@@ -1,0 +1,12 @@
+data/
+dataM13/
+dataAlphaP/
+*.out
+*.npz
+*/*.npz
+basedata13/
+__pycache__/
+*.zip
+*.log
+*.npz.zip
+*.ipynb
