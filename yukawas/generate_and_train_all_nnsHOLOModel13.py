@@ -1,4 +1,4 @@
-from cymetric.config import float_dtype, complex_dtype
+from cymetric.config import real_dtype, complex_dtype
 from cymetric.models.fubinistudy import FSModel
 import tensorflow as tf
 import tensorflow.keras as tfk
@@ -222,7 +222,7 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,stddev=0.
    phimodelzero.compile(custom_metrics=cmetrics)
 
    ## compare validation loss before training for zero network and nonzero network
-   datacasted=[tf.cast(data['X_val'],float_dtype),tf.cast(data['y_val'],float_dtype)]
+   datacasted=[tf.cast(data['X_val'],real_dtype),tf.cast(data['y_val'],real_dtype)]
    #need to re-enable learning, in case there's been a problem:
    phimodel.learn_transition = False
    phimodelzero.learn_transition = False
@@ -272,14 +272,14 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,stddev=0.
    print("ratio of final to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valfinal.items()}))
    print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,tf.cast(data["X_val"],float_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,tf.cast(data["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
    #IMPLEMENT THE FOLLOWING
    #meanfailuretosolveequation,_,_=measure_laplacian_failure(phimodel,data)
    print("\n\n")
    return phimodel,training_history
 
-def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[192,50000],stddev=0.1,lRate=0.001,set_weights_to_zero=False,skip_measures=False):
+def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[192,50000],stddev=0.1,lRate=0.001,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
    dirname = folder_name+ '/tetraquadric_pg_with_'+str(free_coefficient)
    name = 'phimodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(bSizes[1]) + 's' + str(nlayer) + 'x' +str(nHidden)
    print(dirname)
@@ -314,7 +314,7 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    #nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
    print("nns made")
 
-   datacasted=[tf.cast(data['X_val'],float_dtype),tf.cast(data['y_val'],float_dtype)]
+   datacasted=[tf.cast(data['X_val'],real_dtype),tf.cast(data['y_val'],real_dtype)]
 
    #    nn_phi = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
    #    nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
@@ -350,6 +350,10 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
       print("SETTING WEIGHTS TO ZERO")
       training_history=0
       return phimodelzero, training_history
+   elif set_weights_to_random:
+      print("SETTING WEIGHTS TO RANDOM")
+      training_history=0
+      return phimodel, training_history
    else:
       #phimodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirname,name),call_endpoint="serving_default")
       #phimodel.model=tf.keras.models.load_model(os.path.join(dirname, name) + ".keras")
@@ -402,7 +406,7 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    print("validation loss for final network: ")
    print(valtrained)
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,tf.cast(data["X_val"],float_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,tf.cast(data["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
    print("\n\n")
    #IMPLEMENT THE FOLLOWING
@@ -454,6 +458,11 @@ def getcallbacksandmetricsHYM(databeta):
    cmetrics = [TotalLoss(), LaplacianLoss(), TransitionLoss()]
    return cb_list, cmetrics
 
+def convert_to_tensor_dict(data):
+   return {
+    key: tf.convert_to_tensor(value, dtype=value.dtype) if value.dtype in [np.complex64, np.complex128, np.float32, np.float64, np.int32] else value
+    for key, value in data.items()
+   }
    
 def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],stddev=0.1,lRate=0.001,use_zero_network=False,alpha=[1,1],load_network=False):
    
@@ -466,12 +475,15 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
 
 
    databeta = np.load(os.path.join(dirnameHYM, 'dataset.npz'))
+   databeta = convert_to_tensor_dict(databeta)
    databeta_train=tf.data.Dataset.from_tensor_slices(dict(list(dict(databeta).items())[:len(dict(databeta))//2]))
    databeta_val_dict=dict(list(dict(databeta).items())[len(dict(databeta))//2:])
    databeta_val=tf.data.Dataset.from_tensor_slices(databeta_val_dict)
    # batch_sizes=[64,10000]
    databeta_train=databeta_train.shuffle(buffer_size=1024).batch(bSizes[0],drop_remainder=True)
-   datacasted=[tf.cast(databeta['X_val'],float_dtype),tf.cast(databeta['y_val'],float_dtype)]
+   datacasted=[tf.cast(databeta['X_val'],real_dtype),tf.cast(databeta['y_val'],real_dtype)]
+
+
 
    weights = tf.cast(databeta['y_train'][:,0],complex_dtype)
    sources  = tf.cast(databeta['sources_train'],complex_dtype)
@@ -507,7 +519,7 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    #nn_beta_zero = BiholoModelFuncGENERAL(shapeofnetwork,BASIS,use_zero_network=True)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #activ=tf.square
    activ=tfk.activations.gelu
-   if nHidden in [64,128,256]:
+   if nHidden in [64,128,256] or nHidden<20:
        residual_Q = True
        load_func_HYM = BiholoModelFuncGENERALforHYMinv4
    elif nHidden in [65,129, 257]:
@@ -515,6 +527,7 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
        load_func_HYM = BiholoModelFuncGENERALforHYMinv4
    elif nHidden in [66, 130, 258, 513]:
        load_func_HYM = BiholoModelFuncGENERALforHYMinv3
+      
 
    nn_beta = load_func_HYM(shapeofnetwork,BASIS,activation=activ,stddev=stddev,use_zero_network=use_zero_network,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    nn_beta_zero = load_func_HYM(shapeofnetwork,BASIS,activation=activ,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
@@ -552,8 +565,11 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    betamodel.compile(custom_metrics=cmetrics)
    betamodelzero.compile(custom_metrics=cmetrics)
    
-   #datacasted=[tf.cast(data['X_val'],float_dtype),tf.cast(data['y_val'],float_dtype)]
+   #datacasted=[tf.cast(data['X_val'],real_dtype),tf.cast(data['y_val'],real_dtype)]
    print("testing zero and raw")
+   # print("Printing validation dictionary keys and dtypes:")
+   # for key, value in databeta_val_dict.items():
+   #     print(f"{key}: {value.dtype}")
    valzero=betamodelzero.test_step(databeta_val_dict)
    valraw=betamodel.test_step(databeta_val_dict)
    valzero = {key: value.numpy() for key, value in valzero.items()}
@@ -628,7 +644,7 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,tf.cast(databeta["X_val"],float_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,tf.cast(databeta["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
 
 
@@ -649,7 +665,7 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    tf.keras.backend.clear_session()
    return betamodel,training_historyBeta, meanfailuretosolveequation
 
-def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],stddev=0.1,lRate=0.001,set_weights_to_zero=False,skip_measures=False):
+def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],stddev=0.1,lRate=0.001,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
    
    lbstring = ''.join(str(e) for e in linebundleforHYM)
    dirnameHYM = folder_name+'/tetraquadricHYM_pg_with_'+str(free_coefficient)+'forLB_'+lbstring
@@ -662,12 +678,13 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
 
 
    databeta = np.load(os.path.join(dirnameHYM, 'dataset.npz'))
+   databeta = convert_to_tensor_dict(databeta)
    databeta_train=tf.data.Dataset.from_tensor_slices(dict(list(dict(databeta).items())[:len(dict(databeta))//2]))
    databeta_val_dict=dict(list(dict(databeta).items())[len(dict(databeta))//2:])
    databeta_val=tf.data.Dataset.from_tensor_slices(databeta_val_dict)
    # batch_sizes=[64,10000]
    databeta_train=databeta_train.shuffle(buffer_size=1024).batch(bSizes[0],drop_remainder=True)
-   datacasted=[tf.cast(databeta['X_val'],float_dtype),tf.cast(databeta['y_val'],float_dtype)]
+   datacasted=[tf.cast(databeta['X_val'],real_dtype),tf.cast(databeta['y_val'],real_dtype)]
 
    cb_list, cmetrics = getcallbacksandmetricsHYM(databeta)
 
@@ -693,6 +710,17 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
    #nn_beta_zero = BiholoModelFuncGENERAL(shapeofnetwork,BASIS,use_zero_network=True)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    activ=tf.square
    load_func_HYM = BiholoModelFuncGENERALforHYMinv3
+
+
+   activ=tfk.activations.gelu
+   if nHidden in [64,128,256] or nHidden<20:
+       residual_Q = True
+       load_func_HYM = BiholoModelFuncGENERALforHYMinv4
+   elif nHidden in [65,129, 257]:
+       residual_Q = False
+       load_func_HYM = BiholoModelFuncGENERALforHYMinv4
+   elif nHidden in [66, 130, 258, 513]:
+       load_func_HYM = BiholoModelFuncGENERALforHYMinv3
    nn_beta = load_func_HYM(shapeofnetwork,BASIS,activation=activ,stddev=stddev,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    nn_beta_zero = load_func_HYM(shapeofnetwork,BASIS,activation=activ,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #copie from phi above
@@ -711,6 +739,10 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
       print("RETURNING ZERO NETWORK")
       training_historyBeta=0
       return betamodelzero, training_historyBeta
+   elif set_weights_to_random:
+      print("RETURNING RANDOM NETWORK")
+      training_historyBeta=0
+      return betamodel, training_historyBeta
    else:
       #betamodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirnameHYM,name),call_endpoint="serving_default")
       #betamodel.model=tf.keras.models.load_model(os.path.join(dirnameHYM, name) + ".keras")
@@ -752,7 +784,7 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,tf.cast(databeta["X_val"],float_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,tf.cast(databeta["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
    import time
    start=time.time()
@@ -855,13 +887,14 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionfor
    #print("perm2")
    #print(perm.print_diff())
    dataHF = np.load(os.path.join(dirnameHarmonic, 'dataset.npz'))
+   dataHF = convert_to_tensor_dict(dataHF)
    dataHF_train=tf.data.Dataset.from_tensor_slices(dict(list(dict(dataHF).items())[:len(dict(dataHF))//2]))
    dataHF_val_dict=dict(list(dict(dataHF).items())[len(dict(dataHF))//2:])
    dataHF_val_dict = {key: tf.convert_to_tensor(value) for key, value in dataHF_val_dict.items()}
    dataHF_val=tf.data.Dataset.from_tensor_slices(dataHF_val_dict)
    # batch_sizes=[64,10000]
    dataHF_train=dataHF_train.shuffle(buffer_size=1024).batch(bSizes[0],drop_remainder=True)
-   datacasted=[tf.cast(dataHF['X_val'],float_dtype),tf.cast(dataHF['y_val'],float_dtype)]
+   datacasted=[tf.cast(dataHF['X_val'],real_dtype),tf.cast(dataHF['y_val'],real_dtype)]
 
 
 
@@ -911,13 +944,14 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionfor
    activ = tf.keras.activations.gelu
    #load_func = BiholoModelFuncGENERALforSigma2_m13
    #load_func = BiholoModelFuncGENERALforSigmaWNorm
-   if (nHidden ==64) or (nHidden ==128):
+   if (nHidden ==64) or (nHidden ==128) or nHidden<20:
+       #load_func = BiholoBadSectionModel
        load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log
    if (nHidden ==65) or (nHidden ==129):
        #load_func = BiholoModelFuncGENERALforSigmaWNorm
        load_func = BiholoModelFuncGENERALforSigma2_m13
    #if (nHidden ==66) or (nHidden ==130) or :
-   if nHidden in [66,130,250,430,200] :
+   if nHidden in [66,130,250,430,200]:
         load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log_residual 
    if (nHidden==67) or (nHidden==131):
         load_func = BiholoModelFuncGENERALforSigmaWNorm
@@ -1086,15 +1120,29 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionfor
    print(valfinal)
    print("ratio of final to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valfinal.items()}))
    print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
-
+   import time
+   start = time.time()
+   print("start time: ",start)
    check_vals_again = closure_check(pts_check,HFmodel.functionforbaseharmonicform_jbar, HFmodel, pullbacks_check)
+   print(time.time()-start)
    print("check1 again:",tf.reduce_mean(tf.math.abs(check_vals_again)))
+
 
    #print("perm10")
    #print(perm.print_diff())
-
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,tf.cast(dataHF["X_val"],float_dtype))
+   print("-----CHECKS------")
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,tf.cast(dataHF["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs))
+   transition_loss = compute_transition_loss_for_corrected_HF_model(HFmodel,tf.cast(dataHF["X_val"],real_dtype))
+   print("transition loss: " + str(tf.reduce_mean(transition_loss)))
+   transition_loss_zero = compute_transition_loss_for_corrected_HF_model(HFmodelzero,tf.cast(dataHF["X_val"],real_dtype))
+   print("transition loss for zero network: " + str(tf.reduce_mean(transition_loss_zero)))
+   
+   transition_loss_for_uncorrected_HF = compute_transition_loss_for_uncorrected_HF_model(HFmodel,tf.cast(dataHF["X_val"],real_dtype))
+   print("transition loss for uncorrected HF: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF)))
+   transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero,tf.cast(dataHF["X_val"],real_dtype))
+   print("transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero)))
+
 
 
 
@@ -1121,7 +1169,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionfor
 
 
 
-def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmonicform_jbar,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],lRate=0.001,alpha=[1,1],set_weights_to_zero=False,final_layer_scale=1.0,skip_measures=False,norm_momentum=0.999):
+def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmonicform_jbar,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],lRate=0.001,alpha=[1,1],set_weights_to_zero=False,set_weights_to_random=False,final_layer_scale=1.0,skip_measures=False,norm_momentum=0.999):
    
    nameOfBaseHF=functionforbaseharmonicform_jbar.__name__
    lbstring = ''.join(str(e) for e in linebundleforHYM)
@@ -1136,6 +1184,7 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmon
    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameForMetric, 'basis.pickle'), allow_pickle=True))
 
    dataHF = np.load(os.path.join(dirnameHarmonic, 'dataset.npz'))
+   dataHF = convert_to_tensor_dict(dataHF)
    dataHF_train=tf.data.Dataset.from_tensor_slices(dict(list(dict(dataHF).items())[:len(dict(dataHF))//2]))
    dataHF_val_dict=dict(list(dict(dataHF).items())[len(dict(dataHF))//2:])
    dataHF_val_dict = {key: tf.convert_to_tensor(value) for key, value in dataHF_val_dict.items()}
@@ -1213,6 +1262,11 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmon
       training_historyHF=0
       HFmodelzero(dataHF_val_dict['X_val'][0:1])
       return HFmodelzero, training_historyHF
+   elif set_weights_to_random:
+      print("RETURNING RANDOM NETWORK")
+      training_historyHF=0
+      HFmodel(dataHF_val_dict['X_val'][0:1])
+      return HFmodel, training_historyHF
    else:
       #print(HFmodel.model.weights[0])
       #HFmodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirnameHarmonic,name),call_endpoint="serving_default")
@@ -1254,7 +1308,7 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmon
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,tf.cast(dataHF["X_val"],float_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,tf.cast(dataHF["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs))
    #meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
 

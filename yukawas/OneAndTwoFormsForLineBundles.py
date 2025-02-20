@@ -1,4 +1,4 @@
-from cymetric.config import float_dtype, complex_dtype
+from cymetric.config import real_dtype, complex_dtype
 import tensorflow as tf
 import numpy as np
 

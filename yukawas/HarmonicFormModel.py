@@ -1,4 +1,4 @@
-from cymetric.config import float_dtype, complex_dtype
+from cymetric.config import real_dtype, complex_dtype
 from cymetric.models.fubinistudy import FSModel
 import gc
 import tensorflow as tf
@@ -101,10 +101,10 @@ class HarmonicFormModel(FSModel):
         self.NLOSS = 2
         # variable or constant or just tensor?
         if alpha is not None:
-            #self.alpha = [tf.Variable(a, dtype=float_dtype) for a in alpha]
+            #self.alpha = [tf.Variable(a, dtype=real_dtype) for a in alpha]
             self.alpha = [a for a in alpha]
         else:
-            #self.alpha = [tf.Variable(1., dtype=float_dtype) for _ in range(self.NLOSS)]
+            #self.alpha = [tf.Variable(1., dtype=real_dtype) for _ in range(self.NLOSS)]
             self.alpha = [1. for _ in range(self.NLOSS)]
         self.learn_transition = tf.cast(True, dtype=tf.bool)
         self.learn_laplacian = tf.cast(True, dtype=tf.bool)
@@ -118,11 +118,11 @@ class HarmonicFormModel(FSModel):
         #self.learn_volk = tf.cast(False, dtype=tf.bool)
 
         self.custom_metrics = None
-        #self.kappa = tf.cast(BASIS['KAPPA'], dtype=float_dtype)
+        #self.kappa = tf.cast(BASIS['KAPPA'], dtype=real_dtype)
         self.gclipping = float(5.0)
         self.linebundleforHYM=linebundleforHYM
         # add to compile?
-        #self.sigma_loss = sigma_loss(self.kappa, tf.cast(self.nfold, dtype=float_dtype))
+        #self.sigma_loss = sigma_loss(self.kappa, tf.cast(self.nfold, dtype=real_dtype))
 
     def weighting_function_for_section(self,coordsfortrans):
         #$\frac{(\tanh{20\log(2x)}+1)(\tanh{(-20\log(x/2))}+1)}{4}$
@@ -137,7 +137,7 @@ class HarmonicFormModel(FSModel):
         coordsfortrans = tf.reshape(coordsfortrans, (-1, self.nProjective)) # reshape to the appropriate form
         # which is (bSize, nProjective) in this case, so (bSize, 4)
         coordsfortranstotheki=tf.math.reduce_prod(coordsfortrans**self.linebundleforHYM,-1)
-        considerforweightfunction=tf.cast(tf.cast(self.linebundleforHYM,tf.bool),float_dtype)
+        considerforweightfunction=tf.cast(tf.cast(self.linebundleforHYM,tf.bool),real_dtype)
         weights=self.weighting_function_for_section(tf.math.abs(coordsfortrans)**considerforweightfunction)
         #raise to the 0 or 1th power, depending on whether the line bundle is zero in that direction
         weights = tf.reduce_prod(weights, -1)# so this should basically yield 1 if the relevant coordinates are in the [0.2,2] belt, and 0 otherwise
@@ -148,10 +148,10 @@ class HarmonicFormModel(FSModel):
         also can separately check that the 1-form itself transforms appropriately?
 
         Args:
-            points (tf.tensor([bSize, 2*ncoords], float_dtype)): Points.
+            points (tf.tensor([bSize, 2*ncoords], real_dtype)): Points.
 
         Returns:
-            tf.tensor([bSize], float_dtype): Transition loss at each point.
+            tf.tensor([bSize], real_dtype): Transition loss at each point.
         """
         inv_one_mask = self._get_inv_one_mask(points)
         patch_indices = tf.where(~inv_one_mask)[:, 1]
@@ -192,10 +192,10 @@ class HarmonicFormModel(FSModel):
         r"""Computes transition loss at each point. In the case of the Phi model, we demand that \phi(\lambda^q_i z_i)=\phi(z_i)
 
         Args:
-            points (tf.tensor([bSize, 2*ncoords], float_dtype)): Points.
+            points (tf.tensor([bSize, 2*ncoords], real_dtype)): Points.
 
         Returns:
-            tf.tensor([bSize], float_dtype): Transition loss at each point.
+            tf.tensor([bSize], real_dtype): Transition loss at each point.
         """
         #def directly_compute_source(cpoints,invmetrics,pullbacks):
         #    z0 = cpoints[:,4]
@@ -313,7 +313,7 @@ class HarmonicFormModel(FSModel):
         The additional arguments are included for inheritance reasons.
 
         Args:
-            input_tensor (tf.tensor([bSize, 2*ncoords], float_dtype)): Points.
+            input_tensor (tf.tensor([bSize, 2*ncoords], real_dtype)): Points.
             training (bool, optional): Defaults to True.
             j_elim (tf.tensor([bSize, nHyper], tf.int64), optional): 
                 Coordinates(s) to be eliminated in the pullbacks.
@@ -635,13 +635,13 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
     # val_pullbacks=tf.cast(pullbacks[t_i:],complex_dtype) 
     
     # realpoints=tf.concat((tf.math.real(points), tf.math.imag(points)), axis=-1)
-    # realpoints=tf.cast(realpoints,float_dtype)
+    # realpoints=tf.cast(realpoints,real_dtype)
 
-    # X_train=tf.cast(X_train,float_dtype)
-    # y_train=tf.cast(y_train,float_dtype)
-    # X_val=tf.cast(X_val,float_dtype)
-    # y_val=tf.cast(y_val,float_dtype)
-    # #realpoints=tf.cast(realpoints,float_dtype)
+    # X_train=tf.cast(X_train,real_dtype)
+    # y_train=tf.cast(y_train,real_dtype)
+    # X_val=tf.cast(X_val,real_dtype)
+    # y_val=tf.cast(y_val,real_dtype)
+    # #realpoints=tf.cast(realpoints,real_dtype)
     
     # mets = metricModel(realpoints)
     # absdets = tf.abs(tf.linalg.det(mets))
@@ -650,17 +650,17 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
     # inv_mets_val=inv_mets[t_i:]
     # print("gets this far, then4")
 
-    X_train=tf.cast(data['X_train'],float_dtype)
-    y_train=tf.cast(data['y_train'],float_dtype)
-    X_val=tf.cast(data['X_val'],float_dtype)
-    y_val=tf.cast(data['y_val'],float_dtype)
+    X_train=tf.cast(data['X_train'],real_dtype)
+    y_train=tf.cast(data['y_train'],real_dtype)
+    X_val=tf.cast(data['X_val'],real_dtype)
+    y_val=tf.cast(data['y_val'],real_dtype)
     ncoords=int(len(X_train[0])/2)
 
     #y_train=data['y_train']
     #y_val=data['y_val']
     ys=tf.concat((y_train,y_val),axis=0)
-    weights=tf.cast(tf.expand_dims(ys[:,0],axis=-1),float_dtype)
-    omega=tf.cast(tf.expand_dims(ys[:,1],axis=-1),float_dtype)
+    weights=tf.cast(tf.expand_dims(ys[:,0],axis=-1),real_dtype)
+    omega=tf.cast(tf.expand_dims(ys[:,1],axis=-1),real_dtype)
 
     realpoints=tf.concat((X_train,X_val),axis=0)
     points=tf.complex(realpoints[:,0:ncoords],realpoints[:,ncoords:])
@@ -670,20 +670,20 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
 
     #still need to generate pullbacks apparently
     pullbacks = point_gen.pullbacks(points)
-    print("TESTING METS")
-    test = tf.cast(np.array([[-1.58031970e-01, 1.00000000e+00, 5.12138605e-01, 1.00000000e+00,
-  1.00000000e+00, 2.60694236e-01, 1.00000000e+00, 4.38341200e-01,
-  7.85521686e-01, 2.92491859e-17, 6.30328476e-01, 1.35924055e-17,
-  -2.69683842e-17, -2.90005326e-01, 4.55345515e-18, -1.35843813e-01]]),float_dtype)
-    print(metricModel.fubini_study_pb(test))
-    print(metricModel(test))
-    print(metricModel.BASIS['KMODULI'])
-    print("TESTING PBS")
-    print(realpoints[0])
-    print(pullbacks[0])
-    pullbacks_test_remove = metricModel.pullbacks(realpoints)
-    print(pullbacks_test_remove[0])
-    print("DONE TESTING PBS")
+    #print("TESTING METS")
+    #test = tf.cast(np.array([[-1.58031970e-01, 1.00000000e+00, 5.12138605e-01, 1.00000000e+00,
+    #1.00000000e+00, 2.60694236e-01, 1.00000000e+00, 4.38341200e-01,
+    #7.85521686e-01, 2.92491859e-17, 6.30328476e-01, 1.35924055e-17,
+    #-2.69683842e-17, -2.90005326e-01, 4.55345515e-18, -1.35843813e-01]]),real_dtype)
+    #print(metricModel.fubini_study_pb(test))
+    #print(metricModel(test))
+    #print(metricModel.BASIS['KMODULI'])
+    #print("TESTING PBS")
+    #print(realpoints[0])
+    #print(pullbacks[0])
+    #pullbacks_test_remove = metricModel.pullbacks(realpoints)
+    #print(pullbacks_test_remove[0])
+    #print("DONE TESTING PBS")
     train_pullbacks=tf.cast(pullbacks[:t_i],complex_dtype) 
     val_pullbacks=tf.cast(pullbacks[t_i:],complex_dtype) 
 
@@ -729,13 +729,13 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
     #including the 6
     vol_k = tf.math.reduce_mean(det_over_omega * weights[:,0], axis=-1)
     #print("hi")
-    kappaover6 = tf.cast(vol_k,float_dtype) / tf.cast(volume_cy,float_dtype)
+    kappaover6 = tf.cast(vol_k,real_dtype) / tf.cast(volume_cy,real_dtype)
     #rint(ratio)
     #print("hi")
-    tf.cast(kappaover6,float_dtype)
+    tf.cast(kappaover6,real_dtype)
     weightscomp=tf.cast(weights[:,0],complex_dtype)
     #print("hi")
-    det = tf.cast(det,float_dtype)
+    det = tf.cast(det,real_dtype)
     print('kappa over 6, returned as kappa: '+ str(kappaover6))
     #print("gets this far, then5")
 
@@ -796,15 +796,15 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
     #print(fs_forsource.shape)
     # sourceFS=(1/2)*tf.einsum('xba,xab->x',FSmetricinv,F_forsource_pb)
     # #print(FSmetricdets[0:3])
-    # #slopefromvolFSrhoFS=(2/np.pi)*(1/(6*ratio))*tf.reduce_mean((weights[:,0]/det)* tf.cast(FSmetricdets,float_dtype) *sourceFS, axis=-1)
+    # #slopefromvolFSrhoFS=(2/np.pi)*(1/(6*ratio))*tf.reduce_mean((weights[:,0]/det)* tf.cast(FSmetricdets,real_dtype) *sourceFS, axis=-1)
     # #print('reduce')
     # #print(tf.reduce_mean(tf.linalg.det(FS_metric_pb)))
-    # #slopefromvolFSrhoFS=(2/np.pi)*tf.reduce_mean((weights[:,0]/omega[:,0])* tf.cast(FSmetricdets,float_dtype) *sourceFS, axis=-1)/vol_k #vol_k is the actual CY volume.
-    # #slopefromvolFSrhoFS=(1/((3/2) * np.pi))*(2/np.pi)*(6*norm_fac*kappaover6)*tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,float_dtype)/omega[:,0])*sourceFS , axis=-1)#vol_k is the actual CY volume.
-    # slopefromvolFSrhoFS=(1/6)*(2/np.pi)*tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,float_dtype)/omega[:,0])*sourceFS , axis=-1)#vol_k is the actual CY volume.
-    # #volfromFSmetric=tf.reduce_mean((weights[:,0]/omega[:,0])* tf.cast(FSmetricdets,float_dtype) , axis=-1)/vol_k #vol_k is the actual CY volume.
-    # #volfromFSmetric=(6*norm_fac*kappaover6)*tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,float_dtype)/omega[:,0]) , axis=-1) #vol_k is the actual CY volume.
-    # volfromFSmetric=tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,float_dtype)/omega[:,0]) , axis=-1) #vol_k is the actual CY volume.
+    # #slopefromvolFSrhoFS=(2/np.pi)*tf.reduce_mean((weights[:,0]/omega[:,0])* tf.cast(FSmetricdets,real_dtype) *sourceFS, axis=-1)/vol_k #vol_k is the actual CY volume.
+    # #slopefromvolFSrhoFS=(1/((3/2) * np.pi))*(2/np.pi)*(6*norm_fac*kappaover6)*tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,real_dtype)/omega[:,0])*sourceFS , axis=-1)#vol_k is the actual CY volume.
+    # slopefromvolFSrhoFS=(1/6)*(2/np.pi)*tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,real_dtype)/omega[:,0])*sourceFS , axis=-1)#vol_k is the actual CY volume.
+    # #volfromFSmetric=tf.reduce_mean((weights[:,0]/omega[:,0])* tf.cast(FSmetricdets,real_dtype) , axis=-1)/vol_k #vol_k is the actual CY volume.
+    # #volfromFSmetric=(6*norm_fac*kappaover6)*tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,real_dtype)/omega[:,0]) , axis=-1) #vol_k is the actual CY volume.
+    # volfromFSmetric=tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,real_dtype)/omega[:,0]) , axis=-1) #vol_k is the actual CY volume.
     # print('FS vol and slope')
     # print(volfromFSmetric)
     # print(slopefromvolFSrhoFS)

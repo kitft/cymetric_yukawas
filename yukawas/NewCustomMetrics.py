@@ -1,4 +1,4 @@
-from cymetric.config import float_dtype, complex_dtype
+from cymetric.config import real_dtype, complex_dtype
 import tensorflow.keras as tfk
 import tensorflow as tf
 
@@ -42,10 +42,10 @@ def laplacian_measure_loss(model, validation_data):
 
     Args:
         model (tfk.model): Any (sub-)class of FSModel.
-        points (tensor[(n_p,2*ncoord), float_dtype]): NN input
+        points (tensor[(n_p,2*ncoord), real_dtype]): NN input
 
     Returns:
-        float_dtype: Transition loss measure
+        real_dtype: Transition loss measure
     """
     #X_val, aux = validation_data
     X_val = validation_data["X_val"]
@@ -53,9 +53,9 @@ def laplacian_measure_loss(model, validation_data):
     invmetrics = validation_data["inv_mets_val"]
     sources = validation_data["sources_val"]
 
-    #X_val = tf.cast(X_val, float_dtype)
-    #y_val = tf.cast(y_val, float_dtype)
-    #aux=tf.cast(aux, float_dtype)
+    #X_val = tf.cast(X_val, real_dtype)
+    #y_val = tf.cast(y_val, real_dtype)
+    #aux=tf.cast(aux, real_dtype)
     #sort out this float32 problem!
     return tf.math.reduce_mean(
         model.compute_laplacian_loss(X_val,pullbacks,invmetrics,sources))

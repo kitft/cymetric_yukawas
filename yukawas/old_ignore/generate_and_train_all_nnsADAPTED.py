@@ -1,4 +1,4 @@
-from cymetric.config import float_dtype, complex_dtype
+from cymetric.config import real_dtype, complex_dtype
 from cymetric.models.fubinistudy import FSModel
 import tensorflow as tf
 import tensorflow.keras as tfk
@@ -214,7 +214,7 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[1
    phimodelzero.compile(custom_metrics=cmetrics)
 
    # compare validation loss before training for zero network and nonzero network
-   datacasted=[tf.cast(data['X_val'],float_dtype),tf.cast(data['y_val'],float_dtype)]
+   datacasted=[tf.cast(data['X_val'],real_dtype),tf.cast(data['y_val'],real_dtype)]
    #need to re-enable learning, in case there's been a problem:
    phimodel.learn_transition = True
    phimodelzero.learn_transition = True
@@ -252,7 +252,7 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[1
    print("ratio of final to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valfinal.items()}))
    print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,tf.cast(data["X_val"],float_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,tf.cast(data["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
    #IMPLEMENT THE FOLLOWING
    #meanfailuretosolveequation,_,_=measure_laplacian_failure(phimodel,data)
@@ -299,7 +299,7 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    phimodelzero.compile(custom_metrics=cmetrics)
 
    # compare validation loss before training for zero network and nonzero network
-   datacasted=[tf.cast(data['X_val'],float_dtype),tf.cast(data['y_val'],float_dtype)]
+   datacasted=[tf.cast(data['X_val'],real_dtype),tf.cast(data['y_val'],real_dtype)]
    #need to re-enable learning, in case there's been a problem:
    phimodel.learn_transition = True
    phimodelzero.learn_transition = True
@@ -328,7 +328,7 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    print("validation loss for final network: ")
    print(valtrained)
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,tf.cast(data["X_val"],float_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,tf.cast(data["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
    print("\n\n")
    #IMPLEMENT THE FOLLOWING
@@ -438,7 +438,7 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    betamodel.compile(custom_metrics=cmetrics)
    betamodelzero.compile(custom_metrics=cmetrics)
    
-   #datacasted=[tf.cast(data['X_val'],float_dtype),tf.cast(data['y_val'],float_dtype)]
+   #datacasted=[tf.cast(data['X_val'],real_dtype),tf.cast(data['y_val'],real_dtype)]
    valzero=betamodelzero.test_step(databeta_val_dict)
    valraw=betamodel.test_step(databeta_val_dict)
    valzero = {key: value.numpy() for key, value in valzero.items()}
@@ -488,7 +488,7 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,tf.cast(databeta["X_val"],float_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,tf.cast(databeta["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
    meanfailuretosolveequation,_,_=HYM_measure_val(betamodel,databeta)
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
@@ -566,7 +566,7 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,tf.cast(databeta["X_val"],float_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,tf.cast(databeta["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
    meanfailuretosolveequation,_,_=HYM_measure_val(betamodel,databeta)
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
@@ -729,7 +729,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionfor
    print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,tf.cast(dataHF["X_val"],float_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,tf.cast(dataHF["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs))
    meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
@@ -815,7 +815,7 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmon
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,tf.cast(dataHF["X_val"],float_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,tf.cast(dataHF["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs))
    meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))

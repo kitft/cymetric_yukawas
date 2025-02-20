@@ -1,4 +1,4 @@
-from cymetric.config import float_dtype, complex_dtype
+from cymetric.config import real_dtype, complex_dtype
 import tensorflow as tf
 import numpy as np
 import tensorflow.keras as tfk
@@ -54,11 +54,11 @@ def _fubini_study_n_potentials( points, t=tf.complex(1., 0.)):
            t (tf.complex, optional): Volume factor. Defaults to 1+0j.
 
         Returns:
-            tf.tensor([bsize], float_dtype):
+            tf.tensor([bsize], real_dtype):
                 FS-metric in the ambient space coordinates.
         """
         point_square = tf.math.reduce_sum(tf.math.abs(points)**2, axis=-1)
-        return tf.cast(t/np.pi, float_dtype) * tf.cast(tf.math.log(point_square), float_dtype)
+        return tf.cast(t/np.pi, real_dtype) * tf.cast(tf.math.log(point_square), real_dtype)
 
 def getrealandimagofprod(cpoints,return_mat=False):
     X = tf.math.real(cpoints)
@@ -249,12 +249,12 @@ class bihom_function_generator(tf.Module):
 
     @tf.function
     def __call__(self, points):
-        #k_fs = tf.zeros_like(points[:, 0], dtype=float_dtype)
-        k_fs=tf.zeros([tf.shape(points)[0]],dtype=float_dtype)
-        #kappas_prod = tf.ones_like(points[:, 0], dtype=float_dtype)
-        kappas_prod=tf.ones([tf.shape(points)[0]],dtype=float_dtype)
-        iterative_real = tf.zeros_like(points[:, 0:1], dtype=float_dtype)
-        iterative_imag = tf.zeros_like(points[:, 0:1], dtype=float_dtype)
+        #k_fs = tf.zeros_like(points[:, 0], dtype=real_dtype)
+        k_fs=tf.zeros([tf.shape(points)[0]],dtype=real_dtype)
+        #kappas_prod = tf.ones_like(points[:, 0], dtype=real_dtype)
+        kappas_prod=tf.ones([tf.shape(points)[0]],dtype=real_dtype)
+        iterative_real = tf.zeros_like(points[:, 0:1], dtype=real_dtype)
+        iterative_imag = tf.zeros_like(points[:, 0:1], dtype=real_dtype)
 
         for i in range(self.n_projective):
             #print("shaep")
@@ -344,7 +344,7 @@ class bihom_function_generatorTQ(tf.Module):
     @tf.function
     def __call__(self, points):
         #takes complex points
-        #k_fs = tf.zeros_like(points[:, 0], dtype=float_dtype)
+        #k_fs = tf.zeros_like(points[:, 0], dtype=real_dtype)
         #sqrtkappas = tf.math.sqrt(tf.reduce_sum(tf.abs(points[0:2])**2, axis=-1)*tf.reduce_sum(tf.abs(points[2:4])**2, axis=-1)*tf.reduce_sum(tf.abs(points[4:6])**2, axis=-1)*tf.reduce_sum(tf.abs(points[6:8])**2, axis=-1))
         points0=tf.einsum('xi,x->xi',points[:,0:2],tf.cast(tf.reduce_sum(tf.abs(points[:,0:2])**2, axis=-1)**(-0.5),complex_dtype))
         points1=tf.einsum('xi,x->xi',points[:,2:4],tf.cast(tf.reduce_sum(tf.abs(points[:,2:4])**2, axis=-1)**(-0.5),complex_dtype))
@@ -373,7 +373,7 @@ class bihom_function_generatorTQ_flat(tf.Module):
     @tf.function
     def __call__(self, points):
         #takes complex points
-        #k_fs = tf.zeros_like(points[:, 0], dtype=float_dtype)
+        #k_fs = tf.zeros_like(points[:, 0], dtype=real_dtype)
         #sqrtkappas = tf.math.sqrt(tf.reduce_sum(tf.abs(points[0:2])**2, axis=-1)*tf.reduce_sum(tf.abs(points[2:4])**2, axis=-1)*tf.reduce_sum(tf.abs(points[4:6])**2, axis=-1)*tf.reduce_sum(tf.abs(points[6:8])**2, axis=-1))
         points0=tf.einsum('xi,x->xi',points[:,0:2],tf.cast(tf.reduce_sum(tf.abs(points[:,0:2])**2, axis=-1)**(-0.5),complex_dtype))
         points1=tf.einsum('xi,x->xi',points[:,2:4],tf.cast(tf.reduce_sum(tf.abs(points[:,2:4])**2, axis=-1)**(-0.5),complex_dtype))
@@ -807,10 +807,10 @@ def bihomogeneous_section_for_prod_not_mult(points,BASIS):
     r"""Computes the Kahler potential.
 
     Args:
-        points (tf.tensor([bSize, 2*ncoords], float_dtype)): Points.
+        points (tf.tensor([bSize, 2*ncoords], real_dtype)): Points.
 
     Returns:
-        tf.tensor([bSize], float_dtype): Kahler potential.
+        tf.tensor([bSize], real_dtype): Kahler potential.
 
     
     """
@@ -1677,7 +1677,90 @@ class BiholoModelFuncGENERALforSigmaWNorm_no_log_residual(tf.keras.Model):
         return out
         #return tf.reduce_sum(to_multiply_sections_complex,axis=-1)#tf.einsum('xi,xi->x',sectionsbasis,to_multiply_sections_complex)
 
+class BiholoBadSectionModel(tf.keras.Model):
+    def __init__(self, layer_sizes,BASIS,linebundleindices,nsections,k_phi,activation=tf.square,stddev=0.1,final_layer_scale=1.0,use_zero_network=False,use_symmetry_reduced_TQ=False,norm_momentum=0.999):
+        super().__init__()
+        #EXPLAIN what ones((2)) is oding?
+        indskpModM=[tf.cast(get_monomial_indices(tf.ones((2)),k_phi[i]+tf.math.abs(linebundleindices[i])),tf.int32) for i in range(len(k_phi))]
+        indsk=[tf.cast(get_monomial_indices(tf.ones(2),k_phi[i]),tf.int32) for i in range(len(k_phi))] #conj is unnecessary here
+        #tf.print(indsk)
+        #tf.print(indskpModM)
+        self.indslist=(indskpModM,indsk)
+        self.k_phi=k_phi
+        self.linebundleindices=linebundleindices
+        self.nsections=nsections
+        #final_layer_inits=tf.keras.initializers.Ones if (not use_zero_network) else tf.keras.initializers.Zeros
+        final_layer_inits=tf.keras.initializers.Constant(value=final_layer_scale) if (not use_zero_network) else tf.keras.initializers.Zeros
+        temp_list = []
+        for i in range(len(layer_sizes)-2-1):
+            temp_list.append(tf.keras.layers.Dense(units=layer_sizes[i+1], activation=activation))
+            #temp_list.append(MovingAverageBN(momentum=norm_momentum, epsilon=1e-3, center=False, scale=True,axis=-1))
+        
+        self.layers_list = temp_list
+        self.layers_list += [tf.keras.layers.Dense(units=layer_sizes[len(layer_sizes)-1], activation=activation)]
+        self.layers_list += [tf.keras.layers.Dense(units=2*nsections, use_bias=False, kernel_initializer=final_layer_inits)]
 
+
+        self.BASIS=BASIS
+        self.nCoords=tf.reduce_sum(tf.cast(BASIS['AMBIENT'],tf.int32)+1)
+        self.ambient=tf.cast(BASIS['AMBIENT'],tf.int32)
+        self.kmoduli=BASIS['KMODULI']
+        if tf.reduce_sum(tf.math.abs(np.array(self.ambient)-np.array([1,1,1,1])))==0:
+            if use_symmetry_reduced_TQ:
+                self.bihom_func= bihom_function_generatorTQ2(np.array(self.ambient),len(self.ambient),self.kmoduli)
+                print("using TQ with symmetry reduction (input dim 16)")
+            else:
+                self.bihom_func= bihom_function_generatorTQ(np.array(self.ambient),len(self.ambient),self.kmoduli)
+                print("using TQ without symmetry reduction")
+        else:
+            self.bihom_func= bihom_function_generator(np.array(self.ambient),len(self.ambient),self.kmoduli)
+        self.get_deg_kphi_and_mons_class=get_degree_kphiandMmonomials(k_phi,linebundleindices,self.indslist)
+        self.get_deg_kphi_and_mons=tf.function(self.get_deg_kphi_and_mons_class.__call__,input_signature=(tf.TensorSpec(shape=[None,self.nCoords], dtype=complex_dtype),))
+        self.get_deg_kphi_and_mons_func=lambda x: get_degree_kphiandMmonomials_func(k_phi,linebundleindices,self.indslist,x)
+
+        self.batchnorms=MovingAverageBN
+
+    def call(self, inputs, training=False):
+        #sum_coords=(tf.reduce_sum(inputs,axis=-1))
+        #norm_factor_phase=np.e**((1.j)*tf.cast(tf.math.atan2(tf.math.imag(sum_coords),tf.math.real(sum_coords)),complex_dtype))
+        inputsC = tf.complex(inputs[:, :self.nCoords], inputs[:, self.nCoords:])
+        #print("ncCoords" +  str(self.nCoords))
+        #norm=tf.math.abs(tf.norm(inputs,axis=-1))
+        #bihom =self.bihom_func(inputs)
+        #tf.print('inp shape')
+        #tf.print(tf.shape(inputs))
+        sectionsbasis=self.get_deg_kphi_and_mons(inputsC)
+        #sectionsbasis=get_degree_kphiandMmonomials_func(self.k_phi,self.linebundleindices,self.indslist,inputs)
+        #print(sectionsbasis.shape)
+        #tf.print('hi')
+        #tf.print(sectionsbasis.shape)
+        #print(tf.shape(inputs))
+        #print(tf.shape(inputs))
+        #return tf.math.log(tf.reduce_sum(inputs,axis=-1))
+        inputs= inputs
+        inputs2= inputs
+        #print("\nApply layers")
+        for enum, layer in enumerate(self.layers_list[:-1]):
+            #print(f"Layer type: {type(layer)}")
+            #print(f"Input type: {type(inputs)}")
+            #print(f"Input shape: {inputs.shape if hasattr(inputs, 'shape') else 'no shape'}")
+            #print(f"is: {inputs[0,0]}")
+            inputs_temp = layer(inputs,training=training)
+            if enum>=2 and enum <=len(self.layers_list[:-1])-2:
+                inputs = inputs_temp + inputs
+            else:
+                inputs = inputs_temp
+        to_multiply_sections_real= self.layers_list[-1](inputs)
+
+        #to_multiply_sections_real = tf.clip_by_value(to_multiply_sections_real,-1e6,1e6)
+        to_multiply_sections_complex= tf.complex(to_multiply_sections_real[:,:self.nsections],to_multiply_sections_real[:,self.nsections:])
+        #print(f"real:  is nan ? {tf.math.reduce_any(tf.math.is_nan(to_multiply_sections_real))}")
+        #print(f"complex:  is nan ? {tf.math.reduce_any(tf.math.is_nan(tf.math.abs(to_multiply_sections_complex)))}")
+        #print(f"sectionsbasis:  is nan ? {tf.math.reduce_any(tf.math.is_nan(tf.math.abs(sectionsbasis)))}")
+        #tf.print(to_multiply_sections_complex.shape)#should remove this - why so big?
+        #return to_multiply_sections_complex[:,0]
+        out=tf.einsum('xi,xi->x',sectionsbasis,to_multiply_sections_complex)
+        return out*100000
 
 
 

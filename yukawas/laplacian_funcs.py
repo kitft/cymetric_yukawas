@@ -1,4 +1,4 @@
-from cymetric.config import float_dtype, complex_dtype
+from cymetric.config import real_dtype, complex_dtype
 import tensorflow as tf
 
 def convertcomptoreal(complexvec):
@@ -346,10 +346,10 @@ def antiholo_extder_for_nu_w_dzbar(points,nu):
 def compute_transition_pointwise_measure(functionmodel, points):
         r"""Computes transition loss at each point for a function!
         Args:
-            points (tf.tensor([bSize, 2*ncoords], float_dtype)): Points.
+            points (tf.tensor([bSize, 2*ncoords], real_dtype)): Points.
 
         Returns:
-            tf.tensor([bSize], float_dtype): Transition loss at each point.
+            tf.tensor([bSize], real_dtype): Transition loss at each point.
         """
         inv_one_mask = functionmodel._get_inv_one_mask(points)
         patch_indices = tf.where(~inv_one_mask)[:, 1]
@@ -437,7 +437,7 @@ def HYM_measure_val_for_batching(betamodel, X_val, y_val, val_pullbacks, inv_met
 def HYM_measure_val_with_H(HFmodel,dataHF):
     #returns ratio means of deldagger V_corrected/deldagger V_FS
     #and returns
-    pts = tf.cast(dataHF['X_val'],float_dtype)
+    pts = tf.cast(dataHF['X_val'],real_dtype)
     # compute the laplacian (withH) acting on the HFmodel
     laplacianvals=laplacianWithH(HFmodel,pts,dataHF['val_pullbacks'],dataHF['inv_mets_val'],HFmodel.HYMmetric)
     coclosuretrained=coclosure_check(pts,HFmodel.HYMmetric,HFmodel.functionforbaseharmonicform_jbar,HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'])
@@ -452,7 +452,7 @@ def HYM_measure_val_with_H(HFmodel,dataHF):
 def HYM_measure_val_with_H_for_batching(HFmodel, X_val, y_val, val_pullbacks, inv_mets_val):
     #returns ratio means of deldagger V_corrected/deldagger V_FS
     #and returns
-    pts = tf.cast(X_val, float_dtype)
+    pts = tf.cast(X_val, real_dtype)
     # compute the laplacian (withH) acting on the HFmodel
     laplacianvals = laplacianWithH(HFmodel, pts, val_pullbacks, inv_mets_val, HFmodel.HYMmetric)
     coclosuretrained = coclosure_check(pts, HFmodel.HYMmetric, HFmodel.functionforbaseharmonicform_jbar, HFmodel, inv_mets_val, val_pullbacks)
@@ -472,10 +472,10 @@ def compute_transition_pointwise_measure_section(HFmodel, points):
         also can separately check that the 1-form itHFmodel transforms appropriately?
 
         Args:
-            points (tf.tensor([bSize, 2*ncoords], float_dtype)): Points.
+            points (tf.tensor([bSize, 2*ncoords], real_dtype)): Points.
 
         Returns:
-            tf.tensor([bSize], float_dtype): Transition loss at each point.
+            tf.tensor([bSize], real_dtype): Transition loss at each point.
         """
         inv_one_mask = HFmodel._get_inv_one_mask(points)
         patch_indices = tf.where(~inv_one_mask)[:, 1]
@@ -517,6 +517,8 @@ def compute_transition_pointwise_measure_section(HFmodel, points):
 
         return meanoverstddev,all_t_loss/stddev
 
+    
+
 
 #check the corrected FS
 def compute_transition_loss_for_uncorrected_HF_model(HFmodel, points):
@@ -528,10 +530,10 @@ def compute_transition_loss_for_uncorrected_HF_model(HFmodel, points):
             ||g^k - T_{jk} \cdot g^j T^\dagger_{jk}||_n
 
     Args:
-        points (tf.tensor([bSize, 2*ncoords], float_dtype)): Points.
+        points (tf.tensor([bSize, 2*ncoords], real_dtype)): Points.
 
     Returns:
-        tf.tensor([bSize], float_dtype): Transition loss at each point.
+        tf.tensor([bSize], real_dtype): Transition loss at each point.
     """
     inv_one_mask = HFmodel._get_inv_one_mask(points)
     patch_indices = tf.where(~inv_one_mask)[:, 1]
@@ -563,6 +565,7 @@ def compute_transition_loss_for_uncorrected_HF_model(HFmodel, points):
     vi = tf.repeat(HFmodel.uncorrected_FS_harmonicform(points), HFmodel.nTransitions, axis=0)
     current_patch_mask = tf.repeat(
         current_patch_mask, HFmodel.nTransitions, axis=0)
+    print("ALL DTYPES: ", patch_points.dtype, other_patch_mask.dtype, current_patch_mask.dtype, fixed.dtype)
     Tij = HFmodel.get_transition_matrix(
         patch_points, other_patch_mask, current_patch_mask, fixed)
     patch_transformation,weights=HFmodel.get_section_transition_to_patch_mask(exp_points,other_patch_mask) 
@@ -571,6 +574,65 @@ def compute_transition_loss_for_uncorrected_HF_model(HFmodel, points):
                               tf.transpose(Tij, perm=[0, 2, 1], conjugate=True)))
     all_t_loss = tf.math.reduce_sum(all_t_loss**HFmodel.n[1], axis=[1])
     #This should now be nTransitions 
+    all_t_loss = tf.reshape(all_t_loss, (-1, HFmodel.nTransitions))
+    all_t_loss = tf.math.reduce_sum(all_t_loss, axis=-1)
+    return all_t_loss/(HFmodel.nTransitions*HFmodel.nfold)
+
+
+def compute_transition_loss_for_corrected_HF_model(HFmodel, points):
+    r"""Computes transition loss at each point.
+
+    .. math::
+
+        \mathcal{L} = \frac{1}{d} \sum_{k,j} 
+            ||g^k - T_{jk} \cdot g^j T^\dagger_{jk}||_n
+
+    Args:
+        points (tf.tensor([bSize, 2*ncoords], real_dtype)): Points.
+
+    Returns:
+        tf.tensor([bSize], real_dtype): Transition loss at each point.
+    """
+    inv_one_mask = HFmodel._get_inv_one_mask(points)
+    patch_indices = tf.where(~inv_one_mask)[:, 1]
+    patch_indices = tf.reshape(patch_indices, (-1, HFmodel.nProjective))
+    current_patch_mask = HFmodel._indices_to_mask(patch_indices)
+    cpoints = tf.complex(points[:, :HFmodel.ncoords],
+                         points[:, HFmodel.ncoords:])
+    fixed = HFmodel._find_max_dQ_coords(points)
+    if HFmodel.nhyper == 1:
+        other_patches = tf.gather(HFmodel.fixed_patches, fixed)
+    else:
+        combined = tf.concat((fixed, patch_indices), axis=-1)
+        other_patches = HFmodel._generate_patches_vec(combined)
+    other_patches = tf.reshape(other_patches, (-1, HFmodel.nProjective))
+    other_patch_mask = HFmodel._indices_to_mask(other_patches)
+    # NOTE: This will include same to same patch transitions
+    exp_points = tf.repeat(cpoints, HFmodel.nTransitions, axis=-2)
+    patch_points = HFmodel._get_patch_coordinates(
+        exp_points,
+        tf.cast(other_patch_mask, dtype=tf.bool))
+    fixed = tf.reshape(
+        tf.tile(fixed, [1, HFmodel.nTransitions]), (-1, HFmodel.nhyper))
+    real_patch_points = tf.concat(
+        (tf.math.real(patch_points), tf.math.imag(patch_points)),
+        axis=-1)
+    vj = HFmodel.corrected_harmonicform(real_patch_points)
+    # NOTE: We will compute this twice.
+    # TODO: disentangle this to save one computation?
+    vi = tf.repeat(HFmodel.corrected_harmonicform(points), HFmodel.nTransitions, axis=0)
+    current_patch_mask = tf.repeat(
+        current_patch_mask, HFmodel.nTransitions, axis=0)
+    #print("ALL DTYPES: ", patch_points.dtype, other_patch_mask.dtype, current_patch_mask.dtype, fixed.dtype)
+    Tij = HFmodel.get_transition_matrix(
+        patch_points, other_patch_mask, current_patch_mask, fixed)
+    patch_transformation,weights=HFmodel.get_section_transition_to_patch_mask(exp_points,other_patch_mask) 
+    # work out what to do with weights here
+    all_t_loss = tf.math.abs(tf.einsum('xj,x->xj',vj,patch_transformation)- tf.einsum('xk,xkl->xl', vi,
+                              tf.transpose(Tij, perm=[0, 2, 1], conjugate=True)))
+    all_t_loss = tf.math.reduce_sum(all_t_loss**HFmodel.n[1], axis=[1])
+    #This should now be nTransitions 
+    
     all_t_loss = tf.reshape(all_t_loss, (-1, HFmodel.nTransitions))
     all_t_loss = tf.math.reduce_sum(all_t_loss, axis=-1)
     return all_t_loss/(HFmodel.nTransitions*HFmodel.nfold)

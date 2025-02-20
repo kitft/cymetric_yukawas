@@ -1,4 +1,4 @@
-from cymetric.config import float_dtype, complex_dtype
+from cymetric.config import real_dtype, complex_dtype
 import tensorflow as tf
 import numpy as np
 import tensorflow.keras as tfk
@@ -52,11 +52,11 @@ def _fubini_study_n_potentials( points, t=tf.complex(1., 0.)):
            t (tf.complex, optional): Volume factor. Defaults to 1+0j.
 
         Returns:
-            tf.tensor([bsize], float_dtype):
+            tf.tensor([bsize], real_dtype):
                 FS-metric in the ambient space coordinates.
         """
         point_square = tf.math.reduce_sum(tf.math.abs(points)**2, axis=-1)
-        return tf.cast(t/np.pi, float_dtype) * tf.cast(tf.math.log(point_square), float_dtype)
+        return tf.cast(t/np.pi, real_dtype) * tf.cast(tf.math.log(point_square), real_dtype)
 
 def getrealandimagofprod(cpoints,return_mat=False):
     X = tf.math.real(cpoints)
@@ -247,12 +247,12 @@ class bihom_function_generator(tf.Module):
 
     @tf.function
     def __call__(self, points):
-        #k_fs = tf.zeros_like(points[:, 0], dtype=float_dtype)
-        k_fs=tf.zeros([tf.shape(points)[0]],dtype=float_dtype)
-        #kappas_prod = tf.ones_like(points[:, 0], dtype=float_dtype)
-        kappas_prod=tf.ones([tf.shape(points)[0]],dtype=float_dtype)
-        iterative_real = tf.zeros_like(points[:, 0:1], dtype=float_dtype)
-        iterative_imag = tf.zeros_like(points[:, 0:1], dtype=float_dtype)
+        #k_fs = tf.zeros_like(points[:, 0], dtype=real_dtype)
+        k_fs=tf.zeros([tf.shape(points)[0]],dtype=real_dtype)
+        #kappas_prod = tf.ones_like(points[:, 0], dtype=real_dtype)
+        kappas_prod=tf.ones([tf.shape(points)[0]],dtype=real_dtype)
+        iterative_real = tf.zeros_like(points[:, 0:1], dtype=real_dtype)
+        iterative_imag = tf.zeros_like(points[:, 0:1], dtype=real_dtype)
 
         for i in range(self.n_projective):
             #print("shaep")
@@ -342,7 +342,7 @@ class bihom_function_generatorTQ(tf.Module):
     @tf.function
     def __call__(self, points):
         #takes complex points
-        #k_fs = tf.zeros_like(points[:, 0], dtype=float_dtype)
+        #k_fs = tf.zeros_like(points[:, 0], dtype=real_dtype)
         #sqrtkappas = tf.math.sqrt(tf.reduce_sum(tf.abs(points[0:2])**2, axis=-1)*tf.reduce_sum(tf.abs(points[2:4])**2, axis=-1)*tf.reduce_sum(tf.abs(points[4:6])**2, axis=-1)*tf.reduce_sum(tf.abs(points[6:8])**2, axis=-1))
         points0=tf.einsum('xi,x->xi',points[:,0:2],tf.cast(tf.reduce_sum(tf.abs(points[:,0:2])**2, axis=-1)**(-0.5),complex_dtype))
         points1=tf.einsum('xi,x->xi',points[:,2:4],tf.cast(tf.reduce_sum(tf.abs(points[:,2:4])**2, axis=-1)**(-0.5),complex_dtype))
@@ -770,10 +770,10 @@ def bihomogeneous_section_for_prod_not_mult(points,BASIS):
     r"""Computes the Kahler potential.
 
     Args:
-        points (tf.tensor([bSize, 2*ncoords], float_dtype)): Points.
+        points (tf.tensor([bSize, 2*ncoords], real_dtype)): Points.
 
     Returns:
-        tf.tensor([bSize], float_dtype): Kahler potential.
+        tf.tensor([bSize], real_dtype): Kahler potential.
 
     
     """

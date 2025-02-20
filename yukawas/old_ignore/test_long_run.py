@@ -1,4 +1,4 @@
-from cymetric.config import float_dtype, complex_dtype
+from cymetric.config import real_dtype, complex_dtype
 klist: Bad format in credentials cache (filename: /tmp/krb5cc_26794)
 date: invalid date ‘//’
 ./longjob: line 34: [: 1718549456: unary operator expected

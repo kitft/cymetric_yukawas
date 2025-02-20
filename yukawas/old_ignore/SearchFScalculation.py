@@ -1,4 +1,4 @@
-from cymetric.config import float_dtype, complex_dtype
+from cymetric.config import real_dtype, complex_dtype
 from cymetric.models.fubinistudy import FSModel
 import tensorflow as tf
 import tensorflow.keras as tfk
@@ -113,7 +113,7 @@ def create_untrained_nn(basedirname,free_coefficient):
 
    #nn_phi = BiholoModelFuncGENERAL(shapeofnetwork,BASIS,stddev=stddev,use_zero_network=use_zero_network)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #nn_phi_zero =BiholoModelFuncGENERAL(shapeofnetwork,BASIS,use_zero_network=True)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
-   nn_phi_zero= lambda x: tf.zeros((tf.shape(x)[0]),dtype=float_dtype)
+   nn_phi_zero= lambda x: tf.zeros((tf.shape(x)[0]),dtype=real_dtype)
    #nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
    phimodel = PhiFSModel(nn_phi_zero, BASIS, alpha=np.array([1,1,30,1,2.]))
 
@@ -133,7 +133,7 @@ def create_untrained_nn_HYM(basedirname,free_coefficient,linebundleforHYM,alpha=
    #nn_beta_zero = BiholoModelFuncGENERAL(shapeofnetwork,BASIS,use_zero_network=True)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #nn_beta = BiholoModelFuncGENERALnolog(shapeofnetwork,BASIS,activation=tfk.activations.gelu,stddev=stddev,use_zero_network=use_zero_network)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #nn_beta_zero = BiholoModelFuncGENERALnolog(shapeofnetwork,BASIS,activation=tfk.activations.gelu,use_zero_network=True)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
-   nn_beta_zero= lambda x: tf.zeros((tf.shape(x)[0]),dtype=float_dtype)
+   nn_beta_zero= lambda x: tf.zeros((tf.shape(x)[0]),dtype=real_dtype)
    #nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
 
    betamodel= BetaModel(nn_beta_zero,BASIS, linebundleforHYM,alpha=alpha,norm = [1. for _ in range(2)])
@@ -150,7 +150,7 @@ def create_untrained_nn_HF(basedirname,free_coefficient,linebundleforHYM,betamod
    BASIS = prepare_tf_basis(np.load(os.path.join(dirname, 'basis.pickle'), allow_pickle=True))
 
    #define a lambda funciton that returns a vector of zeros the size of the batch in its argument
-   nn_HF_zero= lambda x: tf.zeros((tf.shape(x)[0]),dtype=float_dtype)
+   nn_HF_zero= lambda x: tf.zeros((tf.shape(x)[0]),dtype=real_dtype)
    HFmodel = HarmonicFormModel(nn_HF_zero,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)])
    #HFmodelzero = HarmonicFormModel(nn_HF_zero,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)])
    return HFmodel
@@ -253,7 +253,7 @@ def calculate_masses(basedirname,free_coefficient,nPoints=300000,blockprint=True
       data=np.load(os.path.join(basedirname+'data/tetraquadric_pg_with_'+str(free_coefficient_name), 'dataset.npz'))
       n_p=nPoints
       volCY_from_Om=tf.reduce_mean(data['y_train'][:n_p,0])/6 #this is the actual volume of the CY computed from Omega.
-      real_pts=tf.cast(data['X_train'][0:n_p],float_dtype)# cast to 32 bit
+      real_pts=tf.cast(data['X_train'][0:n_p],real_dtype)# cast to 32 bit
       pointsComplex=tf.cast(point_vec_to_complex(data['X_train'][0:n_p]),complex_dtype)# we have to cast to complex64 from complex128 sometimes. Just for safety. point_vec_to_complex does the obvious thing
 
       aux_weights=(data['y_train'][:n_p,0]/(data['y_train'][:n_p,1]))*(1/(6))### these are the appropriate 'flat measure' so sum_i aux_weights f is int_X f(x)

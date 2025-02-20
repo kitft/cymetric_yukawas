@@ -1,4 +1,4 @@
-from cymetric.config import float_dtype, complex_dtype
+from cymetric.config import real_dtype, complex_dtype
 from cymetric.models.fubinistudy import FSModel
 from laplacian_funcs import *
 import tensorflow as tf
@@ -103,9 +103,9 @@ class BetaModel(FSModel):
         self.NLOSS = 2
         # variable or constant or just tensor?
         if alpha is not None:
-            self.alpha = [tf.Variable(a, dtype=float_dtype) for a in alpha]
+            self.alpha = [tf.Variable(a, dtype=real_dtype) for a in alpha]
         else:
-            self.alpha = [tf.Variable(1., dtype=float_dtype) for _ in range(self.NLOSS)]
+            self.alpha = [tf.Variable(1., dtype=real_dtype) for _ in range(self.NLOSS)]
         self.learn_transition = tf.cast(True, dtype=tf.bool)
         self.learn_laplacian = tf.cast(True, dtype=tf.bool)
 
@@ -115,10 +115,10 @@ class BetaModel(FSModel):
         #self.learn_volk = tf.cast(False, dtype=tf.bool)
 
         self.custom_metrics = None
-        #self.kappa = tf.cast(BASIS['KAPPA'], dtype=float_dtype)
+        #self.kappa = tf.cast(BASIS['KAPPA'], dtype=real_dtype)
         self.gclipping = float(5.0)
         # add to compile?
-        #self.sigma_loss = sigma_loss(self.kappa, tf.cast(self.nfold, dtype=float_dtype))
+        #self.sigma_loss = sigma_loss(self.kappa, tf.cast(self.nfold, dtype=real_dtype))
         self.linebundleforHYM =linebundleforHYM
 
 
@@ -126,10 +126,10 @@ class BetaModel(FSModel):
         r"""Computes transition loss at each point. In the case of the Phi model, we demand that \phi(\lambda^q_i z_i)=\phi(z_i)
 
         Args:
-            points (tf.tensor([bSize, 2*ncoords], float_dtype)): Points.
+            points (tf.tensor([bSize, 2*ncoords], real_dtype)): Points.
 
         Returns:
-            tf.tensor([bSize], float_dtype): Transition loss at each point.
+            tf.tensor([bSize], real_dtype): Transition loss at each point.
         """
         inv_one_mask = self._get_inv_one_mask(points)
         patch_indices = tf.where(~inv_one_mask)[:, 1]
@@ -161,10 +161,10 @@ class BetaModel(FSModel):
         r"""Computes transition loss at each point. In the case of the Phi model, we demand that \phi(\lambda^q_i z_i)=\phi(z_i)
 
         Args:
-            points (tf.tensor([bSize, 2*ncoords], float_dtype)): Points.
+            points (tf.tensor([bSize, 2*ncoords], real_dtype)): Points.
 
         Returns:
-            tf.tensor([bSize], float_dtype): Transition loss at each point.
+            tf.tensor([bSize], real_dtype): Transition loss at each point.
         """
         lpl_losses=tf.math.abs(laplacian(self.model,x,pullbacks,invmetrics)-(sources))
         all_lpl_loss = lpl_losses**self.n[0]
@@ -179,7 +179,7 @@ class BetaModel(FSModel):
         The additional arguments are included for inheritance reasons.
 
         Args:
-            input_tensor (tf.tensor([bSize, 2*ncoords], float_dtype)): Points.
+            input_tensor (tf.tensor([bSize, 2*ncoords], real_dtype)): Points.
             training (bool, optional): Defaults to True.
             j_elim (tf.tensor([bSize, nHyper], tf.int64), optional): 
                 Coordinates(s) to be eliminated in the pullbacks.
@@ -194,7 +194,7 @@ class BetaModel(FSModel):
         #print(input_tensor.dtype)
         #print(type(input_tensor))
         cpoints=point_vec_to_complex(input_tensor)
-        return tf.cast(self.raw_FS_HYM_c(cpoints),float_dtype)*tf.math.exp(self.model(input_tensor, training=training)[:,0])
+        return tf.cast(self.raw_FS_HYM_c(cpoints),real_dtype)*tf.math.exp(self.model(input_tensor, training=training)[:,0])
 
     def compile(self, custom_metrics=None, **kwargs):
         r"""Compiles the model.
@@ -448,14 +448,14 @@ class BetaModel(FSModel):
     #             \int_B g_{\text{out}}|_n
 
     #     Args:
-    #         input_tensor (tf.tensor([bSize, 2*ncoords], float_dtype)): Points.
-    #         weights (tf.tensor([bSize], float_dtype)): Integration weights.
+    #         input_tensor (tf.tensor([bSize, 2*ncoords], real_dtype)): Points.
+    #         weights (tf.tensor([bSize], real_dtype)): Integration weights.
     #         pred (tf.tensor([bSize, nfold, nfold], complex_dtype), optional):
     #             Prediction from `self(input_tensor)`.
     #             If None will be calculated. Defaults to None.
 
     #     Returns:
-    #         tf.tensor([bSize], float_dtype): Volk loss.
+    #         tf.tensor([bSize], real_dtype): Volk loss.
     #     """
     #     if pred is None:
     #         pred = self(input_tensor)
@@ -574,13 +574,13 @@ def prepare_dataset_HYM(point_gen, n_p, dirname, metricModel,linebundleforHYM,BA
     val_pullbacks=tf.cast(pullbacks[t_i:],complex_dtype) 
     
     realpoints=tf.concat((tf.math.real(points), tf.math.imag(points)), axis=-1)
-    realpoints=tf.cast(realpoints,float_dtype)
+    realpoints=tf.cast(realpoints,real_dtype)
 
-    X_train=tf.cast(X_train,float_dtype)
-    y_train=tf.cast(y_train,float_dtype)
-    X_val=tf.cast(X_val,float_dtype)
-    y_val=tf.cast(y_val,float_dtype)
-    #realpoints=tf.cast(realpoints,float_dtype)
+    X_train=tf.cast(X_train,real_dtype)
+    y_train=tf.cast(y_train,real_dtype)
+    X_val=tf.cast(X_val,real_dtype)
+    y_val=tf.cast(y_val,real_dtype)
+    #realpoints=tf.cast(realpoints,real_dtype)
     
     mets = metricModel(realpoints)
     absdets = tf.abs(tf.linalg.det(mets))
@@ -621,13 +621,13 @@ def prepare_dataset_HYM(point_gen, n_p, dirname, metricModel,linebundleforHYM,BA
     #print("hi")
     vol_k = tf.math.reduce_mean(det_over_omega * weights[:,0], axis=-1)
     #print("hi")
-    kappaover6 = tf.cast(vol_k,float_dtype) / tf.cast(volume_cy,float_dtype)
+    kappaover6 = tf.cast(vol_k,real_dtype) / tf.cast(volume_cy,real_dtype)
     #rint(ratio)
     #print("hi")
-    tf.cast(kappaover6,float_dtype)
+    tf.cast(kappaover6,real_dtype)
     weightscomp=tf.cast(weights[:,0],complex_dtype)
     #print("hi")
-    det = tf.cast(det,float_dtype)
+    det = tf.cast(det,real_dtype)
     print('kappa over 6 ')
     print(kappaover6)
     #print(norm_fac)
@@ -642,17 +642,17 @@ def prepare_dataset_HYM(point_gen, n_p, dirname, metricModel,linebundleforHYM,BA
     #print(FSmetricinv.shape)
     #print(fs_forsource.shape)
     #sourceFS=(1/2)*tf.einsum('xba,xab->x',FSmetricinv,F_forsource_pb)# again why the factor of 2?
-    sourceFS=tf.cast(-tf.einsum('xba,xab->x',FSmetricinv,F_forsource_pb),float_dtype)# again why the factor of 2?
+    sourceFS=tf.cast(-tf.einsum('xba,xab->x',FSmetricinv,F_forsource_pb),real_dtype)# again why the factor of 2?
     #print(FSmetricdets[0:3])
-    #slopefromvolFSrhoFS=(2/np.pi)*(1/(6*ratio))*tf.reduce_mean((weights[:,0]/det)* tf.cast(FSmetricdets,float_dtype) *sourceFS, axis=-1)
+    #slopefromvolFSrhoFS=(2/np.pi)*(1/(6*ratio))*tf.reduce_mean((weights[:,0]/det)* tf.cast(FSmetricdets,real_dtype) *sourceFS, axis=-1)
     #print('reduce')
     #print(tf.reduce_mean(tf.linalg.det(FS_metric_pb)))
-    #slopefromvolFSrhoFS=(2/np.pi)*tf.reduce_mean((weights[:,0]/omega[:,0])* tf.cast(FSmetricdets,float_dtype) *sourceFS, axis=-1)/vol_k #vol_k is the actual CY volume.
-    #slopefromvolFSrhoFS=(1/((3/2) * np.pi))*(2/np.pi)*(6*norm_fac*kappaover6)*tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,float_dtype)/omega[:,0])*sourceFS , axis=-1)#vol_k is the actual CY volume.
-    slopefromvolFSrhoFS=(1/6)*(2/np.pi)*tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,float_dtype)/omega[:,0])*sourceFS , axis=-1)#vol_k is the actual CY volume.
-    #volfromFSmetric=tf.reduce_mean((weights[:,0]/omega[:,0])* tf.cast(FSmetricdets,float_dtype) , axis=-1)/vol_k #vol_k is the actual CY volume.
-    #volfromFSmetric=(6*norm_fac*kappaover6)*tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,float_dtype)/omega[:,0]) , axis=-1) #vol_k is the actual CY volume.
-    volfromFSmetric=tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,float_dtype)/omega[:,0]) , axis=-1) #vol_k is the actual CY volume.
+    #slopefromvolFSrhoFS=(2/np.pi)*tf.reduce_mean((weights[:,0]/omega[:,0])* tf.cast(FSmetricdets,real_dtype) *sourceFS, axis=-1)/vol_k #vol_k is the actual CY volume.
+    #slopefromvolFSrhoFS=(1/((3/2) * np.pi))*(2/np.pi)*(6*norm_fac*kappaover6)*tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,real_dtype)/omega[:,0])*sourceFS , axis=-1)#vol_k is the actual CY volume.
+    slopefromvolFSrhoFS=(1/6)*(2/np.pi)*tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,real_dtype)/omega[:,0])*sourceFS , axis=-1)#vol_k is the actual CY volume.
+    #volfromFSmetric=tf.reduce_mean((weights[:,0]/omega[:,0])* tf.cast(FSmetricdets,real_dtype) , axis=-1)/vol_k #vol_k is the actual CY volume.
+    #volfromFSmetric=(6*norm_fac*kappaover6)*tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,real_dtype)/omega[:,0]) , axis=-1) #vol_k is the actual CY volume.
+    volfromFSmetric=tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,real_dtype)/omega[:,0]) , axis=-1) #vol_k is the actual CY volume.
     print('FS vol and slope: ' + str(volfromFSmetric) + " " + str(slopefromvolFSrhoFS))
     #print(tf.reduce_mean(weights[:,0], axis=-1))
     
