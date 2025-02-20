@@ -121,8 +121,9 @@ def generate_points_and_save_using_defaults_for_eval(free_coefficient,number_poi
    elif os.path.exists(dirname):
       try:
          data = np.load(os.path.join(dirname, 'dataset.npz'))
-         if (len(data['X_train'])+len(data['X_val']))!=number_points:
-            print("wrong length - generating anyway")
+         length_total = len(data['X_train'])+len(data['X_val'])
+         if length_total!=number_points:
+            print(f"wrong length {length_total}, want {number_points} - generating anyway")
             kappa = pg.prepare_dataset(number_points, dirname)
             pg.prepare_basis(dirname, kappa=kappa)
       except:
@@ -149,8 +150,9 @@ def generate_points_and_save_using_defaults(free_coefficient,number_points,force
       try:
          print("loading prexisting dataset")
          data = np.load(os.path.join(dirname, 'dataset.npz'))
-         if (len(data['X_train'])+len(data['X_val']))!=number_points:
-            print("wrong length - generating anyway")
+         length_total = len(data['X_train'])+len(data['X_val'])
+         if length_total!=number_points:
+            print(f"wrong length {length_total}, want {number_points} - generating anyway")
             kappa = pg.prepare_dataset(number_points, dirname)
             pg.prepare_basis(dirname, kappa=kappa)
       except:
@@ -442,8 +444,9 @@ def generate_points_and_save_using_defaultsHYM(free_coefficient,linebundleforHYM
       try:
          print("loading prexisting dataset")
          data = np.load(os.path.join(dirnameHYM, 'dataset.npz'))
-         if (len(data['X_train'])+len(data['X_val']))!=number_pointsHYM:
-            print("wrong length - generating anyway")
+         length_total = len(data['X_train'])+len(data['X_val'])
+         if length_total!=number_pointsHYM:
+            print(f"wrong length {length_total}, want {number_pointsHYM} - generating anyway")
             kappaHYM = prepare_dataset_HYM(pg,data,number_pointsHYM, dirnameHYM,phimodel,linebundleforHYM,BASIS,normalize_to_vol_j=True);
       except:
          print("problem loading data - generating anyway")
@@ -852,8 +855,9 @@ def generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM,
          #print(tf.linalg.inv(data['inv_mets_train'][0]))
          #print("DONE")
 
-         if (len(data['X_train'])+len(data['X_val']))!=number_pointsHarmonic:
-            print("wrong length - generating anyway")
+         length_total = len(data['X_train'])+len(data['X_val'])
+         if length_total!=number_pointsHarmonic:
+            print(f"wrong length {length_total}, want {number_pointsHarmonic} - generating anyway")
             kappaHarmonic=prepare_dataset_HarmonicForm(pg,data,number_pointsHarmonic,dirnameHarmonic,phimodel,linebundleforHYM,BASIS,functionforbaseharmonicform_jbar,betamodel)
       except:
          print("problem loading data - generating anyway")
