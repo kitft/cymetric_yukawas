@@ -861,8 +861,9 @@ def train_modelHF(HFmodel, data_train, optimizer=None, epochs=50, batch_sizes=[6
     # hist2['opt'] = ['opt2' for _ in range(epochs)]
     learn_laplacian = HFmodel.learn_laplacian
     learn_transition = HFmodel.learn_transition
-    if sw:
+    if False:
         sample_weights = data_train['y_train'][:, -2]
+        #sample_weights = sample_weights/tf.reduce_mean(sample_weights)# so they have a mean of 1
     else:
         sample_weights = None
     if optimizer is None:

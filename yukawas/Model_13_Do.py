@@ -242,13 +242,18 @@ n_to_integrate=1000000
 use_zero_network_phi = True
 
 
-if len(sys.argv) > 3 and sys.argv[3] == 'test':
+if len(sys.argv) > 3 and sys.argv[3] in ['test','testsmall']:
     # Override with small test values
-    nPoints = 300000
-    nPointsHF = 300000
+    if sys.argv[3] == 'testsmall':
+        nPoints = 100
+        nPointsHF = 100
+        n_to_integrate = 100
+    else:
+        nPoints = 300000
+        nPointsHF = 300000
+        n_to_integrate = 1000000
     #tr_batchsize = 10
     #SecondBSize = 10
-    n_to_integrate = 1000000
     nEpochsPhi = 1
     nEpochsBeta = 1
     nEpochsSigma = 1
@@ -689,9 +694,40 @@ if __name__ ==  '__main__':
         print(s)
         masses_ref_and_learned.append(s)
     
-    #write to a CSV file all relevant details: free coefficient, number of epochs for each type, size of the networks, number of points for each, the physical Yukawas, the singular values of the physical Yukawas,
-    filename = 'Model_13_holo_training_results_fixed.csv'
-    with open(filename, mode='a') as file:
-        writer = csv.writer(file)
-        writer.writerow([free_coefficient,nEpochsPhi,nEpochsBeta,nEpochsSigma,nEpochsSigma2,widthPhi,widthBeta,widthSigma, widthSigma2,nPoints,nPointsHF,n_to_integrate,depthPhi,depthBeta,depthSigma,depthSigma2,mats,masses_ref_and_learned,holomorphic_Yukawas])
-        file.close()
+    # Save training results to CSV
+    results_dict = {
+        'free_coefficient': free_coefficient,
+        'epochs': {
+            'phi': nEpochsPhi,
+            'beta': nEpochsBeta, 
+            'sigma': nEpochsSigma,
+            'sigma2': nEpochsSigma2
+        },
+        'network_width': {
+            'phi': widthPhi,
+            'beta': widthBeta,
+            'sigma': widthSigma,
+            'sigma2': widthSigma2
+        },
+        'network_depth': {
+            'phi': depthPhi,
+            'beta': depthBeta,
+            'sigma': depthSigma,
+            'sigma2': depthSigma2
+        },
+        'points': {
+            'training': nPoints,
+            'harmonic_forms': nPointsHF,
+            'integration': n_to_integrate
+        },
+        'results': {
+            'physical_yukawas': mats,
+            'singular_values': masses_ref_and_learned,
+            'holomorphic_yukawas': holomorphic_Yukawas
+        }
+    }
+    import json
+    filename = 'Model_13_holo_training_results_fixed.json'
+    with open(filename, mode='a') as f:
+        json.dump(results_dict, f)
+        f.write('\n')  # Add newline between entries

@@ -179,6 +179,7 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,stddev=0.
    print('name: ' + name)
    
    data = np.load(os.path.join(dirname, 'dataset.npz'))
+   data = convert_to_tensor_dict(data)
    BASIS = prepare_tf_basis(np.load(os.path.join(dirname, 'basis.pickle'), allow_pickle=True))
 
    cb_list, cmetrics = getcallbacksandmetrics(data)
@@ -222,7 +223,7 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,stddev=0.
    phimodelzero.compile(custom_metrics=cmetrics)
 
    ## compare validation loss before training for zero network and nonzero network
-   datacasted=[tf.cast(data['X_val'],real_dtype),tf.cast(data['y_val'],real_dtype)]
+   datacasted=[data['X_val'],data['y_val']]
    #need to re-enable learning, in case there's been a problem:
    phimodel.learn_transition = False
    phimodelzero.learn_transition = False
@@ -272,7 +273,7 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,stddev=0.
    print("ratio of final to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valfinal.items()}))
    print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,tf.cast(data["X_val"],real_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,data["X_val"])
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
    #IMPLEMENT THE FOLLOWING
    #meanfailuretosolveequation,_,_=measure_laplacian_failure(phimodel,data)
@@ -286,6 +287,7 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    print(name)
    
    data = np.load(os.path.join(dirname, 'dataset.npz'))
+   data = convert_to_tensor_dict(data)
    BASIS = prepare_tf_basis(np.load(os.path.join(dirname, 'basis.pickle'), allow_pickle=True))
 
    cb_list, cmetrics = getcallbacksandmetrics(data)
@@ -314,7 +316,7 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    #nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
    print("nns made")
 
-   datacasted=[tf.cast(data['X_val'],real_dtype),tf.cast(data['y_val'],real_dtype)]
+   datacasted=[data['X_val'],data['y_val']]
 
    #    nn_phi = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
    #    nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
@@ -406,7 +408,7 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    print("validation loss for final network: ")
    print(valtrained)
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,tf.cast(data["X_val"],real_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,data["X_val"])
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
    print("\n\n")
    #IMPLEMENT THE FOLLOWING
@@ -460,7 +462,10 @@ def getcallbacksandmetricsHYM(databeta):
 
 def convert_to_tensor_dict(data):
    return {
-    key: tf.convert_to_tensor(value, dtype=value.dtype) if value.dtype in [np.complex64, np.complex128, np.float32, np.float64, np.int32] else value
+    key: tf.convert_to_tensor(value, dtype=complex_dtype) if value.dtype in [np.complex64, np.complex128] 
+         else tf.convert_to_tensor(value, dtype=real_dtype) if value.dtype in [np.float32, np.float64]
+         else tf.convert_to_tensor(value, dtype=value.dtype) if value.dtype == np.int32
+         else value
     for key, value in data.items()
    }
    
@@ -481,12 +486,12 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    databeta_val=tf.data.Dataset.from_tensor_slices(databeta_val_dict)
    # batch_sizes=[64,10000]
    databeta_train=databeta_train.shuffle(buffer_size=1024).batch(bSizes[0],drop_remainder=True)
-   datacasted=[tf.cast(databeta['X_val'],real_dtype),tf.cast(databeta['y_val'],real_dtype)]
+   datacasted=[databeta['X_val'],databeta['y_val']]
 
 
 
-   weights = tf.cast(databeta['y_train'][:,0],complex_dtype)
-   sources  = tf.cast(databeta['sources_train'],complex_dtype)
+   weights = databeta['y_train'][:,0]
+   sources = databeta['sources_train']
    integrated_source = tf.reduce_mean(weights*sources)
    integrated_abs_source = tf.reduce_mean(tf.math.abs(weights*sources))
    print("sources integrated ",integrated_source)
@@ -644,7 +649,7 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,tf.cast(databeta["X_val"],real_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,databeta["X_val"])
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
 
 
@@ -684,7 +689,7 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
    databeta_val=tf.data.Dataset.from_tensor_slices(databeta_val_dict)
    # batch_sizes=[64,10000]
    databeta_train=databeta_train.shuffle(buffer_size=1024).batch(bSizes[0],drop_remainder=True)
-   datacasted=[tf.cast(databeta['X_val'],real_dtype),tf.cast(databeta['y_val'],real_dtype)]
+   datacasted=[databeta['X_val'],databeta['y_val']]
 
    cb_list, cmetrics = getcallbacksandmetricsHYM(databeta)
 
@@ -784,7 +789,7 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,tf.cast(databeta["X_val"],real_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,databeta["X_val"])
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
    import time
    start=time.time()
@@ -894,7 +899,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionfor
    dataHF_val=tf.data.Dataset.from_tensor_slices(dataHF_val_dict)
    # batch_sizes=[64,10000]
    dataHF_train=dataHF_train.shuffle(buffer_size=1024).batch(bSizes[0],drop_remainder=True)
-   datacasted=[tf.cast(dataHF['X_val'],real_dtype),tf.cast(dataHF['y_val'],real_dtype)]
+   datacasted=[dataHF['X_val'],dataHF['y_val']]
 
 
 
@@ -1131,16 +1136,16 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionfor
    #print("perm10")
    #print(perm.print_diff())
    print("-----CHECKS------")
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,tf.cast(dataHF["X_val"],real_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
    print("average transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs))
-   transition_loss = compute_transition_loss_for_corrected_HF_model(HFmodel,tf.cast(dataHF["X_val"],real_dtype))
+   transition_loss = compute_transition_loss_for_corrected_HF_model(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
    print("transition loss: " + str(tf.reduce_mean(transition_loss)))
-   transition_loss_zero = compute_transition_loss_for_corrected_HF_model(HFmodelzero,tf.cast(dataHF["X_val"],real_dtype))
+   transition_loss_zero = compute_transition_loss_for_corrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2] )
    print("transition loss for zero network: " + str(tf.reduce_mean(transition_loss_zero)))
    
-   transition_loss_for_uncorrected_HF = compute_transition_loss_for_uncorrected_HF_model(HFmodel,tf.cast(dataHF["X_val"],real_dtype))
+   transition_loss_for_uncorrected_HF = compute_transition_loss_for_uncorrected_HF_model(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
    print("transition loss for uncorrected HF: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF)))
-   transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero,tf.cast(dataHF["X_val"],real_dtype))
+   transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
    print("transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero)))
 
 
@@ -1308,7 +1313,7 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmon
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,tf.cast(dataHF["X_val"],real_dtype))
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"])
    print("average transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs))
    #meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
 

@@ -289,7 +289,7 @@ class BetaModel(FSModel):
         # print(len(x))
         # The 'y_train/val' arrays contain the integration weights and $\\Omega \\wedge \\bar\\Omega$ for each point. In principle, they can be used for any relevant pointwise information that could be needed during the training process."
 
-        sample_weight = None
+        sample_weight = data["y_train"][:, -2]/tf.reduce_mean(data["y_train"][:, -2]) #normalise to mean 1
         pbs = data["train_pullbacks"]
         invmets = data["inv_mets_train"]
         sources = data["sources_train"]
@@ -686,7 +686,7 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
 
 
 def train_modelbeta(betamodel, data_train, optimizer=None, epochs=50, batch_sizes=[64, 10000],
-                verbose=1, custom_metrics=[], callbacks=[], sw=False):
+                verbose=1, custom_metrics=[], callbacks=[], sw=True):
     r"""Training loop for fixing the Kähler class. It consists of two 
     optimisation steps. 
         1. With a small batch size and volk loss disabled.
@@ -718,8 +718,8 @@ def train_modelbeta(betamodel, data_train, optimizer=None, epochs=50, batch_size
     # hist2['opt'] = ['opt2' for _ in range(epochs)]
     learn_laplacian = betamodel.learn_laplacian
     learn_transition = betamodel.learn_transition
-    if sw:
-        sample_weights = data_train['y_train'][:, -2]
+    if False:#removed sw
+        sample_weights = data_train['y_train'][:, -2]# sample according to the CY weights
     else:
         sample_weights = None
     if optimizer is None:

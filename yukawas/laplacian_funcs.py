@@ -521,7 +521,7 @@ def compute_transition_pointwise_measure_section(HFmodel, points):
 
 
 #check the corrected FS
-def compute_transition_loss_for_uncorrected_HF_model(HFmodel, points):
+def compute_transition_loss_for_uncorrected_HF_model(HFmodel, points, weights=None):
     r"""Computes transition loss at each point.
 
     .. math::
@@ -576,10 +576,13 @@ def compute_transition_loss_for_uncorrected_HF_model(HFmodel, points):
     #This should now be nTransitions 
     all_t_loss = tf.reshape(all_t_loss, (-1, HFmodel.nTransitions))
     all_t_loss = tf.math.reduce_sum(all_t_loss, axis=-1)
+    if weights is not None:
+        weights = weights/tf.reduce_mean(weights)
+        all_t_loss = all_t_loss*weights
     return all_t_loss/(HFmodel.nTransitions*HFmodel.nfold)
 
 
-def compute_transition_loss_for_corrected_HF_model(HFmodel, points):
+def compute_transition_loss_for_corrected_HF_model(HFmodel, points, weights=None):
     r"""Computes transition loss at each point.
 
     .. math::
@@ -635,6 +638,9 @@ def compute_transition_loss_for_corrected_HF_model(HFmodel, points):
     
     all_t_loss = tf.reshape(all_t_loss, (-1, HFmodel.nTransitions))
     all_t_loss = tf.math.reduce_sum(all_t_loss, axis=-1)
+    if weights is not None:
+        weights = weights/tf.reduce_mean(weights)
+        all_t_loss = all_t_loss*weights
     return all_t_loss/(HFmodel.nTransitions*HFmodel.nfold)
 
 
