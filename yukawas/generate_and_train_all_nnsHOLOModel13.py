@@ -736,8 +736,9 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
    
    betamodel= BetaModel(nn_beta,BASIS, linebundleforHYM,alpha=alpha,norm = [1. for _ in range(2)])
    betamodelzero= BetaModel(nn_beta_zero,BASIS, linebundleforHYM,alpha=alpha,norm = [1. for _ in range(2)])
-   betamodel(datacasted[0][0:1])
-   betamodelzero(datacasted[0][0:1])
+   print("example data:")
+   print("betamodel: " + str(betamodel(datacasted[0][0:1])))
+   print("betamodelzero: " + str(betamodelzero(datacasted[0][0:1])))
 
 
    if set_weights_to_zero:
@@ -1261,17 +1262,18 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmon
    
    HFmodel = HarmonicFormModel(nn_HF,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)])
    HFmodelzero = HarmonicFormModel(nn_HF_zero,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)])
+   print("example data:")
+   print("HFmodel: " + str(HFmodel(dataHF_val_dict['X_val'][0:1])))
+   print("HFmodelzero: " + str(HFmodelzero(dataHF_val_dict['X_val'][0:1])))
 
    if set_weights_to_zero:
       print("RETURNING ZERO NETWORK")
       training_historyHF=0
-      HFmodelzero(dataHF_val_dict['X_val'][0:1])
       if skip_measures:
          return HFmodelzero, training_historyHF, None
    elif set_weights_to_random:
       print("RETURNING RANDOM NETWORK")
       training_historyHF=0
-      HFmodel(dataHF_val_dict['X_val'][0:1])
    else:
       #print(HFmodel.model.weights[0])
       #HFmodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirnameHarmonic,name),call_endpoint="serving_default")
