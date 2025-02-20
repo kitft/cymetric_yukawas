@@ -878,7 +878,7 @@ def getcallbacksandmetricsHF(dataHF):
    return cb_listHF, cmetricsHF
 
    
-def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmonicform_jbar,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],lRate=0.001,alpha=[1,500],use_zero_network=False,load_network=False,stddev=0.05,final_layer_scale=1.0,norm_momentum=0.999):
+def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,functionforbaseharmonicform_jbar,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],lRate=0.001,alpha=[1,500],use_zero_network=False,load_network=False,stddev=0.05,final_layer_scale=1.0,norm_momentum=0.999):
    
    perm= tracker.SummaryTracker()
    #print("perm1")
@@ -1162,18 +1162,22 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionfor
 
    import time
    start=time.time()
-   #meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
-   meanfailuretosolveequation= batch_process_helper_func(
-        tf.function(lambda x,y,z,w: tf.expand_dims(HYM_measure_val_with_H_for_batching(HFmodel,x,y,z,w),axis=0)),
-        (dataHF['X_val'],dataHF['y_val'],dataHF['val_pullbacks'],dataHF['inv_mets_val']),
-        batch_indices=(0,1,2,3),
-        batch_size=50
-    )
+   meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
+   # meanfailuretosolveequation= batch_process_helper_func(
+   #      tf.function(lambda x,y,z,w: tf.expand_dims(HYM_measure_val_with_H_for_batching(HFmodel,x,y,z,w),axis=0)),
+   #      (dataHF['X_val'],dataHF['y_val'],dataHF['val_pullbacks'],dataHF['inv_mets_val']),
+   #      batch_indices=(0,1,2,3),
+   #      batch_size=50
+   #  )
    meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation).numpy()
+
 
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("time to do that: ",time.time()-start)
    print("\n\n")
+   absAvgDivTrained, absAvgDivUntrained = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model)
+   print("coclosure divided by norm of v: " + str(absAvgDivTrained))
+   print("coclosure divided by norm of v_FS: " + str(absAvgDivUntrained))
 
    tf.keras.backend.clear_session()
    del dataHF, dataHF_train, dataHF_val_dict,  dataHF_val,valfinal,valraw,valzero
@@ -1183,7 +1187,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionfor
 
 
 
-def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmonicform_jbar,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],lRate=0.001,alpha=[1,1],set_weights_to_zero=False,set_weights_to_random=False,final_layer_scale=1.0,skip_measures=False,norm_momentum=0.999):
+def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,functionforbaseharmonicform_jbar,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],lRate=0.001,alpha=[1,1],set_weights_to_zero=False,set_weights_to_random=False,final_layer_scale=1.0,skip_measures=False,norm_momentum=0.999):
    
    nameOfBaseHF=functionforbaseharmonicform_jbar.__name__
    lbstring = ''.join(str(e) for e in linebundleforHYM)
@@ -1343,9 +1347,12 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmon
    # )
    import time
    print("computing mean failure to solve equation", time.time())
-   meanfailuretosolveequation = HYM_measure_val_with_H(HFmodel,dataHF_val_dict)
+   meanfailuretosolveequation,_,_ = HYM_measure_val_with_H(HFmodel,dataHF)
    meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation)
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
+   absAvgDivTrained, absAvgDivUntrained = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model)
+   print("coclosure divided by norm of v: " + str(absAvgDivTrained))
+   print("coclosure divided by norm of v_FS: " + str(absAvgDivUntrained))
    print("\n\n")
    return HFmodel,training_historyHF, meanfailuretosolveequation
 
