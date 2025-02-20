@@ -178,7 +178,7 @@ class BetaModel(FSModel):
     def call(self, input_tensor, training=True, j_elim=None):
         r"""Prediction of the NN.
 
-        .. math:: g_{\text{out}} = g_{\text{NN}}
+        .. math:: H_{\text{out}} = H_{\text{FS}} e^{\beta_{\text{NN}}}
 
         The additional arguments are included for inheritance reasons.
 
@@ -190,7 +190,7 @@ class BetaModel(FSModel):
                 Not used in this model. Defaults to None.
 
         Returns:
-            tf.tensor([bSize, nfold, nfold], tf.complex):
+            tf.tensor([bSize], real_dtype):
                 Prediction at each point.
         """
         # nn prediction
@@ -220,6 +220,14 @@ class BetaModel(FSModel):
         super(BetaModel, self).compile(**kwargs)
 
     def raw_FS_HYM_c(self,cpoints):
+        r"""Computes the raw Fubini-Study metric for a line bundle on complex points.
+
+        Args:
+            cpoints (tf.tensor([bSize, ncoords], complex_dtype)): Points in complex coordinates.
+
+        Returns:
+            tf.tensor([bSize], complex_dtype): Raw Fubini-Study metric values.
+        """
 
         linebundleforHYM=self.linebundleforHYM
         K1=tf.reduce_sum(cpoints[:,0:2]*tf.math.conj(cpoints[:,0:2]),1)
@@ -230,6 +238,14 @@ class BetaModel(FSModel):
         return (K1**(-linebundleforHYM[0]))*(K2**(-linebundleforHYM[1]))*(K3**(-linebundleforHYM[2]))*(K4**(-linebundleforHYM[3]))
     
     def raw_FS_HYM_r(self,rpoints):
+        r"""Computes the raw Fubini-Study metric for a line bundle on real points.
+
+        Args:
+            rpoints (tf.tensor([bSize, 2*ncoords], real_dtype)): Points in real coordinates.
+
+        Returns:
+            tf.tensor([bSize], complex_dtype): Raw Fubini-Study metric values.
+        """
         cpoints=point_vec_to_complex(rpoints)
         linebundleforHYM=self.linebundleforHYM
         K1=tf.reduce_sum(cpoints[:,0:2]*tf.math.conj(cpoints[:,0:2]),1)
