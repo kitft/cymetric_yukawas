@@ -1271,13 +1271,19 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmon
    print("HFmodelzero: " + str(HFmodelzero(dataHF_val_dict['X_val'][0:1])))
 
    if set_weights_to_zero:
-      print("RETURNING ZERO NETWORK")
       training_historyHF=0
       if skip_measures:
+         print("RETURNING ZERO NETWORK")
          return HFmodelzero, training_historyHF, None
+      else:
+         print("USING ZERO NETWORK")
    elif set_weights_to_random:
-      print("RETURNING RANDOM NETWORK")
       training_historyHF=0
+      if skip_measures:
+         print("RETURNING RANDOM NETWORK")
+         return HFmodel, training_historyHF, None
+      else:
+         print("USING RANDOM NETWORK")
    else:
       #print(HFmodel.model.weights[0])
       #HFmodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirnameHarmonic,name),call_endpoint="serving_default")
@@ -1323,12 +1329,15 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmon
    print("average transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs))
    #meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
 
-   meanfailuretosolveequation= batch_process_helper_func(
-        tf.function(lambda x,y,z,w: tf.expand_dims(HYM_measure_val_with_H_for_batching(HFmodel,x,y,z,w),axis=0)),
-        (dataHF['X_val'],dataHF['y_val'],dataHF['val_pullbacks'],dataHF['inv_mets_val']),
-        batch_indices=(0,1,2,3),
-        batch_size=50
-    )
+   #meanfailuretosolveequation= batch_process_helper_func(
+   #     tf.function(lambda x,y,z,w: tf.expand_dims(HYM_measure_val_with_H_for_batching(HFmodel,x,y,z,w),axis=0)),
+   #     (dataHF['X_val'],dataHF['y_val'],dataHF['val_pullbacks'],dataHF['inv_mets_val']),
+   #     batch_indices=(0,1,2,3),
+   #     batch_size=50
+   # )
+   import time
+   print("computing mean failure to solve equation", time.time())
+   meanfailuretosolveequation = HYM_measure_val_with_H(HFmodel,dataHF["X_val"],dataHF["y_val"],dataHF["val_pullbacks"],dataHF["inv_mets_val"])
    meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation)
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("\n\n")

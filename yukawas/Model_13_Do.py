@@ -226,10 +226,10 @@ skip_measuresBeta=True
 skip_measuresHF=False
 #skip_measuresHF
 
-force_generate_phi=False
-force_generate_HYM=False
-force_generate_HF=False
-force_generate_HF_2=False
+force_generate_phi=True
+force_generate_HYM=True
+force_generate_HF=True
+force_generate_HF_2=True
 
 return_zero_phi= False
 return_zero_HYM = False
