@@ -1257,7 +1257,7 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmon
    load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log
 
 
-   nn_HF = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activ,stddev=stddev,use_zero_network=True,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+   nn_HF = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activ,stddev=stddev,use_zero_network=False,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    nn_HF_zero  = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activ,stddev=stddev,use_zero_network=True,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    
    HFmodel = HarmonicFormModel(nn_HF,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)])
