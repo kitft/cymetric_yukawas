@@ -10,3 +10,5 @@ __pycache__/
 *.log
 *.npz.zip
 *.ipynb
+model13_results/*
+model**results/*
