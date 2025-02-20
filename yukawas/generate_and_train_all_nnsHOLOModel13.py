@@ -351,11 +351,11 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    if set_weights_to_zero:
       print("SETTING WEIGHTS TO ZERO")
       training_history=0
-      return phimodelzero, training_history, None
+      if skip_measures:
+         return phimodelzero, training_history, None
    elif set_weights_to_random:
       print("SETTING WEIGHTS TO RANDOM")
       training_history=0
-      return phimodel, training_history, None
    else:
       #phimodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirname,name),call_endpoint="serving_default")
       #phimodel.model=tf.keras.models.load_model(os.path.join(dirname, name) + ".keras")
@@ -743,11 +743,11 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
    if set_weights_to_zero:
       print("RETURNING ZERO NETWORK")
       training_historyBeta=0
-      return betamodelzero, training_historyBeta, None
+      if skip_measures:
+         return betamodelzero, training_historyBeta, None
    elif set_weights_to_random:
       print("RETURNING RANDOM NETWORK")
       training_historyBeta=0
-      return betamodel, training_historyBeta, None
    else:
       #betamodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirnameHYM,name),call_endpoint="serving_default")
       #betamodel.model=tf.keras.models.load_model(os.path.join(dirnameHYM, name) + ".keras")
@@ -1266,12 +1266,12 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmon
       print("RETURNING ZERO NETWORK")
       training_historyHF=0
       HFmodelzero(dataHF_val_dict['X_val'][0:1])
-      return HFmodelzero, training_historyHF, None
+      if skip_measures:
+         return HFmodelzero, training_historyHF, None
    elif set_weights_to_random:
       print("RETURNING RANDOM NETWORK")
       training_historyHF=0
       HFmodel(dataHF_val_dict['X_val'][0:1])
-      return HFmodel, training_historyHF, None
    else:
       #print(HFmodel.model.weights[0])
       #HFmodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirnameHarmonic,name),call_endpoint="serving_default")

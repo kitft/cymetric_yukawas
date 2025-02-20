@@ -406,7 +406,7 @@ class HarmonicFormModel(FSModel):
         # print(len(x))
         # The 'y_train/val' arrays contain the integration weights and $\\Omega \\wedge \\bar\\Omega$ for each point. In principle, they can be used for any relevant pointwise information that could be needed during the training process."
 
-        sample_weight = None
+        sample_weight = data["y_train"][:, -2]/tf.reduce_mean(data["y_train"][:, -2])
         pbs = data["train_pullbacks"]
         invmets = data["inv_mets_train"]
         sources = data["sources_train"]
@@ -485,7 +485,7 @@ class HarmonicFormModel(FSModel):
         y = None
         y_pred=None
         x = data["X_val"]
-        sample_weight = None
+        sample_weight = data["y_val"][:, -2]/tf.reduce_mean(data["y_val"][:, -2])
         pbs = data["val_pullbacks"]
         invmets = data["inv_mets_val"]
         sources = data["sources_val"]

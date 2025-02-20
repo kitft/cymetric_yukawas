@@ -221,8 +221,8 @@ stddev_H33=1
 final_layer_scale_H33=0.01#0.01
 
 
-skip_measuresPhi=False
-skip_measuresBeta=False
+skip_measuresPhi=True
+skip_measuresBeta=True
 skip_measuresHF=False
 #skip_measuresHF
 
@@ -243,12 +243,16 @@ n_to_integrate=1000000
 use_zero_network_phi = True
 
 
-if len(sys.argv) > 3 and sys.argv[3] in ['test','testsmall']:
+if len(sys.argv) > 3 and sys.argv[3] in ['test','testmid','testsmall']:
     # Override with small test values
     if sys.argv[3] == 'testsmall':
         nPoints = 100
         nPointsHF = 100
         n_to_integrate = 100
+    elif sys.argv[3] == 'testmid':
+        nPoints = 100000
+        nPointsHF = 100000
+        n_to_integrate = 100000
     else:
         nPoints = 300000
         nPointsHF = 300000
@@ -269,12 +273,12 @@ if len(sys.argv) > 3 and sys.argv[3] in ['test','testsmall']:
     depthSigma2 = 2
     widthSigma2 = 10
 
-    return_random_phi = False
-    return_random_HYM = False
-    return_random_HF = False
-    return_random_HF_2 = False
+    return_random_phi = True
+    return_random_HYM = True
+    return_random_HF = True
+    return_random_HF_2 = True
 
-
+print("Number of points: " + str(nPoints), "Number of points HF: " + str(nPointsHF), "Number of points to integrate: " + str(n_to_integrate))
 
 
 def delete_all_dicts_except(except_dict_name):

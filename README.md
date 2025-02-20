@@ -21,9 +21,10 @@ are on the main branch yet. Features with an (*) will be released soonish.
 This guide assumes that you have a working Python 3 (preferably python 3.7 or above) installation (and Sage and Mathematica, if you want to use these features as well). So running ```python3``` should work on your system. Moreover, it assumes that you have installed git. Note that both are standard on Mac and most Linux distributions. For Windows, you will typically have to install them and make sure that for example Python works correctly with Mathematica if you are planing on using the Mathematica interface.
 
 ### 1. Install it with Python
-If you want to use any existing python installation (note that we recommend using a virtual environment, see below), just run in a terminal
+If you want to use any existing python installation (note that we recommend using a virtual environment, see below), just run in a terminal.
+If you've never used uv, I recommend trying it out! It's a modern package manager for Python that is MUCH faster than pip, and is mostly a drop-in replacement.
 ```console
-pip install git+https://github.com/pythoncymetric/cymetric.git
+(uv) pip install git+https://github.com/kitft/cymetric_yukawas.git
 ```
 
 To run the example notebooks, you need jupyter. You can install it with

@@ -295,10 +295,10 @@ class FSModel(tfk.Model):
         for i in range(self.nhyper):
             dQdz = self._compute_dQdz(cpoints, i)
             if i == 0:
-                indices = tf.argmax(tf.math.abs(dQdz*available_mask), axis=-1)
+                indices = tf.argmax(tf.math.abs(dQdz*available_mask), axis=-1, output_type=tf.int32)
                 indices = tf.reshape(indices, (-1, 1))
             else:
-                max_dq = tf.argmax(tf.math.abs(dQdz*available_mask), axis=-1)
+                max_dq = tf.argmax(tf.math.abs(dQdz*available_mask), axis=-1, output_type=tf.int32)
                 indices = tf.concat([indices, tf.reshape(max_dq, (-1, 1))], axis=-1)
             available_mask -= tf.one_hot(
                 indices[:, i], self.ncoords, dtype=complex_dtype)
@@ -514,7 +514,7 @@ class FSModel(tfk.Model):
                              points[:, self.ncoords:])
         dQdz = self._compute_dQdz(cpoints)
         dQdz = dQdz*tf.cast(inv_one_mask, dtype=complex_dtype)
-        indices = tf.argmax(tf.math.abs(dQdz), axis=-1)
+        indices = tf.argmax(tf.math.abs(dQdz), axis=-1, output_type=tf.int32)
         dQdz_mask = -1.*tf.one_hot(indices, self.ncoords,dtype=real_dtype)
         full_mask = tf.math.add(
             tf.cast(inv_one_mask, dtype=real_dtype), dQdz_mask)
@@ -653,8 +653,8 @@ class FSModel(tfk.Model):
         Returns:
             tf.tensor([bSize, nfold, nfold], complex_dtype): T_ij on the CY.
         """
-        same_patch = tf.where(tf.math.reduce_all(i_mask == j_mask, axis=-1))
-        diff_patch = tf.where(~tf.math.reduce_all(i_mask == j_mask, axis=-1))
+        same_patch = tf.cast(tf.where(tf.math.reduce_all(i_mask == j_mask, axis=-1)), dtype=tf.int32)
+        diff_patch = tf.cast(tf.where(~tf.math.reduce_all(i_mask == j_mask, axis=-1)), dtype=tf.int32)
         same_patch = same_patch[:, 0]
         diff_patch = diff_patch[:, 0]
         n_p = tf.math.reduce_sum(tf.ones_like(fixed[:, 0]))
@@ -665,25 +665,25 @@ class FSModel(tfk.Model):
         j_mask_red = tf.gather(j_mask, diff_patch)
         fixed_red = tf.gather(fixed, diff_patch)
         points_red = tf.gather(points, diff_patch)
-        p2 = tf.reshape(tf.where(j_mask_red)[:, 1], (-1, self.nProjective))
+        p2 = tf.cast(tf.reshape(tf.where(j_mask_red)[:, 1], (-1, self.nProjective)), tf.int32)
 
         # g1
         g1_mask = tf.reduce_sum(tf.one_hot(fixed_red, self.ncoords,dtype=real_dtype), axis=-2)
         g1_mask = g1_mask + i_mask_red
         g1_mask = ~tf.cast(g1_mask, dtype=tf.bool)
-        g1_i = tf.where(g1_mask)
+        g1_i = tf.cast(tf.where(g1_mask), tf.int32)
         g1_i = tf.reshape(g1_i[:, 1], (-1, self.nfold))
 
         # g2
         g2_mask = tf.reduce_sum(tf.one_hot(fixed_red, self.ncoords,dtype=real_dtype), axis=-2)
         g2_mask = g2_mask + j_mask_red
         g2_mask = ~tf.cast(g2_mask, dtype=tf.bool)
-        g2_i = tf.where(g2_mask)
+        g2_i = tf.cast(tf.where(g2_mask), tf.int32)
         g2_i = tf.reshape(g2_i[:, 1], (-1, self.nfold))
 
         # find proj indices
         proj_indices = tf.reshape(
-            tf.tile(self._proj_indices, [n_p_red]),
+            tf.tile(tf.cast(self._proj_indices, dtype=tf.int32), [tf.cast(n_p_red, tf.int32)]),
             (-1, self.ncoords))
         g1_proj = tf.boolean_mask(proj_indices, g1_mask)
         g1_proj = tf.reshape(g1_proj, (-1, self.nfold))
@@ -698,7 +698,7 @@ class FSModel(tfk.Model):
             t_pos = tf.einsum('xi,xj->xij',
                               tf.cast(g1_i == p2[:, j:j+1], dtype=tf.int32),
                               tf.cast(g1_proj == j, dtype=tf.int32))
-            t_indices = tf.where(tf.cast(t_pos, dtype=tf.bool))
+            t_indices = tf.cast(tf.where(tf.cast(t_pos, dtype=tf.bool)), tf.int32)
             num_indices = tf.gather_nd(
                 g2_i, tf.concat((t_indices[:, 0:1], t_indices[:, 2:3]), axis=-1))
             num_indices = tf.concat(
@@ -708,7 +708,7 @@ class FSModel(tfk.Model):
             ratio_tpos = tf.gather(ratios[:, j], ratio_indices)
             denom_indices = p2[:, j:j+1]
             denom_indices = tf.concat(
-                (tf.reshape(tf.range(n_p_red), (-1, 1)), denom_indices), axis=-1)
+                (tf.reshape(tf.range(tf.cast(n_p_red, tf.int32)), (-1, 1)), denom_indices), axis=-1)
             denom_tpos = tf.gather_nd(points_red, denom_indices)
             denom_tpos = tf.gather(denom_tpos, ratio_indices)
             t_values = -1.*num_tpos*ratio_tpos/denom_tpos
@@ -716,7 +716,7 @@ class FSModel(tfk.Model):
             tij_red = tf.tensor_scatter_nd_update(
                 tij_red, t_indices, t_values)
         # fill the single ratio elements
-        c_pos = tf.where(tf.reshape(g1_i, (-1, 1, self.nfold)) == tf.reshape(g2_i, (-1, self.nfold, 1)))
+        c_pos = tf.cast(tf.where(tf.reshape(g1_i, (-1, 1, self.nfold)) == tf.reshape(g2_i, (-1, self.nfold, 1))), tf.int32)
         c_indices = tf.gather_nd(g1_proj, c_pos[:, 0:2])
         c_indices = tf.concat(
             (c_pos[:, 0:1], tf.reshape(c_indices, (-1, 1))), axis=-1)
@@ -725,7 +725,7 @@ class FSModel(tfk.Model):
         c_pos = tf.concat((c_pos[:, 0:1], c_pos[:, 2:3], c_pos[:, 1:2]), axis=-1)
         tij_red = tf.tensor_scatter_nd_update(tij_red, c_pos, c_values)
         # fill tij
-        tij_eye = tf.eye(self.nfold, batch_shape=[n_p-n_p_red], dtype=complex_dtype)
+        tij_eye = tf.eye(self.nfold, batch_shape=[tf.cast(n_p-n_p_red, tf.int32)], dtype=complex_dtype)
         tij_all = tf.zeros((n_p, self.nfold, self.nfold), dtype=complex_dtype)
         tij_all = tf.tensor_scatter_nd_update(
             tij_all, tf.reshape(diff_patch, (-1, 1)), tij_red)
