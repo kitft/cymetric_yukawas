@@ -1337,7 +1337,7 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmon
    # )
    import time
    print("computing mean failure to solve equation", time.time())
-   meanfailuretosolveequation = HYM_measure_val_with_H(HFmodel,dataHF["X_val"],dataHF["y_val"],dataHF["val_pullbacks"],dataHF["inv_mets_val"])
+   meanfailuretosolveequation = HYM_measure_val_with_H(HFmodel,dataHF_val_dict)
    meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation)
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("\n\n")
