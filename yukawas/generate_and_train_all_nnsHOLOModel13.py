@@ -278,7 +278,7 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,stddev=0.
    #IMPLEMENT THE FOLLOWING
    #meanfailuretosolveequation,_,_=measure_laplacian_failure(phimodel,data)
    print("\n\n")
-   return phimodel,training_history
+   return phimodel,training_history, None
 
 def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[192,50000],stddev=0.1,lRate=0.001,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
    dirname = folder_name+ '/tetraquadric_pg_with_'+str(free_coefficient)
@@ -351,11 +351,11 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    if set_weights_to_zero:
       print("SETTING WEIGHTS TO ZERO")
       training_history=0
-      return phimodelzero, training_history
+      return phimodelzero, training_history, None
    elif set_weights_to_random:
       print("SETTING WEIGHTS TO RANDOM")
       training_history=0
-      return phimodel, training_history
+      return phimodel, training_history, None
    else:
       #phimodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirname,name),call_endpoint="serving_default")
       #phimodel.model=tf.keras.models.load_model(os.path.join(dirname, name) + ".keras")
@@ -365,7 +365,7 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
       training_history=np.load(os.path.join(dirname, 'trainingHistory-' + name +'.npz'),allow_pickle=True)['arr_0'].item()
 
    if skip_measures:
-       return phimodel, training_history
+      return phimodel, training_history, None
 
    print("compiling")
    phimodel.compile(custom_metrics=cmetrics)
@@ -416,7 +416,7 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    #print("\n\n")
    #print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    tf.keras.backend.clear_session()
-   return phimodel,training_history
+   return phimodel,training_history, None
 
 def generate_points_and_save_using_defaultsHYM(free_coefficient,linebundleforHYM,number_pointsHYM,phimodel,force_generate=False,seed_set=0):
 
@@ -743,11 +743,11 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
    if set_weights_to_zero:
       print("RETURNING ZERO NETWORK")
       training_historyBeta=0
-      return betamodelzero, training_historyBeta
+      return betamodelzero, training_historyBeta, None
    elif set_weights_to_random:
       print("RETURNING RANDOM NETWORK")
       training_historyBeta=0
-      return betamodel, training_historyBeta
+      return betamodel, training_historyBeta, None
    else:
       #betamodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirnameHYM,name),call_endpoint="serving_default")
       #betamodel.model=tf.keras.models.load_model(os.path.join(dirnameHYM, name) + ".keras")
@@ -759,7 +759,7 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
       print("second print",betamodel(databeta_val_dict['X_val'][0:1]))
 
    if skip_measures:
-       return betamodel,training_historyBeta
+       return betamodel,training_historyBeta, None
 
    betamodel.compile(custom_metrics=cmetrics)
    betamodelzero.compile(custom_metrics=cmetrics)
@@ -812,7 +812,7 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("time to do that: ",time.time()-start)
    print("\n\n")
-   return betamodel,training_historyBeta
+   return betamodel,training_historyBeta, meanfailuretosolveequation
 
 
 def generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM,functionforbaseharmonicform_jbar,phimodel,betamodel,number_pointsHarmonic,force_generate=False,seed_set=0):
@@ -1266,12 +1266,12 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmon
       print("RETURNING ZERO NETWORK")
       training_historyHF=0
       HFmodelzero(dataHF_val_dict['X_val'][0:1])
-      return HFmodelzero, training_historyHF
+      return HFmodelzero, training_historyHF, None
    elif set_weights_to_random:
       print("RETURNING RANDOM NETWORK")
       training_historyHF=0
       HFmodel(dataHF_val_dict['X_val'][0:1])
-      return HFmodel, training_historyHF
+      return HFmodel, training_historyHF, None
    else:
       #print(HFmodel.model.weights[0])
       #HFmodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirnameHarmonic,name),call_endpoint="serving_default")
@@ -1284,7 +1284,7 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmon
 
    
    if skip_measures:
-       return HFmodel, training_historyHF
+       return HFmodel, training_historyHF, None
 
    HFmodel.compile(custom_metrics=cmetricsHF)
    HFmodelzero.compile(custom_metrics=cmetricsHF)
@@ -1326,7 +1326,7 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmon
    meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation)
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("\n\n")
-   return HFmodel,training_historyHF
+   return HFmodel,training_historyHF, meanfailuretosolveequation
 
 
 
