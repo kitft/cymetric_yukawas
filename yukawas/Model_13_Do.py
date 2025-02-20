@@ -620,10 +620,9 @@ if __name__ ==  '__main__':
         #consider omega normalisation
         omega = pg.holomorphic_volume_form(pointsComplex)
         #put the omega here, not the omegabar
-        omega_normalised_to_one=omega/tf.cast(np.sqrt(volCY_from_Om),complex_dtype) # this is the omega that's normalised to 1. Numerical factor missing for the physical Yukawas?
+        omega_normalised_to_one=omega/tf.cast(np.sqrt(volCY_from_Om),complex_dtype) # this is the omega that's normalised to 1. VERIFIED yes.
 
-        print("Integral of omega_normalised_to_one = ", tf.reduce_mean(aux_weights * omega_normalised_to_one* tf.math.conj(omega_normalised_to_one)))
-        print("Integral of omega_normalised_to_one_after_removing_6 = ", tf.reduce_mean(aux_weights * omega_normalised_to_one* tf.math.conj(omega_normalised_to_one))/6)
+        #print("Integral of omega_normalised_to_one = ", tf.reduce_mean(aux_weights * omega_normalised_to_one* tf.math.conj(omega_normalised_to_one))) # verified that this is correct!!!yes
         #this is the holomorphic Yukawa
         m = [[0,0,0],[0,0,0],[0,0,0]]
         mwoH = [[0,0,0],[0,0,0],[0,0,0]]
@@ -642,7 +641,7 @@ if __name__ ==  '__main__':
 
 
         mwoH = (1/(8*np.sqrt(30))) *   2*np.sqrt(2)/4* np.array(mwoH)
-        print("without H")
+        print("without H * 10**6")
         print(np.round(np.array(mwoH)*10**6,1))
 
         m[0][0] = tf.reduce_mean(aux_weights * tf.einsum("abc,x,xa,xb,xc->x",pg.lc,tfsqrtandcast(H1*H3*H3),vH,vQ1,vU1)*omega_normalised_to_one)
@@ -659,7 +658,7 @@ if __name__ ==  '__main__':
         # 8 Sqrt30 is the group theoretic factor
         m= (1/(8*np.sqrt(30))) *   2*np.sqrt(2)/4* np.array(m)
         holomorphic_Yukawas.append(m)
-        print('proper calculation')
+        print('proper calculation*10**6')
         print(np.round(np.array(m)*10**6,1))
         #volCY=tf.reduce_mean(omega)
         vals = []
@@ -680,6 +679,7 @@ if __name__ ==  '__main__':
         # second index is the U index
         #physical_yukawas=  (1/(8*np.sqrt(30))) *   2*np.sqrt(2)/4*NormH[0][0].numpy()*np.einsum('ab,cd,bd->ac',NormQ,NormU,m)
         physical_yukawas= NormH[0][0].numpy()*np.einsum('ab,cd,bd->ac',NormQ,NormU,m)
+        print("physical_yukawas*10**6")
         print(np.round(physical_yukawas*10**6,1))
         print(physical_yukawas)
         mats.append(physical_yukawas)
