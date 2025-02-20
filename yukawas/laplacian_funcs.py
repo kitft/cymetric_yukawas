@@ -449,7 +449,7 @@ def HYM_measure_val_with_H(HFmodel,dataHF):
     #print("check this is tiny: ",tf.math.reduce_std(coclosureofjustdsigma/(laplacianvals)))
     return averageoftraineddivaverageofvFS,traineddivaverageofvFS,tf.math.reduce_std(coclosureofjustdsigma/laplacianvals)
 
-def HYM_measure_val_with_H(HFmodel,dataHF,HYMmetric_model,metric_model):
+def HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF,HYMmetric_model,metric_model):
     #returns ratio means of deldagger V_corrected/deldagger V_FS
     #and returns
     pts = tf.cast(dataHF['X_val'],real_dtype)
