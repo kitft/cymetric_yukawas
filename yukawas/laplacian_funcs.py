@@ -389,7 +389,15 @@ def compute_transition_pointwise_measure(functionmodel, points):
         #print("average value/stddev "+ str(meanoverstddev))
 
         return meanoverstddev,all_t_loss/stddev
-        
+
+def compute_sigma_measure(sigma_model, points_real, CY_weights_unnormalised, omegas):
+    """"""    
+    metrics = sigma_model(points_real)
+    omegas = omegas
+    sigma_values = tf.math.abs(1-tf.linalg.det(metrics)/omegas)
+    CY_weights = CY_weights_unnormalised/tf.reduce_sum(CY_weights_unnormalised)
+    sigma_measure = tf.einsum('x,x->',CY_weights,sigma_values)
+    return sigma_measure
 
 def HYM_measure_val(betamodel,databeta):
     #arguments: betamodel, databeta

@@ -2199,3 +2199,51 @@ def batch_process_helper_func(func, args, batch_indices=(0,), batch_size=10000):
 
     return tf.concat(results_list, axis=0)
     
+
+
+class BiholoModelFuncGENERAL_Q(tf.keras.Model):
+    def __init__(self, layer_sizes, BASIS, activation=tf.square, stddev=0.1, use_zero_network=False):
+        super().__init__()
+        
+        self.layers_list = []
+        #SKIP FIRST INDEX
+        for i in range(1,len(layer_sizes) - 1):
+            self.layers_list.append(tf.keras.layers.Dense(layer_sizes[i], activation=activation))
+        
+        # Last layer before abs and log
+        self.layers_list.append(tf.keras.layers.Dense(layer_sizes[-1]))
+        
+        # Free parameter after log
+        if use_zero_network:    
+            self.alpha = tf.Variable(initial_value=0.0, dtype=real_dtype, trainable=True)
+        else:
+            self.alpha = tf.Variable(initial_value=1.0, dtype=real_dtype, trainable=True)
+        
+        self.BASIS=BASIS
+        self.nCoords=tf.reduce_sum(tf.cast(BASIS['AMBIENT'],tf.int32)+1)
+        self.ambient=tf.cast(BASIS['AMBIENT'],tf.int32)
+        self.kmoduli=BASIS['KMODULI']
+        #if len(self.ambient)==1:
+        #    print("using single ambient surface bihom func generator")
+        #    self.bihom_func= bihom_function_generator(np.array(self.ambient),len(self.ambient),self.kmoduli)
+        #else:
+        #    print("using multi ambient surface bihom func generator")
+        #    self.bihom_func= bihom_function_generator(np.array(self.ambient),len(self.ambient),self.kmoduli)
+
+
+    def call(self, inputs):
+        #inputs = 
+        inputs = tf.complex(inputs[:, :self.nCoords], inputs[:, self.nCoords:])
+        #x = np.einsum('xi,xj->xij',tf.math.conj(inputs),inputs)
+        iterativereal,iterativeimag=getrealandimagofprod(inputs,return_mat=False)
+        x = tf.concat([iterativereal,iterativeimag],axis=-1)
+        y = tf.math.abs(tf.einsum('xi,xi->x',tf.math.conj(inputs),inputs))
+        x = tf.einsum('xi,x->xi',x,y**(-1))
+        for layer in self.layers_list:
+            x = layer(x)
+        x = tf.abs(x)
+        x = tf.math.log(x)
+        x = self.alpha * x
+        x = (1/np.pi) * (1/2**(len(self.layers_list))) * x
+        return  x
+
