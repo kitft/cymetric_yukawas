@@ -632,7 +632,6 @@ def compute_transition_loss_for_uncorrected_HF_model(HFmodel, points,only_inside
     vi = tf.repeat(HFmodel.uncorrected_FS_harmonicform(points), HFmodel.nTransitions, axis=0)
     current_patch_mask = tf.repeat(
         current_patch_mask, HFmodel.nTransitions, axis=0)
-    print("ALL DTYPES: ", patch_points.dtype, other_patch_mask.dtype, current_patch_mask.dtype, fixed.dtype)
     Tij = HFmodel.get_transition_matrix(
         patch_points, other_patch_mask, current_patch_mask, fixed)
     patch_transformation,weights_for_belt=HFmodel.get_section_transition_to_patch_mask(exp_points,other_patch_mask, return_weights_for_belt=only_inside_belt) 

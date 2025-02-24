@@ -298,8 +298,8 @@ if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall']:
         nEpochsPhi = 1
         nEpochsBeta = 1
         if sys.argv[3] == 'testmid':
-            nEpochsSigma = 1
-            nEpochsSigma2 = 1
+            nEpochsSigma = 2
+            nEpochsSigma2 = 2
         else:
             nEpochsSigma = 5
             nEpochsSigma2 = 5
