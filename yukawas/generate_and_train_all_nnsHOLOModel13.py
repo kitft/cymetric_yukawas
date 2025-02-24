@@ -239,8 +239,8 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,stddev=0.
    print('tested')
    # phimodel.learn_ricci_val=False 
    # phimodelzero.learn_ricci_val=False 
-   valzero = {key: value.numpy() for key, value in valzero.items()}
-   valraw = {key: value.numpy() for key, value in valraw.items()}
+   valzero = {key: float(value.numpy()) for key, value in valzero.items()}
+   valraw = {key: float(value.numpy()) for key, value in valraw.items()}
 
    #print("CHECKING MODEL:")
    #print(data['X_train'][0:1])
@@ -777,8 +777,8 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
 
    valzero=betamodelzero.test_step(databeta_val_dict)
    valtrained=betamodel.test_step(databeta_val_dict)
-   valzero = {key: value.numpy() for key, value in valzero.items()}
-   valtrained= {key: value.numpy() for key, value in valtrained.items()}
+   valzero = {key: float(value.numpy()) for key, value in valzero.items()}
+   valtrained= {key: float(value.numpy()) for key, value in valtrained.items()}
 
    #metricsnames=betamodel.metrics_names
 
@@ -1023,8 +1023,8 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    print("testing zero and raw")
    valzero=HFmodelzero.test_step(dataHF_val_dict)
    valraw=HFmodel.test_step(dataHF_val_dict)
-   valzero = {key: value.numpy() for key, value in valzero.items()}
-   valraw = {key: value.numpy() for key, value in valraw.items()}
+   valzero = {key: float(value.numpy()) for key, value in valzero.items()}
+   valraw = {key: float(value.numpy()) for key, value in valraw.items()}
    print("tested zero and raw")
    print("zero network validation loss: ")
    print(valzero)
@@ -1076,7 +1076,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
                  #verbose=1, custom_metrics=cmetricsHF, callbacks=cb_listHF)
          HFmodel.model = nn_HF
          valraw=HFmodel.test_step(dataHF_val_dict)
-         valraw = {key: value.numpy() for key, value in valraw.items()}
+         valraw = {key: float(value.numpy()) for key, value in valraw.items()}
       HFmodel, training_historyHF= train_modelHF(HFmodel, dataHF_train, optimizer=opt, epochs=nEpochs, batch_sizes=bSizes, 
                                        verbose=1, custom_metrics=cmetricsHF, callbacks=cb_listHF)
       i+=1 
@@ -1112,7 +1112,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    tf.keras.backend.clear_session()
 
    valfinal =HFmodel.test_step(dataHF_val_dict)
-   valfinal = {key: value.numpy() for key, value in valfinal.items()}
+   valfinal = {key: float(value.numpy()) for key, value in valfinal.items()}
 
    #print("perm9")
    #print(perm.print_diff())
@@ -1169,7 +1169,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    #      batch_indices=(0,1,2,3),
    #      batch_size=50
    #  )
-   meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation).numpy()
+   meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation).numpy().item()
 
 
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
@@ -1321,8 +1321,8 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,function
 
    valzero=HFmodelzero.test_step(dataHF_val_dict)
    valtrained=HFmodel.test_step(dataHF_val_dict)
-   valzero = {key: value.numpy() for key, value in valzero.items()}
-   valtrained = {key: value.numpy() for key, value in valtrained.items()}
+   valzero = {key: float(value.numpy()) for key, value in valzero.items()}
+   valtrained = {key: float(value.numpy()) for key, value in valtrained.items()}
 
    #valzero=HFmodelzero.evaluate(dataHF_val_dict,return_dict=True)
    #valtrained=HFmodel.evaluate(dataHF_val_dict,return_dict=True)
