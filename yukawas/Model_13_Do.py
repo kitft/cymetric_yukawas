@@ -221,10 +221,15 @@ stddev_H33=1
 final_layer_scale_H33=0.01#0.01
 
 
-skip_measuresPhi=True
-skip_measuresBeta=True
-skip_measuresHF=False
-#skip_measuresHF
+if len(sys.argv) > 4 and str(sys.argv[4]) == 'skipall':
+    skip_measuresPhi=True
+    skip_measuresBeta=True
+    skip_measuresHF=True
+else:
+    skip_measuresPhi=True
+    skip_measuresBeta=True
+    skip_measuresHF=False
+    #skip_measuresHF
 
 force_generate_phi=False
 force_generate_HYM=False
