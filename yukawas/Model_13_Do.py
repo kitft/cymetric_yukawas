@@ -26,8 +26,10 @@ from cymetric.pointgen.nphelper import prepare_dataset, prepare_basis_pickle
 import tensorflow as tf
 import tensorflow.keras as tfk
 
-if len(sys.argv) > 3 and sys.argv[3] == 'test':
+if len(sys.argv) > 3 and sys.argv[3] in ['test','testsmall', 'testmid']:
     tf.config.run_functions_eagerly(True)
+    if len(sys.argv) > 4 and sys.argv[4] == 'actual':
+        tf.config.run_functions_eagerly(False)
 
 from cymetric.config import real_dtype, complex_dtype, set_double_precision
 set_double_precision(False)
