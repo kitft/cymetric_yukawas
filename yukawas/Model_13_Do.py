@@ -268,7 +268,7 @@ if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall']:
     elif sys.argv[3] == 'testmid':
         nPoints = 100000
         nPointsHF = 100000
-        n_to_integrate = 100000
+        n_to_integrate = 300000
     else:
         nPoints = 300000
         nPointsHF = 300000
@@ -297,8 +297,12 @@ if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall']:
     if len(sys.argv) > 4 and str(sys.argv[4]) == 'actual':
         nEpochsPhi = 1
         nEpochsBeta = 1
-        nEpochsSigma = 5
-        nEpochsSigma2 = 5
+        if sys.argv[3] == 'testmid':
+            nEpochsSigma = 1
+            nEpochsSigma2 = 1
+        else:
+            nEpochsSigma = 5
+            nEpochsSigma2 = 5
         depthPhi = 2
         depthBeta = 2
         depthSigma = 3
