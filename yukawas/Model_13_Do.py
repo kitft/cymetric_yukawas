@@ -519,7 +519,7 @@ if __name__ ==  '__main__':
     #mem= = tracker.SummaryTracker()
     #print(sorted(mem(.create_summary(), reverse=True, key=itemgetter(2))[:10])
 
-    batch_size_for_processing=10000
+    batch_size_for_processing=min(100000, len(real_pts))
     mats=[]
     masses_ref_and_learned=[]
     use_trained = False
@@ -527,40 +527,37 @@ if __name__ ==  '__main__':
     for use_trained in [True,False]:
         print("using trained? " + str(use_trained))
         if use_trained:
-            #mets=phi(real_pts)
             mets = batch_process_helper_func(phi, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing)
-            print('got mets',flush=True)
-            dets=tf.linalg.det(mets)
+            print('got mets', flush=True)
+            dets = tf.linalg.det(mets)
             # Batch process corrected harmonic forms
-            #vH = batch_process_helper_func(HFmodel_vH.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing)
-            vH = HFmodel_vH.corrected_harmonicform(real_pts)
+            vH = batch_process_helper_func(HFmodel_vH.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing)
             hvHb = tf.einsum('x,xb->xb', tf.cast(betamodel_02m20(real_pts), complex_dtype), tf.math.conj(vH))
-
-            print('got mets',flush=True)
-            vQ3 = HFmodel_vQ3.corrected_harmonicform(real_pts)
+            print('got vH', flush=True)
+            
+            vQ3 = batch_process_helper_func(HFmodel_vQ3.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing)
             hvQ3b = tf.einsum('x,xb->xb', tf.cast(betamodel_001m3(real_pts), complex_dtype), tf.math.conj(vQ3))
-
-            print('got mets',flush=True)
-            vU3 = HFmodel_vU3.corrected_harmonicform(real_pts)
+            print('got vQ3', flush=True)
+            
+            vU3 = batch_process_helper_func(HFmodel_vU3.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing)
             hvU3b = tf.einsum('x,xb->xb', tf.cast(betamodel_001m3(real_pts), complex_dtype), tf.math.conj(vU3))
-
-            print('got mets',flush=True)
-            vQ1 = HFmodel_vQ1.corrected_harmonicform(real_pts)
+            print('got vU3', flush=True)
+            
+            vQ1 = batch_process_helper_func(HFmodel_vQ1.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing)
             hvQ1b = tf.einsum('x,xb->xb', tf.cast(betamodel_0m213(real_pts), complex_dtype), tf.math.conj(vQ1))
-
-            print('got mets',flush=True)
-            vQ2 = HFmodel_vQ2.corrected_harmonicform(real_pts)
+            print('got vQ1', flush=True)
+            
+            vQ2 = batch_process_helper_func(HFmodel_vQ2.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing)
             hvQ2b = tf.einsum('x,xb->xb', tf.cast(betamodel_0m213(real_pts), complex_dtype), tf.math.conj(vQ2))
-
-            print('got mets',flush=True)
-            vU1 = HFmodel_vU1.corrected_harmonicform(real_pts)
+            print('got vQ2', flush=True)
+            
+            vU1 = batch_process_helper_func(HFmodel_vU1.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing)
             hvU1b = tf.einsum('x,xb->xb', tf.cast(betamodel_0m213(real_pts), complex_dtype), tf.math.conj(vU1))
-
-            print('got mets',flush=True)
-            vU2 = HFmodel_vU2.corrected_harmonicform(real_pts)
+            print('got vU1', flush=True)
+            
+            vU2 = batch_process_helper_func(HFmodel_vU2.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing)
             hvU2b = tf.einsum('x,xb->xb', tf.cast(betamodel_0m213(real_pts), complex_dtype), tf.math.conj(vU2))
-
-            print('got mets',flush=True)
+            print('got vU2', flush=True)
             H1=betamodel_02m20(real_pts) 
             H2=betamodel_001m3(real_pts) 
             H3=betamodel_0m213(real_pts) 
