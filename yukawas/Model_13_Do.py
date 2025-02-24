@@ -643,7 +643,7 @@ if __name__ ==  '__main__':
 
         print("Compute holomorphic Yukawas")
         #consider omega normalisation
-        omega = pg.holomorphic_volume_form(pointsComplex)
+        omega = batch_process_helper_func(pg.holomorphic_volume_form, [pointsComplex], batch_indices=[0], batch_size=100000)
         #put the omega here, not the omegabar
         omega_normalised_to_one=omega/tf.cast(np.sqrt(volCY_from_Om),complex_dtype) # this is the omega that's normalised to 1. VERIFIED yes.
 
