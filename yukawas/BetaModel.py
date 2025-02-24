@@ -627,27 +627,27 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     
     # Ensure consistent dtype
     kappaover6 = tf.cast(kappaover6, real_dtype)
-    weightscomp = tf.cast(weights[:,0], complex_dtype)
+    weightsreal = tf.cast(weights[:,0], real_dtype)
     
     print('kappa over 6 ')
     print(kappaover6)
     
     # Calculate volumes and slopes
-    volfromCY = tf.math.real(tf.reduce_mean(weightscomp, axis=-1)) * kappaover6
-    slopefromvolCYrhoCY = (1/6) * (2/np.pi) * tf.math.real(tf.reduce_mean(weightscomp * sourcesCY, axis=-1)) * kappaover6
+    volfromCY = tf.math.real(tf.reduce_mean(weightsreal, axis=-1)) * kappaover6
+    slopefromvolCYrhoCY = (1/6) * (2/np.pi) * tf.math.real(tf.reduce_mean(weightsreal * sourcesCY, axis=-1)) * kappaover6
     print("CY volume and slope: " + str(volfromCY) + " and " + str(slopefromvolCYrhoCY))
     
-    integratedabsolutesource = (1/6) * (2/np.pi) * tf.math.real(tf.reduce_mean(weights[:,0] * tf.math.abs(sourcesCY), axis=-1)) * kappaover6
+    integratedabsolutesource = (1/6) * (2/np.pi) * tf.math.real(tf.reduce_mean(weightsreal * tf.math.abs(sourcesCY), axis=-1)) * kappaover6
     print("Integrated slope but with absolute val: " + str(integratedabsolutesource))
     
     # Calculate FS metrics
     sourceFS = tf.cast(-tf.einsum('xba,xab->x', FSmetricinv, F_forsource_pb), real_dtype)
-    slopefromvolFSrhoFS = (1/6) * (2/np.pi) * tf.reduce_mean(weights[:,0] * (tf.cast(FSmetricdets, real_dtype) / omega[:,0]) * sourceFS, axis=-1)
-    volfromFSmetric = tf.reduce_mean(weights[:,0] * (tf.cast(FSmetricdets, real_dtype) / omega[:,0]), axis=-1)
+    slopefromvolFSrhoFS = (1/6) * (2/np.pi) * tf.reduce_mean(weightsreal * (tf.cast(FSmetricdets, real_dtype) / omega[:,0]) * sourceFS, axis=-1)
+    volfromFSmetric = tf.reduce_mean(weightsreal * (tf.cast(FSmetricdets, real_dtype) / omega[:,0]), axis=-1)
     print('FS vol and slope: ' + str(volfromFSmetric) + " " + str(slopefromvolFSrhoFS))
     
     # Calculate effective sample size and error
-    ess = tf.square(tf.reduce_sum(weights[:,0])) / tf.reduce_sum(tf.square(weights[:,0]))
+    ess = tf.square(tf.reduce_sum(weightsreal)) / tf.reduce_sum(tf.square(weightsreal))
     error = 1/tf.sqrt(ess)
     print("ESS: ", ess)
     print("error: ", error)
@@ -668,23 +668,16 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     print("print 'kappa/6'")
     return kappaover6  # point_gen.compute_kappa(points, weights, omega)
 
-
 def train_modelbeta(betamodel, data_train, optimizer=None, epochs=50, batch_sizes=[64, 10000],
                 verbose=1, custom_metrics=[], callbacks=[], sw=True):
-    r"""Training loop for fixing the Kähler class. It consists of two 
-    optimisation steps. 
-        1. With a small batch size and volk loss disabled.
-        2. With only MA and volk loss enabled and a large batchsize such that 
-            the MC integral is a reasonable approximation and we don't lose 
-            the MA progress from the first step.
+    r"""Training loop for beta models.
 
     Args:
         betamodel (cymetric.models.tfmodels): Any of the custom metric models.
-        data (dict): numpy dictionary with keys 'X_train' and 'y_train'.
+        data_train (dict): Dictionary with training data.
         optimizer (tfk.optimiser, optional): Any tf optimizer. Defaults to None.
             If None Adam is used with default hyperparameters.
-        epochs (int, optional): # of training epochs. Every training sample will
-            be iterated over twice per Epoch. Defaults to 50.
+        epochs (int, optional): # of training epochs. Defaults to 50.
         batch_sizes (list, optional): batch sizes. Defaults to [64, 10000].
         verbose (int, optional): If > 0 prints epochs. Defaults to 1.
         custom_metrics (list, optional): List of tf metrics. Defaults to [].
@@ -693,72 +686,48 @@ def train_modelbeta(betamodel, data_train, optimizer=None, epochs=50, batch_size
             Defaults to False.
 
     Returns:
-        model, training_history
+        tuple: (model, training_history)
     """
+    # Initialize history dictionaries
     training_history = {}
     hist1 = {}
-    # hist1['opt'] = ['opt1' for _ in range(epochs)]
-    hist2 = {}
-    # hist2['opt'] = ['opt2' for _ in range(epochs)]
+    
+    # Store original learning flags
     learn_laplacian = betamodel.learn_laplacian
     learn_transition = betamodel.learn_transition
-    if False:#removed sw
-        sample_weights = data_train['y_train'][:, -2]# sample according to the CY weights
-    else:
-        sample_weights = None
+    
+    # Set up sample weights if needed
+    sample_weights = None  # Disabled sample weights as per commented code
+    
+    # Create optimizer if not provided
     if optimizer is None:
         optimizer = tf.keras.optimizers.Adam()
-    #permint= tracker.SummaryTracker()
-    #for epoch in range(epochs):
-    for epoch in range(1):
-        #print("internal")
-        #print(permint.print_diff())
-        batch_size = batch_sizes[0]
-        betamodel.learn_transition = learn_transition
-        betamodel.learn_laplacian = learn_laplacian
-        betamodel.compile(custom_metrics=custom_metrics, optimizer=optimizer)
-        if verbose > 0:
-            print("\nEpoch {:2d}/{:d}".format(epoch + 1, epochs))
-
-        history = betamodel.fit(
-            data_train,
-            epochs=epochs, batch_size=batch_size, verbose=verbose,
-            callbacks=callbacks, sample_weight=sample_weights
-        )
-        #print(history)
-        for k in history.history.keys():
-            if k not in hist1.keys():
-                hist1[k] = history.history[k]
-            else:
-                hist1[k] += history.history[k]
-        #print("internal2")
-        #print(permint.print_diff())
-        # if history.history['transition_loss'][-1]<10**(-8):
-        #     print("t_loss too low")
-        #     break
-        # batch_size = min(batch_sizes[1], len(data['X_train']))
-        # betamodel.learn_kaehler = tf.cast(False, dtype=tf.bool)
-        # betamodel.learn_transition = tf.cast(False, dtype=tf.bool)
-        # betamodel.learn_ricci = tf.cast(False, dtype=tf.bool)
-        # betamodel.learn_ricci_val = tf.cast(False, dtype=tf.bool)
-        # betamodel.learn_volk = tf.cast(True, dtype=tf.bool)
-        # betamodel.compile(custom_metrics=custom_metrics, optimizer=optimizer)
-        # history = betamodel.fit(
-        #     data['X_train'], data['y_train'],
-        #     epochs=1, batch_size=batch_size, verbose=verbose,
-        #     callbacks=callbacks, sample_weight=sample_weights
-        # )
-        # for k in history.history.keys():
-        #     if k not in hist2.keys():
-        #         hist2[k] = history.history[k]
-        #     else:
-        #         hist2[k] += history.history[k]
-    # training_history['epochs'] = list(range(epochs)) + list(range(epochs))
-    # for k in hist1.keys():
-    #     training_history[k] = hist1[k] + hist2[k]
-    #for k in set(list(hist1.keys()) + list(hist2.keys())):
+    
+    # Ensure learning flags are set correctly
+    betamodel.learn_transition = learn_transition
+    betamodel.learn_laplacian = learn_laplacian
+    
+    # Compile model once before training
+    betamodel.compile(custom_metrics=custom_metrics, optimizer=optimizer)
+    
+    # Train for all epochs at once
+    history = betamodel.fit(
+        data_train,
+        epochs=epochs, 
+        batch_size=batch_sizes[0], 
+        verbose=verbose,
+        callbacks=callbacks, 
+        sample_weight=sample_weights
+    )
+    
+    # Process history to match original format
+    for k in history.history.keys():
+        hist1[k] = history.history[k]
+    
+    # Format training_history to match original structure
     for k in set(list(hist1.keys())):
-        #training_history[k] = hist2[k] if k in hist2 and max(hist2[k]) != 0 else hist1[k]
         training_history[k] = hist1[k]
+    
     training_history['epochs'] = list(range(epochs))
+    
     return betamodel, training_history

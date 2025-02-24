@@ -836,23 +836,16 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
     print("Calculated kappa/6?")
     return kappaover6#point_gen.compute_kappa(points, weights, omega)
 
-
 def train_modelHF(HFmodel, data_train, optimizer=None, epochs=50, batch_sizes=[64, 10000],
                 verbose=1, custom_metrics=[], callbacks=[], sw=False):
-    r"""Training loop for fixing the Kähler class. It consists of two 
-    optimisation steps. 
-        1. With a small batch size and volk loss disabled.
-        2. With only MA and volk loss enabled and a large batchsize such that 
-            the MC integral is a reasonable approximation and we don't lose 
-            the MA progress from the first step.
+    r"""Training loop for harmonic form models.
 
     Args:
         HFmodel (cymetric.models.tfmodels): Any of the custom metric models.
-        data (dict): numpy dictionary with keys 'X_train' and 'y_train'.
+        data_train (dict): Dictionary with training data.
         optimizer (tfk.optimiser, optional): Any tf optimizer. Defaults to None.
             If None Adam is used with default hyperparameters.
-        epochs (int, optional): # of training epochs. Every training sample will
-            be iterated over twice per Epoch. Defaults to 50.
+        epochs (int, optional): # of training epochs. Defaults to 50.
         batch_sizes (list, optional): batch sizes. Defaults to [64, 10000].
         verbose (int, optional): If > 0 prints epochs. Defaults to 1.
         custom_metrics (list, optional): List of tf metrics. Defaults to [].
@@ -861,95 +854,54 @@ def train_modelHF(HFmodel, data_train, optimizer=None, epochs=50, batch_sizes=[6
             Defaults to False.
 
     Returns:
-        model, training_history
+        tuple: (model, training_history)
     """
-    #from pympler import tracker
+    # Initialize history dictionaries
     training_history = {}
     hist1 = {}
-    # hist1['opt'] = ['opt1' for _ in range(epochs)]
-    hist2 = {}
-    # hist2['opt'] = ['opt2' for _ in range(epochs)]
+    
+    # Store original learning flags
     learn_laplacian = HFmodel.learn_laplacian
     learn_transition = HFmodel.learn_transition
-    if False:
-        sample_weights = data_train['y_train'][:, -2]
-        #sample_weights = sample_weights/tf.reduce_mean(sample_weights)# so they have a mean of 1
-    else:
-        sample_weights = None
+    
+    # Set up sample weights if needed
+    sample_weights = data_train['y_train'][:, -2] if sw else None
+    
+    # Create optimizer if not provided
     if optimizer is None:
         optimizer = tf.keras.optimizers.Adam()
-    #permint= tracker.SummaryTracker()
-    #track= tracker.SummaryTracker()
-    #from pympler import summary
-    ######for epoch in range(epochs):
-    for epoch in range(1):
-        #print("internal")
-        #print(permint.print_diff())
-        #current_summary = track.create_summary()
-        ## Print the entire memory summary
-        #print(summary.print_(current_summary))
-
-        batch_size = batch_sizes[0]
-        HFmodel.learn_transition = learn_transition
-        HFmodel.learn_laplacian = learn_laplacian
-        #print("internal2")
-        #print(permint.print_diff())
-        HFmodel.compile(custom_metrics=custom_metrics, optimizer=optimizer)
-        if verbose > 0:
-            print("\nEpoch {:2d}/{:d}".format(epoch + 1, epochs))
-
-        history = HFmodel.fit(
-            data_train,
-            epochs=epochs, batch_size=batch_size, verbose=verbose,
-            callbacks=callbacks, sample_weight=sample_weights
-        )
-        #print("internal2")
-        #print(permint.print_diff())
-        #current_summary = track.create_summary()
-        #print(summary.print_(current_summary))
-
-
-        #print('fit run')
-        #tf.print('fit run')
-        for k in history.history.keys():
-            if k not in hist1.keys():
-                hist1[k] = history.history[k]
-            else:
-                hist1[k] += history.history[k]
-        #print('added hist')
-        #tf.print('added hist')
-        #print(hist1)
-        #print(history)
-        del history
-        if tf.math.is_nan(hist1['loss'][-1]):
-            break
-        #if history.history['transition_loss'][-1]<10**(-8):
-        #    break
-        # batch_size = min(batch_sizes[1], len(data['X_train']))
-        # HFmodel.learn_kaehler = tf.cast(False, dtype=tf.bool)
-        # HFmodel.learn_transition = tf.cast(False, dtype=tf.bool)
-        # HFmodel.learn_ricci = tf.cast(False, dtype=tf.bool)
-        # HFmodel.learn_ricci_val = tf.cast(False, dtype=tf.bool)
-        # HFmodel.learn_volk = tf.cast(True, dtype=tf.bool)
-        # HFmodel.compile(custom_metrics=custom_metrics, optimizer=optimizer)
-        # history = HFmodel.fit(
-        #     data['X_train'], data['y_train'],
-        #     epochs=1, batch_size=batch_size, verbose=verbose,
-        #     callbacks=callbacks, sample_weight=sample_weights
-        # )
-        # for k in history.history.keys():
-        #     if k not in hist2.keys():
-        #         hist2[k] = history.history[k]
-        #     else:
-        #         hist2[k] += history.history[k]
-    # training_history['epochs'] = list(range(epochs)) + list(range(epochs))
-    # for k in hist1.keys():
-    #     training_history[k] = hist1[k] + hist2[k]
-    #for k in set(list(hist1.keys()) + list(hist2.keys())):
+    
+    # Ensure learning flags are set correctly
+    HFmodel.learn_transition = learn_transition
+    HFmodel.learn_laplacian = learn_laplacian
+    
+    # Compile model once before training
+    HFmodel.compile(custom_metrics=custom_metrics, optimizer=optimizer)
+    
+    # Train for all epochs at once
+    history = HFmodel.fit(
+        data_train,
+        epochs=epochs, 
+        batch_size=batch_sizes[0], 
+        verbose=verbose,
+        callbacks=callbacks, 
+        sample_weight=sample_weights
+    )
+    
+    # Process history to match original format
+    for k in history.history.keys():
+        hist1[k] = history.history[k]
+        
+    # # Check for NaN values
+    # if any(tf.math.is_nan(hist1['loss'])):
+    #     print("NaN detected in loss, training stopped")
+    
     print("finished epoch loop")
+    
+    # Format training_history to match original structure
     for k in set(list(hist1.keys())):
-        #training_history[k] = hist2[k] if k in hist2 and max(hist2[k]) != 0 else hist1[k]
         training_history[k] = hist1[k]
+    
     training_history['epochs'] = list(range(epochs))
+    
     return HFmodel, training_history
-
