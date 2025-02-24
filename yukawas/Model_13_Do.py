@@ -626,6 +626,7 @@ if __name__ ==  '__main__':
 
         #print("Integral of omega_normalised_to_one = ", tf.reduce_mean(aux_weights * omega_normalised_to_one* tf.math.conj(omega_normalised_to_one))) # verified that this is correct!!!yes
         #this is the holomorphic Yukawa
+        print('doing einsums')
         m = [[0,0,0],[0,0,0],[0,0,0]]
         mwoH = [[0,0,0],[0,0,0],[0,0,0]]
 
