@@ -24,7 +24,7 @@ This guide assumes that you have a working Python 3 (preferably python 3.7 or ab
 If you want to use any existing python installation (note that we recommend using a virtual environment, see below), just run in a terminal.
 If you've never used uv, I recommend trying it out! It's a modern package manager for Python that is MUCH faster than pip, and is mostly a drop-in replacement.
 ```console
-(uv) pip install git+https://github.com/kitft/cymetric_yukawas.git
+(uv) pip install git+https://github.com/kift/cymetric_yukawas.git
 ```
 
 To run the example notebooks, you need jupyter. You can install it with
@@ -45,7 +45,7 @@ Then install with pip directly from github
 ```console
 source ~/cymetric/bin/activate
 pip install --upgrade pip
-pip install git+https://github.com/pythoncymetric/cymetric.git
+pip install git+https://github.com/kift/cymetric_yukawas.git
 pip install jupyter notebook
 python -m ipykernel install --user --name=cymetric
 ```
@@ -61,30 +61,30 @@ Then install with pip directly from github
 
 ```console
 conda activate cymetric
-pip install git+https://github.com/pythoncymetric/cymetric.git
+pip install git+https://github.com/kift/cymetric_yukawas.git
 ```
 
 ### 3. Install within Sage
 Since sage comes with python, all you need to do is run 
 ```console
-pip install git+https://github.com/pythoncymetric/cymetric.git
+pip install git+https://github.com/kift/cymetric_yukawas.git
 ```
 from within a sage notebook. If you'd rather keep ML and sage separate, you can just install the package (without tensorflow etc.) using 
 ```console
-pip install --no-dependencies git+https://github.com/pythoncymetric/cymetric.git
+pip install --no-dependencies git+https://github.com/kift/cymetric_yukawas.git
 ```
 Then you can use the function ```prepare_toric_cy_data(tv, "toric_data.pickle"))``` to create and store all the toric data needed, and then run the ML algorithms with this data file from a separate package installation (with tensorflow).
 
 ### 4. Install within Mathematica
 The whole installation process is fully automatic in the [Mathematica notebook](/notebooks/4.Mathematica_integration_example.nb). Just download it and follow the instructions in the notebook. In a nutshell, you run
 ```console
-Get["https://raw.githubusercontent.com/pythoncymetric/cymetric/main/cymetric/wolfram/cymetric.m"];
+Get["https://raw.githubusercontent.com/kift/cymetric_yukawas/main/cymetric/wolfram/cymetric.m"];
 PathToVenv = FileNameJoin[{$HomeDirectory, "cymetric"}];
 python = Setup[PathToVenv];
 ```
 You can also use an already existing installation. To do so, you run
 ```console
-Get["https://raw.githubusercontent.com/pythoncymetric/cymetric/main/cymetric/wolfram/cymetric.m"];
+Get["https://raw.githubusercontent.com/kift/cymetric_yukawas/main/cymetric/wolfram/cymetric.m"];
 PathToVenv = FileNameJoin[{$HomeDirectory, "cymetric"}];
 ChangeSetting["Python", PathToVenv]
 python = Setup[PathToVenv];
@@ -113,7 +113,7 @@ that you have or want to be implemented. Please read more [here](CONTRIBUTING.md
 
 ## Citation
 
-You can find our paper on the [arXiv](https://arxiv.org/abs/2111.01436). It will be presented at the [ML4PS workshop](https://ml4physicalsciences.github.io/2021/) of [NeurIPS 2021](https://neurips.cc/Conferences/2021/Schedule?showEvent=21862). If you find this package useful in your work, cite the following bib entry:
+You can find the original paper on the [arXiv](https://arxiv.org/abs/2111.01436). It was presented at the [ML4PS workshop](https://ml4physicalsciences.github.io/2021/) of [NeurIPS 2021](https://neurips.cc/Conferences/2021/Schedule?showEvent=21862). If you find this package useful in your work, cite the following bib entry:
 
 ```
 @article{Larfors:2021pbb,

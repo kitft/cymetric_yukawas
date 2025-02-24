@@ -12,12 +12,12 @@ with open("requirements.txt", "r") as fh:
 setuptools.setup(
     name="cymetric",
     version=VERSION,
-    author="Fabian Ruehle, Robin Schneider",
-    author_email="robin.schneider@physics.uu.se",
+    author="Fabian Ruehle, Robin Schneider, Kit FT",
+    author_email="cristofero.fraser-taliente@physics.ox.ac.uk",
     description="An open source python library to study CY metrics.",
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
-    url="https://github.com/robin-schneider/cymetric",
+    url="https://github.com/kitft/cymetric_yukawas",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
