@@ -627,7 +627,7 @@ if __name__ ==  '__main__':
         #overall have added a factor of 2
         print("The field normalisations:")
         #check this is constant!
-        lc_c = tf.cast(lc_c,complex_dtype    )
+        lc_c = tf.cast(pg.lc,complex_dtype)
         HuHu=(-1j/2)*(-1j/2)**2*(-2j)**3*(-1)*tf.reduce_mean(aux_weights[0:n_p]*tf.einsum('xab,xcd,xe,xf,acf,bde->x',mets[:n_p],mets[:n_p],vH[:n_p],hvHb[:n_p],lc_c,lc_c))
         print("(Hu,Hu) = " + str(HuHu))
         Q3Q3=(-1j/2)*(-1j/2)**2*(-2j)**3*(-1)*tf.reduce_mean(aux_weights[0:n_p]*tf.einsum('xab,xcd,xe,xf,acf,bde->x',mets[:n_p],mets[:n_p],vQ3[:n_p],hvQ3b[:n_p],lc_c,lc_c))
