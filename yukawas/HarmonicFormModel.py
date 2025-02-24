@@ -128,7 +128,7 @@ class HarmonicFormModel(FSModel):
         #$\frac{(\tanh{20\log(2x)}+1)(\tanh{(-20\log(x/2))}+1)}{4}$
         return (tf.math.tanh(20*tf.math.log(2*coordsfortrans))+1)*(tf.math.tanh(-20*tf.math.log(coordsfortrans/2))+1)/4
     
-    def get_section_transition_to_patch_mask(self, points, patch_mask):
+    def get_section_transition_to_patch_mask(self, points, patch_mask, return_weights_for_belt = False):
         r"""Given the old points points, and patch_mask giving the new patch, compute the transition functions for s_i - t_ij s_j.
         we wish to have s_i = psi_ij s_j. Consider f(a1,a2,a3) on P2. Define the local sections f1(1,x1,x2), f2(y1,1,y2) and f3(z1,z2,1)
         Then f1 = y1^-k f2 = x1^k f2, f1 = z1**(-k)f3 = x2**(k) f3
@@ -138,12 +138,16 @@ class HarmonicFormModel(FSModel):
         # which is (bSize, nProjective) in this case, so (bSize, 4)
         coordsfortranstotheki=tf.math.reduce_prod(coordsfortrans**self.linebundleforHYM,-1)
         considerforweightfunction=tf.cast(tf.cast(self.linebundleforHYM,tf.bool),real_dtype)
-        weights=self.weighting_function_for_section(tf.math.abs(coordsfortrans)**considerforweightfunction)
-        #raise to the 0 or 1th power, depending on whether the line bundle is zero in that direction
-        weights = tf.reduce_prod(weights, -1)# so this should basically yield 1 if the relevant coordinates are in the [0.2,2] belt, and 0 otherwise
+        if return_weights_for_belt:
+            weights_for_belt=self.weighting_function_for_section(tf.math.abs(coordsfortrans)**considerforweightfunction)
+            #raise to the 0 or 1th power, depending on whether the line bundle is zero in that direction
+            weights_for_belt = tf.reduce_prod(weights_for_belt, -1)# so this should basically yield 1 if the relevant coordinates are in the [0.2,2] belt, and 0 otherwise
+            return coordsfortranstotheki,weights_for_belt
+        else:
+            return coordsfortranstotheki, None
 
-        return coordsfortranstotheki,weights
-    def compute_transition_loss(self, points):
+        return coordsfortranstotheki,weights_for_belt
+    def compute_transition_loss(self, points, only_inside_belt = False, weights=None):
         r"""Computes transition loss at each point. In the case of the harmonic form model, we demand that the section transforms as a section of the line bundle to which it belongs. \phi(\lambda^q_i z_i)=\phi(z_i)
         also can separately check that the 1-form itself transforms appropriately?
 
@@ -176,14 +180,20 @@ class HarmonicFormModel(FSModel):
         sigmai = tf.repeat(self(points), self.nTransitions, axis=0)
         # this takes (1,z1,1,z2,1,z3,1,z4), picks out the ones we want to set to 1 - i.e. z1,z2,z3,z4 for the (1,1,1,1) patch,
         # and returns z1^k1 x z2^k2 etc... It therefore should multiply the w (i.e. the sigmaj)?
-        transformation,weights=self.get_section_transition_to_patch_mask(exp_points,other_patch_mask) 
-        all_t_loss = tf.math.abs(sigmai-transformation*sigmaj)*weights
+        transformation,weights_for_belt=self.get_section_transition_to_patch_mask(exp_points,other_patch_mask, return_weights_for_belt=only_inside_belt) 
+        if only_inside_belt:
+            all_t_loss = tf.math.abs(sigmai-transformation*sigmaj)*weights_for_belt
+        else:
+            all_t_loss = tf.math.abs(sigmai-transformation*sigmaj)
         all_t_loss = tf.reshape(all_t_loss, (-1, self.nTransitions))
         all_t_loss = tf.math.reduce_sum(all_t_loss**self.n[1], axis=-1)
         #print("weights meannnn: ")
         #tf.print(tf.reduce_mean(weights)/self.nTransitions)
         #print("weights mean zero: ")
         #tf.print(tf.reduce_mean(weights**0.)/self.nTransitions)
+        if weights is not None:
+            all_t_loss = all_t_loss*weights
+
         return all_t_loss/(self.nTransitions)
 
 

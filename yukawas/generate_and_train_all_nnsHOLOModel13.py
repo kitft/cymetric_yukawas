@@ -1340,7 +1340,7 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,function
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"])
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"],dataHF["y_val"][:, -2])
    print("average transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs))
    #meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
 

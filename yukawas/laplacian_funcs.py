@@ -513,7 +513,7 @@ def HYM_measure_val_with_H_for_batching(HFmodel, X_val, y_val, val_pullbacks, in
     #print("check this is tiny: ",tf.math.reduce_std(coclosureofjustdsigma/(laplacianvals)))
     return averageoftraineddivaverageofvFS#, traineddivaverageofvFS, tf.math.reduce_std(weights * coclosureofjustdsigma/laplacianvals)
 
-def compute_transition_pointwise_measure_section(HFmodel, points):
+def compute_transition_pointwise_measure_section(HFmodel, points, weights=None):
         r"""Computes transition loss at each point. In the case of the harmonic form model, we demand that the section transforms as a section of the line bundle to which it belongs. \phi(\lambda^q_i z_i)=\phi(z_i)
         also can separately check that the 1-form itHFmodel transforms appropriately?
 
@@ -567,7 +567,7 @@ def compute_transition_pointwise_measure_section(HFmodel, points):
 
 
 #check the corrected FS
-def compute_transition_loss_for_uncorrected_HF_model(HFmodel, points, weights=None):
+def compute_transition_loss_for_uncorrected_HF_model(HFmodel, points,only_inside_belt=False, weights=None):
     r"""Computes transition loss at each point.
 
     .. math::
@@ -614,9 +614,13 @@ def compute_transition_loss_for_uncorrected_HF_model(HFmodel, points, weights=No
     print("ALL DTYPES: ", patch_points.dtype, other_patch_mask.dtype, current_patch_mask.dtype, fixed.dtype)
     Tij = HFmodel.get_transition_matrix(
         patch_points, other_patch_mask, current_patch_mask, fixed)
-    patch_transformation,weights=HFmodel.get_section_transition_to_patch_mask(exp_points,other_patch_mask) 
+    patch_transformation,weights_for_belt=HFmodel.get_section_transition_to_patch_mask(exp_points,other_patch_mask, return_weights_for_belt=only_inside_belt) 
     # work out what to do with weights here
-    all_t_loss = tf.math.abs(tf.einsum('xj,x->xj',vj,patch_transformation)- tf.einsum('xk,xkl->xl', vi,
+    if only_inside_belt:
+        all_t_loss = tf.math.abs(tf.einsum('xj,x->xj',vj,patch_transformation)- tf.einsum('xk,xkl->xl', vi,
+                              tf.transpose(Tij, perm=[0, 2, 1], conjugate=True)))*weights_for_belt
+    else:
+        all_t_loss = tf.math.abs(tf.einsum('xj,x->xj',vj,patch_transformation)- tf.einsum('xk,xkl->xl', vi,
                               tf.transpose(Tij, perm=[0, 2, 1], conjugate=True)))
     all_t_loss = tf.math.reduce_sum(all_t_loss**HFmodel.n[1], axis=[1])
     #This should now be nTransitions 
@@ -628,7 +632,7 @@ def compute_transition_loss_for_uncorrected_HF_model(HFmodel, points, weights=No
     return all_t_loss/(HFmodel.nTransitions*HFmodel.nfold)
 
 
-def compute_transition_loss_for_corrected_HF_model(HFmodel, points, weights=None):
+def compute_transition_loss_for_corrected_HF_model(HFmodel, points, only_inside_belt=False, weights=None):
     r"""Computes transition loss at each point.
 
     .. math::
@@ -675,9 +679,13 @@ def compute_transition_loss_for_corrected_HF_model(HFmodel, points, weights=None
     #print("ALL DTYPES: ", patch_points.dtype, other_patch_mask.dtype, current_patch_mask.dtype, fixed.dtype)
     Tij = HFmodel.get_transition_matrix(
         patch_points, other_patch_mask, current_patch_mask, fixed)
-    patch_transformation,weights=HFmodel.get_section_transition_to_patch_mask(exp_points,other_patch_mask) 
+    patch_transformation,weights_for_belt=HFmodel.get_section_transition_to_patch_mask(exp_points,other_patch_mask, return_weights_for_belt=only_inside_belt) 
     # work out what to do with weights here
-    all_t_loss = tf.math.abs(tf.einsum('xj,x->xj',vj,patch_transformation)- tf.einsum('xk,xkl->xl', vi,
+    if only_inside_belt:
+        all_t_loss = tf.math.abs(tf.einsum('xj,x->xj',vj,patch_transformation)- tf.einsum('xk,xkl->xl', vi,
+                              tf.transpose(Tij, perm=[0, 2, 1], conjugate=True)))*weights_for_belt
+    else:
+        all_t_loss = tf.math.abs(tf.einsum('xj,x->xj',vj,patch_transformation)- tf.einsum('xk,xkl->xl', vi,
                               tf.transpose(Tij, perm=[0, 2, 1], conjugate=True)))
     all_t_loss = tf.math.reduce_sum(all_t_loss**HFmodel.n[1], axis=[1])
     #This should now be nTransitions 
