@@ -28,10 +28,14 @@ import tensorflow.keras as tfk
 
 if len(sys.argv) > 3 and sys.argv[3] in ['test','testsmall', 'testmid']:
     run_eagerly = True
-    tf.config.run_functions_eagerly(run_eagerly)
     if len(sys.argv) > 4 and sys.argv[4] == 'actual':
         run_eagerly = False
-        tf.config.run_functions_eagerly(run_eagerly)
+if len(sys.argv) > 5 and sys.argv[5] in ['eager']:
+    run_eagerly = True
+elif len(sys.argv) > 5 and sys.argv[5] in ['noteager']:
+    run_eagerly = False
+
+tf.config.run_functions_eagerly(run_eagerly)
     
 print("Running with eager execution:",run_eagerly)
 
