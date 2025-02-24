@@ -559,11 +559,13 @@ def compute_transition_pointwise_measure_section(HFmodel, points, weights=None, 
         # Remove zero elements
         all_t_loss = tf.reshape(all_t_loss, (-1))
         nonzero_mask = tf.math.not_equal(all_t_loss, 0.)
-        all_t_loss = tf.boolean_mask(all_t_loss, nonzero_mask)
-
-        # Reshape and sum over transitions
+        # Reshape first, then mask and reduce
         bsize = tf.shape(points)[0]
         all_t_loss = tf.reshape(all_t_loss, (bsize, -1))
+        nonzero_mask = tf.reshape(nonzero_mask, (bsize, -1))
+        
+        # Zero out masked values instead of removing them
+        all_t_loss = tf.where(nonzero_mask, all_t_loss, tf.zeros_like(all_t_loss))
         all_t_loss = tf.reduce_sum(all_t_loss, axis=1)
 
         # Calculate standard deviation for normalization
@@ -574,11 +576,12 @@ def compute_transition_pointwise_measure_section(HFmodel, points, weights=None, 
         if weights is not None:
             weights = weights/tf.reduce_mean(weights)
             weights = tf.repeat(weights, HFmodel.nTransitions)
-            weights = tf.boolean_mask(weights, nonzero_mask)
+            weights = tf.reshape(weights, (bsize, -1))
+            weights = tf.where(nonzero_mask, weights, tf.zeros_like(weights))
+            weights = tf.reduce_sum(weights, axis=1)
             all_t_loss = all_t_loss * weights
         
         meanoverstddev = tf.reduce_mean(all_t_loss)/stddev
-        
         return meanoverstddev, all_t_loss/stddev
 
     
