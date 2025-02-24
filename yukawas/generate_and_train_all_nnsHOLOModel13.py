@@ -1146,18 +1146,16 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    #print(perm.print_diff())
    print("-----CHECKS------")
    averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("average transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs))
+   print("average transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs.numpy()))
    transition_loss = compute_transition_loss_for_corrected_HF_model(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("transition loss: " + str(tf.reduce_mean(transition_loss)))
+   print("transition loss: " + str(tf.reduce_mean(transition_loss).numpy()))
    transition_loss_zero = compute_transition_loss_for_corrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2] )
-   print("transition loss for zero network: " + str(tf.reduce_mean(transition_loss_zero)))
+   print("transition loss for zero network: " + str(tf.reduce_mean(transition_loss_zero).numpy()))
    
    transition_loss_for_uncorrected_HF = compute_transition_loss_for_uncorrected_HF_model(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("transition loss for uncorrected HF: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF)))
+   print("transition loss for uncorrected HF: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF).numpy()))
    transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero)))
-
-
+   print("transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()))
 
 
    import time
@@ -1353,7 +1351,7 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,function
    import time
    print("computing mean failure to solve equation", time.strftime("%H:%M:%S", time.localtime()))
    meanfailuretosolveequation,_,_ = HYM_measure_val_with_H(HFmodel,dataHF)
-   meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation)
+   meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation).numpy().item()
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model)
    print("trained coclosure divided by norm of v: " + str(TrainedDivTrained))

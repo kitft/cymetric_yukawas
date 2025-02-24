@@ -510,12 +510,12 @@ def HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF,HYMmetric_model,metri
     print('average mean of trained one form: ',tf.reduce_mean(tf.math.abs(trained_one_form_conj_times_metric)))
     print('average mean of FS one form: ',tf.reduce_mean(tf.math.abs(FS_one_form_conj_times_metric)))
     
-    TrainedDivTrained = tf.reduce_mean(tf.math.abs(coclosuretrained)/trained_one_form_conj_times_metric)
-    avgavagTrainedDivTrained = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(trained_one_form_conj_times_metric)
-    TrainedDivFS = tf.reduce_mean(tf.math.abs(coclosuretrained)/FS_one_form_conj_times_metric)
-    avgavagTrainedDivFS = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(FS_one_form_conj_times_metric)
-    FS_DivFS = tf.reduce_mean(tf.math.abs(coclosureofvFS)/FS_one_form_conj_times_metric)
-    avgavagFS_DivFS = tf.reduce_mean(tf.math.abs(coclosureofvFS))/tf.reduce_mean(FS_one_form_conj_times_metric)
+    TrainedDivTrained = tf.reduce_mean(tf.math.abs(coclosuretrained)/trained_one_form_conj_times_metric).numpy().item()
+    avgavagTrainedDivTrained = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(trained_one_form_conj_times_metric).numpy().item()
+    TrainedDivFS = tf.reduce_mean(tf.math.abs(coclosuretrained)/FS_one_form_conj_times_metric).numpy().item()
+    avgavagTrainedDivFS = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(FS_one_form_conj_times_metric).numpy().item()
+    FS_DivFS = tf.reduce_mean(tf.math.abs(coclosureofvFS)/FS_one_form_conj_times_metric).numpy().item()
+    avgavagFS_DivFS = tf.reduce_mean(tf.math.abs(coclosureofvFS))/tf.reduce_mean(FS_one_form_conj_times_metric).numpy().item()
     #print("check this is tiny: ",tf.math.reduce_std(coclosureofjustdsigma/(laplacianvals)))
     return TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS
 
