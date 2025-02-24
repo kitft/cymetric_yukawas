@@ -27,7 +27,7 @@ import tensorflow as tf
 import tensorflow.keras as tfk
 
 if len(sys.argv) > 3 and sys.argv[3] in ['test','testsmall', 'testmid']:
-    run_eagerly = True
+    run_eagerly = False
     if len(sys.argv) > 4 and sys.argv[4] == 'actual':
         run_eagerly = False
 if len(sys.argv) > 5 and sys.argv[5] in ['eager']:
@@ -236,10 +236,19 @@ if len(sys.argv) > 4 and str(sys.argv[4]) == 'skipall':
     skip_measuresPhi=True
     skip_measuresBeta=True
     skip_measuresHF=True
+elif len(sys.argv) > 4 and str(sys.argv[4]) == 'skipnone':
+    skip_measuresPhi=False
+    skip_measuresBeta=False
+    skip_measuresHF=False
+    print("Requested to skip none of the measures")
 else:
+    print("Requested to skip some of the measures")
     skip_measuresPhi=True
     skip_measuresBeta=True
     skip_measuresHF=False
+
+print(f"Skipping measures? phi? {skip_measuresPhi}, beta? {skip_measuresBeta}, HF? {skip_measuresHF}")
+
     #skip_measuresHF
 
 force_generate_phi=False
