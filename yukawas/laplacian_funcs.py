@@ -516,7 +516,6 @@ def HYM_measure_val_with_H_for_batching(HFmodel, X_val, y_val, val_pullbacks, in
 def compute_transition_pointwise_measure_section(HFmodel, points, weights=None, only_inside_belt=False):
         r"""Computes transition loss at each point. In the case of the harmonic form model, we demand that the section transforms as a section of the line bundle to which it belongs. \phi(\lambda^q_i z_i)=\phi(z_i)
         also can separately check that the 1-form itHFmodel transforms appropriately?
-
         Args:
             points (tf.tensor([bSize, 2*ncoords], real_dtype)): Points.
 
@@ -538,37 +537,49 @@ def compute_transition_pointwise_measure_section(HFmodel, points, weights=None, 
         other_patches = tf.reshape(other_patches, (-1, HFmodel.nProjective))
         other_patch_mask = HFmodel._indices_to_mask(other_patches)
         # NOTE: This will include same to same patch transitions
-        exp_points = tf.repeat(cpoints, HFmodel.nTransitions, axis=-2)#expanded points
+        exp_points = tf.repeat(cpoints, HFmodel.nTransitions, axis=-2) # expanded points
         patch_points = HFmodel._get_patch_coordinates(exp_points, tf.cast(other_patch_mask, dtype=tf.bool)) # other patches
         real_patch_points = tf.concat((tf.math.real(patch_points), tf.math.imag(patch_points)), axis=-1)
         sigmaj = HFmodel(real_patch_points, training=True)
         sigmai = tf.repeat(HFmodel(points), HFmodel.nTransitions, axis=0)
-        # this takes (1,z1,1,z2,1,z3,1,z4), picks out the ones we want to set to 1 - i.e. z1,z2,z3,z4 for the (1,1,1,1) patch,
-        # and returns z1^k1 x z2^k2 etc... It therefore should multiply the w!
-        transformation,weights_for_belt=HFmodel.get_section_transition_to_patch_mask(exp_points,other_patch_mask, return_weights_for_belt=only_inside_belt) 
+        
+        # Get transition factors between patches
+        transformation, weights_for_belt = HFmodel.get_section_transition_to_patch_mask(
+            exp_points, 
+            other_patch_mask,
+            return_weights_for_belt=only_inside_belt
+        )
+
+        # Calculate transition loss
         if only_inside_belt:
-            all_t_loss = tf.math.abs(sigmai-transformation*sigmaj)*weights_for_belt
+            all_t_loss = tf.math.abs(sigmai - transformation*sigmaj) * weights_for_belt
         else:
-            all_t_loss = tf.math.abs(sigmai-transformation*sigmaj)
+            all_t_loss = tf.math.abs(sigmai - transformation*sigmaj)
+
+        # Remove zero elements
         all_t_loss = tf.reshape(all_t_loss, (-1))
-        #delete elements of all_t_loss that are zero
-        indices = tf.math.not_equal(all_t_loss, 0.)
+        nonzero_mask = tf.math.not_equal(all_t_loss, 0.)
+        all_t_loss = tf.boolean_mask(all_t_loss, nonzero_mask)
 
-        # use boolean mask to remove zero elements
-        all_t_loss = tf.boolean_mask(all_t_loss, indices)
+        # Reshape and sum over transitions
+        bsize = tf.shape(points)[0]
+        all_t_loss = tf.reshape(all_t_loss, (bsize, -1))
+        all_t_loss = tf.reduce_sum(all_t_loss, axis=1)
 
-        # evaluate HFmodel on points, this returns sigma, complexified
-        evalmodelonpoints=HFmodel(points)
-        #stdev returns a real number from complex arguments
+        # Calculate standard deviation for normalization
+        evalmodelonpoints = HFmodel(points)
         stddev = tf.math.reduce_std(evalmodelonpoints)
+
+        # Apply weights if provided
         if weights is not None:
             weights = weights/tf.reduce_mean(weights)
-            all_t_loss = all_t_loss*weights
+            weights = tf.repeat(weights, HFmodel.nTransitions)
+            weights = tf.boolean_mask(weights, nonzero_mask)
+            all_t_loss = all_t_loss * weights
         
-        meanoverstddev=tf.reduce_mean(all_t_loss)/stddev
+        meanoverstddev = tf.reduce_mean(all_t_loss)/stddev
         
-
-        return meanoverstddev,all_t_loss/stddev
+        return meanoverstddev, all_t_loss/stddev
 
     
 
