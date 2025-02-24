@@ -27,9 +27,13 @@ import tensorflow as tf
 import tensorflow.keras as tfk
 
 if len(sys.argv) > 3 and sys.argv[3] in ['test','testsmall', 'testmid']:
-    tf.config.run_functions_eagerly(True)
+    run_eagerly = True
+    tf.config.run_functions_eagerly(run_eagerly)
     if len(sys.argv) > 4 and sys.argv[4] == 'actual':
-        tf.config.run_functions_eagerly(False)
+        run_eagerly = False
+        tf.config.run_functions_eagerly(run_eagerly)
+    
+print("Running with eager execution:",run_eagerly)
 
 from cymetric.config import real_dtype, complex_dtype, set_double_precision
 set_double_precision(False)
@@ -646,7 +650,7 @@ if __name__ ==  '__main__':
 
         print("Compute holomorphic Yukawas")
         #consider omega normalisation
-        omega = batch_process_helper_func(pg.holomorphic_volume_form, [pointsComplex], batch_indices=[0], batch_size=100000)
+        omega = tf.cast(batch_process_helper_func(pg.holomorphic_volume_form, [pointsComplex], batch_indices=[0], batch_size=100000),complex_dtype)
         #put the omega here, not the omegabar
         omega_normalised_to_one=omega/tf.cast(np.sqrt(volCY_from_Om),complex_dtype) # this is the omega that's normalised to 1. VERIFIED yes.
 
