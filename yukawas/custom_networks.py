@@ -1921,7 +1921,7 @@ class BiholoModelFuncGENERALforSigma2_m13(tf.keras.Model):
         to_multiply_sections_complex= tf.complex(to_multiply_sections_real[:,:self.nsections],to_multiply_sections_real[:,self.nsections:])
         #tf.print(to_multiply_sections_complex.shape)#should remove this - why so big?
         #return to_multiply_sections_complex[:,0]
-        to_multiply_sections_complex = tf.ones_like(to_multiply_sections_complex) if not self.use_zero_network else tf.zeros_like(to_multiply_sections_complex)
+        to_multiply_sections_complex = 0.1*tf.ones_like(to_multiply_sections_complex) if not self.use_zero_network else tf.zeros_like(to_multiply_sections_complex)
         out=tf.einsum('xi,xi->x',sectionsbasis,to_multiply_sections_complex)
         return out
     
