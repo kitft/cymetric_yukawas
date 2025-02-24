@@ -285,69 +285,55 @@ class BetaModel(FSModel):
             3. The conditionals need to be set before tracing. 
             
             4. We employ under the hood gradient clipping.
-
         Args:
             data (tuple): test_data (x,y, sample_weight)
 
         Returns:
             dict: metrics
         """
-        # if len(data) == 3:
-        #     x, sample_weight = data
-        # else:
-        #     sample_weight = None
-        #     x, aux = dataX_train, y_train, train_pullback,inv_mets_train,sources_train
+        # Unpack data from the dataset
         x = data["X_train"]
-        y = None
-        y_pred=None
-        # print("hi")
-        # print(x.shape)
-        # print(len(x))
-        # The 'y_train/val' arrays contain the integration weights and $\\Omega \\wedge \\bar\\Omega$ for each point. In principle, they can be used for any relevant pointwise information that could be needed during the training process."
-
-        sample_weight = data["y_train"][:, -2]/tf.reduce_mean(data["y_train"][:, -2]) #normalise to mean 1
+        sample_weight = data["y_train"][:, -2]/tf.reduce_mean(data["y_train"][:, -2]) # normalize to mean 1
         pbs = data["train_pullbacks"]
         invmets = data["inv_mets_train"]
         sources = data["sources_train"]
-        #x,sample_weight, pbs, invmets, sources = data#.values()
-        # print("help")
-        # print(type(data))
-        # print(type(data.values()))
-        # print(data)
-        # print("hi")
-        # print(list(x))
+        
+        # Use gradient tape to track operations for automatic differentiation
         with tf.GradientTape(persistent=False) as tape:
             trainable_vars = self.model.trainable_variables
-            #tape.watch(trainable_vars)
-            #automatically watch trainable vars
-            # add other loss contributions.
+            
+            # Calculate losses based on enabled learning components
             if self.learn_transition:
                 t_loss = self.compute_transition_loss(x)
             else:
                 t_loss = tf.zeros_like(x[:, 0])
+                
             if self.learn_laplacian:
-                lpl_loss = self.compute_laplacian_loss(x,pbs,invmets,sources)
-                #print("lpl beta")
+                lpl_loss = self.compute_laplacian_loss(x, pbs, invmets, sources)
             else:
                 lpl_loss = tf.zeros_like(x[:, 0])
 
-            #omega = tf.expand_dims(y[:, -1], -1)
-            #sigma_loss_cont = self.sigma_loss(omega, y_pred)**self.n[0]
-            total_loss = self.alpha[0]*lpl_loss +\
-                self.alpha[1]*t_loss 
-            # weight the loss.
+            # Combine losses with their respective weights
+            total_loss = self.alpha[0] * lpl_loss + self.alpha[1] * t_loss
+            
+            # Apply sample weights if provided
             if sample_weight is not None:
                 total_loss *= sample_weight
-            total_loss_mean=tf.reduce_mean(total_loss)
+                
+            # Calculate mean loss for gradient computation
+            total_loss_mean = tf.reduce_mean(total_loss)
+            
         # Compute gradients
         gradients = tape.gradient(total_loss_mean, trainable_vars)
-        # remove nans and gradient clipping from transition loss.
+        
+        # Handle NaN gradients and apply gradient clipping
         for g, var in zip(gradients, trainable_vars):
             if g is None:
                 print(f"None gradient for variable: {var.name}")
         gradients = [tf.where(tf.math.is_nan(g), 1e-8, g) for g in gradients]
         gradients, _ = tf.clip_by_global_norm(gradients, self.gclipping)
-        # Update weights
+        
+        # Update weights using optimizer
         self.optimizer.apply_gradients(zip(gradients, trainable_vars))
         # Return metrics. NOTE: This interacts badly with any regular MSE
         # compiled loss. Make it so that only custom metrics are updated?
@@ -604,87 +590,69 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
 
     #batch to make more neat
     mets = batch_process_helper_func(metricModel, (realpoints,), batch_indices=(0,), batch_size=10000)
-
     absdets = tf.abs(tf.linalg.det(mets))
-    inv_mets=tf.linalg.inv(mets)
-    inv_mets_train=inv_mets[:t_i]
-    inv_mets_val=inv_mets[t_i:]
-    #linebundleindicea=tf.convert_to_tensor(np.ones_like(kmoduli))
-    #J_abbar = -ig_abbar
-    #2jnp.pi*(kJ) is F, but J = -ig so it works out. Neecd to pull back
-    #linebundleforHYM=np.array([-4,2,-2,-1])
-    F_forsource = -1*(2*np.pi/1j)*(1j/2)*point_gen.fubini_study_metrics(points, vol_js=linebundleforHYM)#F_FSab = - 2 pi i  k J, and Jab = i/2g? No, that isn't true... J = ig???. In the end, we want F = -k_i/kappa_i^2, so it should be -1 for the ^(-k), then (pi/i) to counteract the J, then i to convert from g to J..
-    F_forsource_pb= tf.einsum('xai,xij,xbj->xab', pullbacks, F_forsource, tf.math.conj(pullbacks))
+    inv_mets = tf.linalg.inv(mets)
+    inv_mets_train = inv_mets[:t_i]
+    inv_mets_val = inv_mets[t_i:]
+    
+    # Calculate Fubini-Study metrics for HYM line bundle
+    F_forsource = -1*(2*np.pi/1j)*(1j/2)*point_gen.fubini_study_metrics(points, vol_js=linebundleforHYM)
+    F_forsource_pb = tf.einsum('xai,xij,xbj->xab', pullbacks, F_forsource, tf.math.conj(pullbacks))
 
-    FS_metric_pb = tf.einsum('xai,xij,xbj->xab', pullbacks, point_gen.fubini_study_metrics(points, vol_js=point_gen.kmoduli), np.conj(pullbacks))
-    FSmetricdets=tf.abs(tf.linalg.det(FS_metric_pb))
+    # Calculate Fubini-Study metrics for Kähler moduli
+    FS_metric_pb = tf.einsum('xai,xij,xbj->xab', pullbacks, point_gen.fubini_study_metrics(points, vol_js=point_gen.kmoduli), tf.math.conj(pullbacks))
+    FSmetricdets = tf.abs(tf.linalg.det(FS_metric_pb))
     FSmetricinv = tf.linalg.inv(FS_metric_pb)
-    #print(tf.shape(fs_ref))
     
-    #sourcesCY= tf.cast((1/2)*tf.einsum('xba,xab->x',inv_mets, F_forsource_pb),complex_dtype)# why the factor of 2???
-    sourcesCY= tf.cast(tf.einsum('xba,xab->x',tf.cast(inv_mets,complex_dtype), tf.cast(F_forsource_pb,complex_dtype)),complex_dtype)# why the factor of 2???
-    sources_train=tf.cast(sourcesCY[:t_i],complex_dtype)
-    sources_val=tf.cast(sourcesCY[t_i:],complex_dtype)
+    # Calculate sourcesCY as complex first to ensure numerical precision
+    sourcesCY_complex = tf.einsum('xba,xab->x', tf.cast(inv_mets, complex_dtype), tf.cast(F_forsource_pb, complex_dtype))
+    # Check if imaginary part exceeds numerical precision threshold
+    imag_part = tf.abs(tf.math.imag(sourcesCY_complex))
+    tf.debugging.assert_less(imag_part, 1e-5, message="Error: Imaginary component exceeds numerical precision")
+    # Convert to real if safe
+    sourcesCY = tf.cast(tf.math.real(sourcesCY_complex), real_dtype)
     
+    sources_train = sourcesCY[:t_i]
+    sources_val = sourcesCY[t_i:]
     
     print("check slope: isec, FSmetric, CYomega,CYdirect") 
-    print(tf.einsum('abc,a,b,c',BASIS["INTNUMS"],point_gen.kmoduli,point_gen.kmoduli,linebundleforHYM))
-    #print(weights[:,0])
-    #print(sources.shape)
-    #print((weights*sources).shape)
-    #g = phimodel(points)
-
-    # use gamma series
-    det = tf.math.real(absdets)  # * factorial / (2**nfold)
-    #print("hi")
+    print(tf.einsum('abc,a,b,c', BASIS["INTNUMS"], point_gen.kmoduli, point_gen.kmoduli, linebundleforHYM))
+    
+    # Calculate volume metrics
+    det = tf.cast(tf.math.real(absdets), real_dtype)
     det_over_omega = det / omega[:,0]
-    #print("hi")
-    volume_cy = tf.math.reduce_mean(weights[:,0], axis=-1)# according to raw CY omega calculation and sampling...
-    #print("hi")
+    volume_cy = tf.math.reduce_mean(weights[:,0], axis=-1)  # according to raw CY omega calculation and sampling
     vol_k = tf.math.reduce_mean(det_over_omega * weights[:,0], axis=-1)
-    #print("hi")
-    kappaover6 = tf.cast(vol_k,real_dtype) / tf.cast(volume_cy,real_dtype)
-    #rint(ratio)
-    #print("hi")
-    tf.cast(kappaover6,real_dtype)
-    weightscomp=tf.cast(weights[:,0],complex_dtype)
-    #print("hi")
-    det = tf.cast(det,real_dtype)
+    kappaover6 = tf.cast(vol_k, real_dtype) / tf.cast(volume_cy, real_dtype)
+    
+    # Ensure consistent dtype
+    kappaover6 = tf.cast(kappaover6, real_dtype)
+    weightscomp = tf.cast(weights[:,0], complex_dtype)
+    
     print('kappa over 6 ')
     print(kappaover6)
-    #print(norm_fac)
-    #print(norm_fac)
-    #slopefromvolCYrhoCY=(2/np.pi)*(1/(ratio))*tf.math.real(tf.reduce_mean(weightscomp*sourcesCY, axis=-1))
-    volfromCY=tf.math.real(tf.reduce_mean(weightscomp, axis=-1))*kappaover6
-    slopefromvolCYrhoCY=(1/6)*(2/np.pi)*tf.math.real(tf.reduce_mean(weightscomp*sourcesCY, axis=-1))*kappaover6
-    # slopeCY2=(2/np.pi)*tf.reduce_mean((omega.flatten() / weights.flatten())* weights.flatten() *sourcesCY, axis=-1)
-    print("CY volume and slope: " +str(volfromCY)+" and " + str(slopefromvolCYrhoCY))# this is just the integrate source
-    integratedabsolutesource=(1/6)*(2/np.pi)*tf.math.real(tf.reduce_mean(weights[:,0]*tf.math.abs(sourcesCY), axis=-1))*kappaover6
+    
+    # Calculate volumes and slopes
+    volfromCY = tf.math.real(tf.reduce_mean(weightscomp, axis=-1)) * kappaover6
+    slopefromvolCYrhoCY = (1/6) * (2/np.pi) * tf.math.real(tf.reduce_mean(weightscomp * sourcesCY, axis=-1)) * kappaover6
+    print("CY volume and slope: " + str(volfromCY) + " and " + str(slopefromvolCYrhoCY))
+    
+    integratedabsolutesource = (1/6) * (2/np.pi) * tf.math.real(tf.reduce_mean(weights[:,0] * tf.math.abs(sourcesCY), axis=-1)) * kappaover6
     print("Integrated slope but with absolute val: " + str(integratedabsolutesource))
-    # print(slopeCY2)
-    #xba as the inverse has bbar first then 
-    #print(FSmetricinv.shape)
-    #print(fs_forsource.shape)
-    #sourceFS=(1/2)*tf.einsum('xba,xab->x',FSmetricinv,F_forsource_pb)# again why the factor of 2?
-    sourceFS=tf.cast(-tf.einsum('xba,xab->x',FSmetricinv,F_forsource_pb),real_dtype)# again why the factor of 2?
-    #print(FSmetricdets[0:3])
-    #slopefromvolFSrhoFS=(2/np.pi)*(1/(6*ratio))*tf.reduce_mean((weights[:,0]/det)* tf.cast(FSmetricdets,real_dtype) *sourceFS, axis=-1)
-    #print('reduce')
-    #print(tf.reduce_mean(tf.linalg.det(FS_metric_pb)))
-    #slopefromvolFSrhoFS=(2/np.pi)*tf.reduce_mean((weights[:,0]/omega[:,0])* tf.cast(FSmetricdets,real_dtype) *sourceFS, axis=-1)/vol_k #vol_k is the actual CY volume.
-    #slopefromvolFSrhoFS=(1/((3/2) * np.pi))*(2/np.pi)*(6*norm_fac*kappaover6)*tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,real_dtype)/omega[:,0])*sourceFS , axis=-1)#vol_k is the actual CY volume.
-    slopefromvolFSrhoFS=(1/6)*(2/np.pi)*tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,real_dtype)/omega[:,0])*sourceFS , axis=-1)#vol_k is the actual CY volume.
-    #volfromFSmetric=tf.reduce_mean((weights[:,0]/omega[:,0])* tf.cast(FSmetricdets,real_dtype) , axis=-1)/vol_k #vol_k is the actual CY volume.
-    #volfromFSmetric=(6*norm_fac*kappaover6)*tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,real_dtype)/omega[:,0]) , axis=-1) #vol_k is the actual CY volume.
-    volfromFSmetric=tf.reduce_mean(weights[:,0]*(tf.cast(FSmetricdets,real_dtype)/omega[:,0]) , axis=-1) #vol_k is the actual CY volume.
+    
+    # Calculate FS metrics
+    sourceFS = tf.cast(-tf.einsum('xba,xab->x', FSmetricinv, F_forsource_pb), real_dtype)
+    slopefromvolFSrhoFS = (1/6) * (2/np.pi) * tf.reduce_mean(weights[:,0] * (tf.cast(FSmetricdets, real_dtype) / omega[:,0]) * sourceFS, axis=-1)
+    volfromFSmetric = tf.reduce_mean(weights[:,0] * (tf.cast(FSmetricdets, real_dtype) / omega[:,0]), axis=-1)
     print('FS vol and slope: ' + str(volfromFSmetric) + " " + str(slopefromvolFSrhoFS))
-    #print(tf.reduce_mean(weights[:,0], axis=-1))
+    
+    # Calculate effective sample size and error
     ess = tf.square(tf.reduce_sum(weights[:,0])) / tf.reduce_sum(tf.square(weights[:,0]))
     error = 1/tf.sqrt(ess)
     print("ESS: ", ess)
     print("error: ", error)
     
-    # save everything to compressed dict.
+    # Save everything to compressed dict
     np.savez_compressed(os.path.join(dirname, 'dataset'),
                         X_train=X_train,
                         y_train=y_train,
@@ -698,7 +666,7 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
                         sources_val=sources_val
                         )
     print("print 'kappa/6'")
-    return kappaover6#point_gen.compute_kappa(points, weights, omega)
+    return kappaover6  # point_gen.compute_kappa(points, weights, omega)
 
 
 def train_modelbeta(betamodel, data_train, optimizer=None, epochs=50, batch_sizes=[64, 10000],

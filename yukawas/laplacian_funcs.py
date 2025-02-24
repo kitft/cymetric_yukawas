@@ -14,6 +14,20 @@ def point_vec_to_complex(p):
 
 @tf.function
 def laplacian(betamodel,points,pullbacks,invmetrics):
+    r"""Computes the Laplacian of a real function on a complex manifold.
+    
+    Calculates ∇²φ = g^(ab̄) ∂_a ∂_b̄ φ, where g^(ab̄) is the inverse metric,
+    and φ is the output of the betamodel.
+    
+    Args:
+        betamodel (BetaModel): Model that outputs the function φ.
+        points (tf.tensor([bSize, 2*ncoords], real_dtype)): Points in real coordinates.
+        pullbacks (tf.tensor([bSize, nfold, ncoords], complex_dtype)): Pullback matrices.
+        invmetrics (tf.tensor([bSize, nfold, nfold], complex_dtype)): Inverse metric tensors.
+        
+    Returns:
+        tf.tensor([bSize], real_dtype): Laplacian of φ at each point.
+    """
     ncoords = tf.shape(points[0])[-1] // 2 
     with tf.GradientTape(persistent=False) as tape1:#why persistent?
         tape1.watch(points)
@@ -48,7 +62,17 @@ def laplacian(betamodel,points,pullbacks,invmetrics):
     #factor of 2 because the laplacian is 2g^ab da db 2gCY∂a∂ ̄b,. pb_dd_phi_Pbbar is just
     #no, ditch the factor of two!
     gdd_phi = tf.einsum('xba,xai,xji,xbj->x', invmetrics,pullbacks, dd_phi, tf.math.conj(pullbacks))
-    return gdd_phi
+    # Check if the Laplacian has a large imaginary part when not compiled
+    if not tf.executing_eagerly():
+        return tf.cast(tf.math.real(gdd_phi), real_dtype)
+    
+    # Check if imaginary part is significant
+    imag_part = tf.math.imag(gdd_phi)
+    real_part = tf.math.real(gdd_phi)
+    
+    if tf.reduce_max(tf.abs(imag_part)) > 1e-6 * tf.reduce_max(tf.abs(real_part)):
+        tf.print("Warning: Significant imaginary component in Laplacian")
+    return tf.cast(tf.math.real(gdd_phi), real_dtype)
 
 
 #@tf.function
