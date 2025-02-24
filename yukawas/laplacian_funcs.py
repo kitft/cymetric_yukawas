@@ -457,27 +457,35 @@ def HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF,HYMmetric_model,metri
     laplacianvals=laplacianWithH(HFmodel,pts,dataHF['val_pullbacks'],dataHF['inv_mets_val'],HFmodel.HYMmetric)
     coclosuretrained=coclosure_check(pts,HFmodel.HYMmetric,HFmodel.functionforbaseharmonicform_jbar,HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'])
     coclosureofjustdsigma=coclosure_check(pts,HFmodel.HYMmetric,lambda x: 0*HFmodel.functionforbaseharmonicform_jbar(x),HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'])
+    coclosureofFSdirect=coclosure_check(pts,HFmodel.HYMmetric,HFmodel.functionforbaseharmonicform_jbar,lambda x: tf.ones(x.shape[0],dtype=complex_dtype),dataHF['inv_mets_val'],dataHF['val_pullbacks'])
     coclosureofvFS = coclosuretrained-coclosureofjustdsigma # by linearity
     averageoftraineddivaverageofvFS = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(tf.math.abs(coclosureofvFS))
     traineddivaverageofvFS = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(tf.math.abs(coclosureofvFS))
 
     trained_one_form = HFmodel.corrected_harmonicform(pts)
     trained_one_form_conj = tf.math.conj(trained_one_form)
-    untrain_one_form = HFmodel.uncorrected_FS_harmonicform(pts)
-    untrain_one_form_conj = tf.math.conj(untrain_one_form)
+    FS_one_form = HFmodel.uncorrected_FS_harmonicform(pts)
+    FS_one_form_conj = tf.math.conj(FS_one_form)
     HYMmetric_pts  = tf.cast(HYMmetric_model(pts),complex_dtype)
-    untrained_HYMmetric_pts = tf.cast(HYMmetric_model.raw_FS_HYM_r(untrain_one_form),complex_dtype)
+    FS_HYMmetric_pts = tf.cast(HYMmetric_model.raw_FS_HYM_r(pts),complex_dtype)
     trained_inv_metric = tf.linalg.inv(metric_model(pts))
-    untrained_inv_metric = tf.linalg.inv(metric_model.fubini_study_pb(pts))
+    FS_inv_metric = tf.linalg.inv(metric_model.fubini_study_pb(pts))
     
-    trained_one_form_conj_times_metric = tf.math.sqrt(tf.einsum('x,xBa,xa,xB->x',HYMmetric_pts,trained_inv_metric,trained_one_form_conj,trained_one_form))#trained is bbar indices
-    untrained_one_form_conj_times_metric = tf.math.sqrt(tf.einsum('x,xBa,xa,xB->x',untrained_HYMmetric_pts,untrained_inv_metric,untrain_one_form_conj,untrain_one_form))#untrained is b indices
+    trained_one_form_conj_times_metric = tf.math.sqrt(tf.math.abs(tf.einsum('x,xBa,xa,xB->x',HYMmetric_pts,trained_inv_metric,trained_one_form_conj,trained_one_form)))#trained is bbar indices
+    FS_one_form_conj_times_metric = tf.math.sqrt(tf.math.abs(tf.einsum('x,xBa,xa,xB->x',FS_HYMmetric_pts,FS_inv_metric,FS_one_form_conj,FS_one_form)))#untrained is b indices
+    print('average mean of trained coclosure: ',tf.reduce_mean(tf.math.abs(coclosuretrained)))
+    print('average mean of FS coclosure: ',tf.reduce_mean(tf.math.abs(coclosureofvFS)), 'coclosure of FS direct: ',tf.reduce_mean(tf.math.abs(coclosureofFSdirect)))
+    print('average mean of trained one form: ',tf.reduce_mean(tf.math.abs(trained_one_form_conj_times_metric)))
+    print('average mean of FS one form: ',tf.reduce_mean(tf.math.abs(FS_one_form_conj_times_metric)))
     
-    
-    absAvgDivTrained = tf.reduce_mean(tf.math.abs(trained_one_form_conj_times_metric)/untrained_one_form_conj_times_metric)
-    absAvgDivUntrained = tf.reduce_mean(tf.math.abs(untrained_one_form_conj_times_metric)/trained_one_form_conj_times_metric)
+    TrainedDivTrained = tf.reduce_mean(tf.math.abs(coclosuretrained)/trained_one_form_conj_times_metric)
+    avgavagTrainedDivTrained = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(trained_one_form_conj_times_metric)
+    TrainedDivFS = tf.reduce_mean(tf.math.abs(coclosuretrained)/FS_one_form_conj_times_metric)
+    avgavagTrainedDivFS = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(FS_one_form_conj_times_metric)
+    FS_DivFS = tf.reduce_mean(tf.math.abs(coclosureofvFS)/FS_one_form_conj_times_metric)
+    avgavagFS_DivFS = tf.reduce_mean(tf.math.abs(coclosureofvFS))/tf.reduce_mean(FS_one_form_conj_times_metric)
     #print("check this is tiny: ",tf.math.reduce_std(coclosureofjustdsigma/(laplacianvals)))
-    return absAvgDivTrained, absAvgDivUntrained
+    return TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS
 
 def HYM_measure_val_with_H_for_batching(HFmodel, X_val, y_val, val_pullbacks, inv_mets_val):
     #returns ratio means of deldagger V_corrected/deldagger V_FS

@@ -1175,9 +1175,13 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("time to do that: ",time.time()-start)
    print("\n\n")
-   absAvgDivTrained, absAvgDivUntrained = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model)
-   print("coclosure divided by norm of v: " + str(absAvgDivTrained))
-   print("coclosure divided by norm of v_FS: " + str(absAvgDivUntrained))
+   TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model)
+   print("trained coclosure divided by norm of v: " + str(TrainedDivTrained))
+   print("avg/avg trained coclosure divided by norm of trained v: " + str(avgavagTrainedDivTrained))
+   print("trained coclosure divided by norm of v_FS: " + str(TrainedDivFS))
+   print("avg/avg trained coclosure divided by norm of v_FS: " + str(avgavagTrainedDivFS))
+   print("FS coclosure divided by norm of v_FS: " + str(FS_DivFS))
+   print("avg/avg FS coclosure divided by norm of v_FS: " + str(avgavagFS_DivFS))
 
    tf.keras.backend.clear_session()
    del dataHF, dataHF_train, dataHF_val_dict,  dataHF_val,valfinal,valraw,valzero
@@ -1247,7 +1251,6 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,function
    activ=tf.keras.activations.gelu
    #else:
    #    activ=tf.square
-   print("activation: ",activ)
 
 
    #nn_HF = BiholoModelFuncGENERALforSigma2(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activ,stddev=stddev,final_layer_scale=final_layer_scale,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
@@ -1268,9 +1271,11 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,function
    activ = tf.square
    #load_func = BiholoModelFuncGENERALforSigma2_m13
    #load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log
+
    load_func = BiholoModelFuncGENERALforSigma2_m13
 
-
+   print("network arch:",load_func)
+   print("activation: ",activ)
    nn_HF = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activ,stddev=stddev,use_zero_network=False,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    nn_HF_zero  = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activ,stddev=stddev,use_zero_network=True,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    
@@ -1346,13 +1351,17 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,function
    #     batch_size=50
    # )
    import time
-   print("computing mean failure to solve equation", time.time())
+   print("computing mean failure to solve equation", time.strftime("%H:%M:%S", time.localtime()))
    meanfailuretosolveequation,_,_ = HYM_measure_val_with_H(HFmodel,dataHF)
    meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation)
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
-   absAvgDivTrained, absAvgDivUntrained = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model)
-   print("coclosure divided by norm of v: " + str(absAvgDivTrained))
-   print("coclosure divided by norm of v_FS: " + str(absAvgDivUntrained))
+   TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model)
+   print("trained coclosure divided by norm of v: " + str(TrainedDivTrained))
+   print("avg/avg trained coclosure divided by norm of trained v: " + str(avgavagTrainedDivTrained))
+   print("trained coclosure divided by norm of v_FS: " + str(TrainedDivFS))
+   print("avg/avg trained coclosure divided by norm of v_FS: " + str(avgavagTrainedDivFS))
+   print("FS coclosure divided by norm of v_FS: " + str(FS_DivFS))
+   print("avg/avg FS coclosure divided by norm of v_FS: " + str(avgavagFS_DivFS))
    print("\n\n")
    return HFmodel,training_historyHF, meanfailuretosolveequation
 
