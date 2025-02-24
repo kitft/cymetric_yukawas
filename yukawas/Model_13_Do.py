@@ -266,8 +266,8 @@ if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall']:
         nPointsHF = 100
         n_to_integrate = 100
     elif sys.argv[3] == 'testmid':
-        nPoints = 30000
-        nPointsHF = 30000
+        nPoints = 100000
+        nPointsHF = 100000
         n_to_integrate = 1000000
     else:
         nPoints = 300000
@@ -317,6 +317,7 @@ if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall']:
         return_random_HF_2 = False   
         
 print("Number of points: " + str(nPoints), "Number of points HF: " + str(nPointsHF), "Number of points to integrate: " + str(n_to_integrate))
+
 
 
 def delete_all_dicts_except(except_dict_name):
