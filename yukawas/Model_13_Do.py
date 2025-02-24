@@ -222,6 +222,7 @@ final_layer_scale_H33=0.01#0.01
 
 
 if len(sys.argv) > 4 and str(sys.argv[4]) == 'skipall':
+    print("Requested to skip all measures")
     skip_measuresPhi=True
     skip_measuresBeta=True
     skip_measuresHF=True
