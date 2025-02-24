@@ -266,9 +266,9 @@ if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall']:
         nPointsHF = 100
         n_to_integrate = 100
     elif sys.argv[3] == 'testmid':
-        nPoints = 100000
-        nPointsHF = 100000
-        n_to_integrate = 300000
+        nPoints = 30000
+        nPointsHF = 30000
+        n_to_integrate = 1000000
     else:
         nPoints = 300000
         nPointsHF = 300000
