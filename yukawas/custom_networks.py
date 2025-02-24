@@ -1884,18 +1884,18 @@ class BiholoModelFuncGENERALforSigma2_m13(tf.keras.Model):
         # self.layers_list2+=[tf.keras.layers.Dense(units=2*nsections, use_bias=False,kernel_initializer=final_layer_inits)]# add the extra free parameter after the log
         # # 
         print("2 for no good reason")
-        if nsections != layer_sizes[-1]:
+        if nsections*2 != layer_sizes[-1]:
             raise ValueError(f"nsections does not match layer_sizes[-1]: {nsections} != {layer_sizes[-1]}")
         self.layers_list = [tf.keras.layers.Dense(units=widths_out,activation=activation)
                             for widths_out in layer_sizes[1:-1]]#i.e. 0->1,1->2,... layer_sizes-2->layer_sizes-3->layer_sizes-2. so misses the last 1. this should be 1.
         #self.layers_list += [tf.keras.layers.Dense(units=2*layer_sizes[len(layer_sizes)-1],activation=activation)] # 2 for no good reason!!!!
-        self.layers_list+=[tf.keras.layers.Dense(units=2*nsections, use_bias=True)]
-        self.layers_list+=[tf.keras.layers.Dense(units=2*nsections, use_bias=False,kernel_initializer=final_layer_inits)]# add the extra free parameter after the log
+        self.layers_list+=[tf.keras.layers.Dense(units=layer_sizes[-1], use_bias=True)]
+        self.layers_list+=[tf.keras.layers.Dense(units=layer_sizes[-1], use_bias=False,kernel_initializer=final_layer_inits)]# add the extra free parameter after the log
 
         self.layers_list2 = [tf.keras.layers.Dense(units=widths_out,activation=activation)
                              for widths_out in layer_sizes[1:-1]]#i.e. 0->1,1->2,... layer_sizes-2->layer_sizes-3->layer_sizes-2. so misses the last 1. this should be 1.
-        self.layers_list2+=[tf.keras.layers.Dense(units=2*nsections, use_bias=False)]
-        self.layers_list2+=[tf.keras.layers.Dense(units=2*nsections, use_bias=False,kernel_initializer=final_layer_inits)]# add the extra free parameter after the log
+        self.layers_list2+=[tf.keras.layers.Dense(units=layer_sizes[-1], use_bias=False)]
+        self.layers_list2+=[tf.keras.layers.Dense(units=layer_sizes[-1], use_bias=False,kernel_initializer=final_layer_inits)]# add the extra free parameter after the log
         # 
 
         self.BASIS=BASIS
