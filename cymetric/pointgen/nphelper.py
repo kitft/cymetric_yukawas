@@ -75,35 +75,13 @@ def generate_monomials(n, deg):
                 yield (i,) + j
 
 
-def prepare_dataset(point_gen, n_p, dirname, val_split=0.1, ltails=0, rtails=0, normalize_to_vol_j=True):
-    r"""Prepares training and validation data from point_gen.
-
-    Note:
-        The dataset will be saved in `dirname/dataset.npz`.
-
-    Args:
-        point_gen (PointGenerator): Any point generator.
-        n_p (int): # of points.
-        dirname (str): dir name to save data.
-        val_split (float, optional): train-val split. Defaults to 0.1.
-        ltails (float, optional): Discarded % on the left tail of weight 
-            distribution.
-        rtails (float, optional): Discarded % on the left tail of weight 
-            distribution.
-        normalize_to_vol_j (bool, optional): Normalize such that
-
-            .. math::
-            
-                \int_X \det(g) = \sum_p \det(g) * w|_p  = d^{ijk} t_i t_j t_k
-
-            Defaults to True.
+def _prepare_dataset_for_batching(point_gen, batch_n_p, val_split, ltails, rtails, normalize_to_vol_j):
+    r"""Prepares a batch of training and validation data from point_gen.
 
     Returns:
-        np.float: kappa = vol_k / vol_cy
+        tuple: (points, weights, omega, X_train, y_train, X_val, y_val, val_pullbacks)
     """
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-    new_np = int(round(n_p/(1-ltails-rtails)))
+    new_np = int(round(batch_n_p/(1-ltails-rtails)))
     pwo = point_gen.generate_point_weights(new_np, omega=True)
     if len(pwo) < new_np:
         new_np = int((new_np-len(pwo))/len(pwo)*new_np + 100)
@@ -113,16 +91,15 @@ def prepare_dataset(point_gen, n_p, dirname, val_split=0.1, ltails=0, rtails=0, 
     sorted_weights = np.sort(pwo['weight'])
     lower_bound = sorted_weights[round(ltails*new_np)]
     upper_bound = sorted_weights[round((1-rtails)*new_np)-1]
-    mask = np.logical_and(pwo['weight'] >= lower_bound,
-                          pwo['weight'] <= upper_bound)
+    mask = np.logical_and(pwo['weight'] >= lower_bound, pwo['weight'] <= upper_bound)
     weights = np.expand_dims(pwo['weight'][mask], -1)
     omega = np.expand_dims(pwo['omega'][mask], -1)
     omega = np.real(omega * np.conj(omega))
     
-    new_np = len(weights)
-    t_i = int((1-val_split)*new_np)
+    n_mask = len(weights)
+    t_i = int((1-val_split)*n_mask)
     points = pwo['point'][mask]
-
+    
     if normalize_to_vol_j:
         pbs = point_gen.pullbacks(points)
         fs_ref = point_gen.fubini_study_metrics(points, vol_js=np.ones_like(point_gen.kmoduli))
@@ -136,16 +113,69 @@ def prepare_dataset(point_gen, n_p, dirname, val_split=0.1, ltails=0, rtails=0, 
     X_val = np.concatenate((points[t_i:].real, points[t_i:].imag), axis=-1)
     y_val = np.concatenate((weights[t_i:], omega[t_i:]), axis=1)
     val_pullbacks = point_gen.pullbacks(points[t_i:])
-    
-    # save everything to compressed dict.
+    return points, weights, omega, X_train, y_train, X_val, y_val, val_pullbacks
+
+
+def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltails=0, rtails=0, normalize_to_vol_j=True):
+    r"""Prepares training and validation data from point_gen in batches.
+
+    Note:
+        The dataset will be saved in `dirname/dataset.npz`.
+        Data is generated in batches to reduce memory usage.
+
+    Args:
+        point_gen (PointGenerator): Any point generator.
+        n_p (int): Total number of points.
+        dirname (str): Directory name to save data.
+        n_batches (int, optional): Number of batches to split the data generation.
+            Defaults to n_p//300000 (at least 1).
+        val_split (float, optional): Train-val split. Defaults to 0.1.
+        ltails (float, optional): Discarded % on the left tail of weight distribution.
+        rtails (float, optional): Discarded % on the right tail of weight distribution.
+        normalize_to_vol_j (bool, optional): Normalize such that
+            ∫_X det(g) = ∑_p det(g) * w|_p  = d^{ijk} t_i t_j t_k.
+            Defaults to True.
+
+    Returns:
+        np.float: kappa = vol_k / vol_cy computed from the combined data.
+    """
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+    if n_batches is None:
+        n_batches = n_p // 300000 if n_p // 300000 > 0 else 1
+    print('Generating points using: ', n_batches, ' batches')
+    base = n_p // n_batches
+    rem = n_p % n_batches
+    all_points, all_weights, all_omega = [], [], []
+    X_train_list, y_train_list = [], []
+    X_val_list, y_val_list, val_pb_list = [], [], []
+    for i in range(n_batches):
+        batch_n = base + (1 if i < rem else 0)
+        pts, w, om, X_tr, y_tr, X_v, y_v, val_pb = _prepare_dataset_for_batching(
+            point_gen, batch_n, val_split, ltails, rtails, normalize_to_vol_j)
+        all_points.append(pts)
+        all_weights.append(w)
+        all_omega.append(om)
+        X_train_list.append(X_tr)
+        y_train_list.append(y_tr)
+        X_val_list.append(X_v)
+        y_val_list.append(y_v)
+        val_pb_list.append(val_pb)
+    X_train = np.concatenate(X_train_list, axis=0)
+    y_train = np.concatenate(y_train_list, axis=0)
+    X_val = np.concatenate(X_val_list, axis=0)
+    y_val = np.concatenate(y_val_list, axis=0)
+    val_pullbacks = np.concatenate(val_pb_list, axis=0)
+    all_points = np.concatenate(all_points, axis=0)
+    all_weights = np.concatenate(all_weights, axis=0)
+    all_omega = np.concatenate(all_omega, axis=0)
     np.savez_compressed(os.path.join(dirname, 'dataset'),
                         X_train=X_train,
                         y_train=y_train,
                         X_val=X_val,
                         y_val=y_val,
-                        val_pullbacks=val_pullbacks
-                        )
-    return point_gen.compute_kappa(points, weights, omega)
+                        val_pullbacks=val_pullbacks)
+    return point_gen.compute_kappa(all_points, all_weights, all_omega)
 
 
 def prepare_basis(point_gen, dirname, kappa=1.):
