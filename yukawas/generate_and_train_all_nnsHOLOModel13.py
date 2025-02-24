@@ -1136,7 +1136,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
    import time
    start = time.time()
-   print("start time: ",start)
+   print("start time:", time.strftime("%H:%M:%S", time.localtime()))
    check_vals_again = closure_check(pts_check,HFmodel.functionforbaseharmonicform_jbar, HFmodel, pullbacks_check)
    print(time.time()-start)
    print("check1 again:",tf.reduce_mean(tf.math.abs(check_vals_again)))

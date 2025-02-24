@@ -513,7 +513,7 @@ def HYM_measure_val_with_H_for_batching(HFmodel, X_val, y_val, val_pullbacks, in
     #print("check this is tiny: ",tf.math.reduce_std(coclosureofjustdsigma/(laplacianvals)))
     return averageoftraineddivaverageofvFS#, traineddivaverageofvFS, tf.math.reduce_std(weights * coclosureofjustdsigma/laplacianvals)
 
-def compute_transition_pointwise_measure_section(HFmodel, points, weights=None):
+def compute_transition_pointwise_measure_section(HFmodel, points, weights=None, only_inside_belt=False):
         r"""Computes transition loss at each point. In the case of the harmonic form model, we demand that the section transforms as a section of the line bundle to which it belongs. \phi(\lambda^q_i z_i)=\phi(z_i)
         also can separately check that the 1-form itHFmodel transforms appropriately?
 
@@ -545,8 +545,11 @@ def compute_transition_pointwise_measure_section(HFmodel, points, weights=None):
         sigmai = tf.repeat(HFmodel(points), HFmodel.nTransitions, axis=0)
         # this takes (1,z1,1,z2,1,z3,1,z4), picks out the ones we want to set to 1 - i.e. z1,z2,z3,z4 for the (1,1,1,1) patch,
         # and returns z1^k1 x z2^k2 etc... It therefore should multiply the w!
-        transformation,weights=HFmodel.get_section_transition_to_patch_mask(exp_points,other_patch_mask) 
-        all_t_loss = tf.math.abs(sigmai-transformation*sigmaj)*weights
+        transformation,weights_for_belt=HFmodel.get_section_transition_to_patch_mask(exp_points,other_patch_mask, return_weights_for_belt=only_inside_belt) 
+        if only_inside_belt:
+            all_t_loss = tf.math.abs(sigmai-transformation*sigmaj)*weights_for_belt
+        else:
+            all_t_loss = tf.math.abs(sigmai-transformation*sigmaj)
         all_t_loss = tf.reshape(all_t_loss, (-1))
         #delete elements of all_t_loss that are zero
         indices = tf.math.not_equal(all_t_loss, 0.)
@@ -558,8 +561,12 @@ def compute_transition_pointwise_measure_section(HFmodel, points, weights=None):
         evalmodelonpoints=HFmodel(points)
         #stdev returns a real number from complex arguments
         stddev = tf.math.reduce_std(evalmodelonpoints)
+        if weights is not None:
+            weights = weights/tf.reduce_mean(weights)
+            all_t_loss = all_t_loss*weights
         
         meanoverstddev=tf.reduce_mean(all_t_loss)/stddev
+        
 
         return meanoverstddev,all_t_loss/stddev
 
