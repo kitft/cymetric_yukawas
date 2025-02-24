@@ -50,77 +50,95 @@ def train_model(fsmodel, data, optimizer=None, epochs=50, batch_sizes=[64, 10000
     """
     training_history = {}
     hist1 = {}
-    # hist1['opt'] = ['opt1' for _ in range(epochs)]
     hist2 = {}
-    # hist2['opt'] = ['opt2' for _ in range(epochs)]
+    # Store original learning flags
     learn_kaehler = fsmodel.learn_kaehler
     learn_transition = fsmodel.learn_transition
     learn_ricci = fsmodel.learn_ricci
     learn_ricci_val = fsmodel.learn_ricci_val
+    
+    # Set up sample weights if needed
     if sw:
         sample_weights = data['y_train'][:, -2]
     else:
         sample_weights = None
+        
+    # Create optimizer if not provided
     if optimizer is None:
         optimizer = tf.keras.optimizers.Adam()
+        
     # Compile once at start of training to avoid resetting optimizer
     fsmodel.compile(custom_metrics=custom_metrics, optimizer=optimizer)
+    
+    # Create datasets outside the loop to avoid recreating them each epoch
+    dataset1 = tf.data.Dataset.from_tensor_slices(
+        (tf.cast(data['X_train'], real_dtype), tf.cast(data['y_train'], real_dtype)))
+    ).cache()
+    
+    dataset2 = dataset1.cache()  # Reuse the same dataset with different batch size
+    
     for epoch in range(epochs):
+        if verbose > 0:
+            print(f"\nEpoch {epoch + 1}/{epochs}")
+            
+        # Step 1: Small batch size, volk loss disabled
         batch_size = batch_sizes[0]
         fsmodel.learn_kaehler = learn_kaehler
         fsmodel.learn_transition = learn_transition
         fsmodel.learn_ricci = learn_ricci
         fsmodel.learn_ricci_val = learn_ricci_val
         fsmodel.learn_volk = tf.cast(False, dtype=tf.bool)
-        if verbose > 0:
-            print("\nEpoch {:2d}/{:d}".format(epoch + 1, epochs))
+        
         steps_per_epoch = len(data['X_train']) // batch_size
-        dataset = tf.data.Dataset.from_tensor_slices((tf.cast(data['X_train'],real_dtype), tf.cast(data['y_train'],real_dtype)))
-        dataset = dataset.batch(batch_size).repeat()
-        #repeat to ensure we don't run out of data 
+        batched_dataset = dataset1.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+        
         history = fsmodel.fit(
-            dataset.repeat(),
-            epochs=1, batch_size=batch_size, verbose=verbose,
-            callbacks=None, sample_weight=sample_weights,
+            batched_dataset.repeat(),
+            epochs=1, 
+            verbose=verbose,
+            callbacks=None, 
+            sample_weight=sample_weights,
             steps_per_epoch=steps_per_epoch
         )
+        
+        # Update history
         for k in history.history.keys():
-            if k not in hist1.keys():
+            if k not in hist1:
                 hist1[k] = history.history[k]
             else:
                 hist1[k] += history.history[k]
+        
+        # Step 2: Large batch size, only MA and volk loss enabled
         batch_size = min(batch_sizes[1], len(data['X_train']))
         fsmodel.learn_kaehler = tf.cast(False, dtype=tf.bool)
         fsmodel.learn_transition = tf.cast(False, dtype=tf.bool)
         fsmodel.learn_ricci = tf.cast(False, dtype=tf.bool)
         fsmodel.learn_ricci_val = tf.cast(False, dtype=tf.bool)
         fsmodel.learn_volk = tf.cast(True, dtype=tf.bool)
-        dataset = tf.data.Dataset.from_tensor_slices((tf.cast(data['X_train'],real_dtype), tf.cast(data['y_train'],real_dtype)))
-        dataset = dataset.batch(batch_size).repeat()
+        
         steps_per_epoch = len(data['X_train']) // batch_size
-
+        batched_dataset = dataset2.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+        
         history = fsmodel.fit(
-            #data['X_train'], data['y_train'],
-            dataset.repeat(),
-            epochs=1, batch_size=batch_size, verbose=verbose,
-            callbacks=callbacks, sample_weight=sample_weights,
+            batched_dataset.repeat(),
+            epochs=1, 
+            verbose=verbose,
+            callbacks=callbacks, 
+            sample_weight=sample_weights,
             steps_per_epoch=steps_per_epoch
         )
+        
+        # Update history
         for k in history.history.keys():
-            if k not in hist2.keys():
+            if k not in hist2:
                 hist2[k] = history.history[k]
             else:
                 hist2[k] += history.history[k]
-    # training_history['epochs'] = list(range(epochs)) + list(range(epochs))
-    # for k in hist1.keys():
-    #     training_history[k] = hist1[k] + hist2[k]
-    #print("keys")
-    #rint(list(hist1.keys()) + ["hi"]  + list(hist2.keys()))
-    #tf.print(list(hist1.keys()) + ["hi"] + list(hist2.keys()))
-    #print((list(hist1.values()) + ["hi"] +  list(hist2.values())))
-    #tf.print((list(hist1.values()) + ["hi"] +  list(hist2.values())))
+    
+    # Combine histories
     for k in set(list(hist1.keys()) + list(hist2.keys())):
         training_history[k] = hist2[k] if (k not in hist1 or (k in hist2 and max(hist2[k]) != 0)) else hist1[k]
+    
     training_history['epochs'] = list(range(epochs))
     return fsmodel, training_history
     
