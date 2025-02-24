@@ -1899,6 +1899,10 @@ class BiholoModelFuncGENERALforSigma2_m13(tf.keras.Model):
         self.get_deg_kphi_and_mons=tf.function(self.get_deg_kphi_and_mons_class.__call__,input_signature=(tf.TensorSpec(shape=[None,self.nCoords], dtype=complex_dtype),))
         #self.get_deg_kphi_and_mons_func=lambda x: get_degree_kphiandMmonomials_func(k_phi,linebundleindices,self.indslist,x)
         self.use_zero_network = use_zero_network
+        if not self.use_zero_network:
+            print("scaling 0.1 and 1s")
+        else:
+            print("mul by zero")
 
     def call(self, inputs):
         inputs = tf.complex(inputs[:, :self.nCoords], inputs[:, self.nCoords:])
@@ -1921,10 +1925,6 @@ class BiholoModelFuncGENERALforSigma2_m13(tf.keras.Model):
         to_multiply_sections_complex= tf.complex(to_multiply_sections_real[:,:self.nsections],to_multiply_sections_real[:,self.nsections:])
         #tf.print(to_multiply_sections_complex.shape)#should remove this - why so big?
         #return to_multiply_sections_complex[:,0]
-        if not self.use_zero_network:
-            print("scaling 0.1 and 1s")
-        else:
-            print("mul by zero")
         to_multiply_sections_complex = 0.1*tf.ones_like(to_multiply_sections_complex) +0*to_multiply_sections_complex if not self.use_zero_network else 0*to_multiply_sections_complex
         out=tf.einsum('xi,xi->x',sectionsbasis,to_multiply_sections_complex)
         return out
