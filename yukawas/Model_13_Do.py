@@ -243,9 +243,9 @@ n_to_integrate=1000000
 use_zero_network_phi = True
 
 
-if len(sys.argv) > 3 and sys.argv[3] in ['test','testmid','testsmall']:
+if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall']:
     # Override with small test values
-    if sys.argv[3] == 'testsmall':
+    if str(sys.argv[3]) == 'testsmall':
         nPoints = 100
         nPointsHF = 100
         n_to_integrate = 100
@@ -273,11 +273,29 @@ if len(sys.argv) > 3 and sys.argv[3] in ['test','testmid','testsmall']:
     depthSigma2 = 2
     widthSigma2 = 10
 
-    return_random_phi = True
-    return_random_HYM = True
+    return_random_phi = False
+    return_random_HYM = False
     return_random_HF = True
     return_random_HF_2 = True
 
+    if len(sys.argv) > 4 and str(sys.argv[4]) == 'actual':
+        nEpochsPhi = 1
+        nEpochsBeta = 1
+        nEpochsSigma = 5
+        nEpochsSigma2 = 5
+        depthPhi = 2
+        depthBeta = 2
+        depthSigma = 3
+        depthSigma2 = 3
+        widthPhi = 10
+        widthBeta = 10
+        widthSigma = 100
+        widthSigma2 = 100
+        return_random_phi = False
+        return_random_HYM = False
+        return_random_HF = False
+        return_random_HF_2 = False   
+        
 print("Number of points: " + str(nPoints), "Number of points HF: " + str(nPointsHF), "Number of points to integrate: " + str(n_to_integrate))
 
 

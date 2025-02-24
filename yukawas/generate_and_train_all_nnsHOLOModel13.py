@@ -528,7 +528,7 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    #activ=tf.square
    activ=tfk.activations.gelu
    activ = tf.square
-   if nHidden in [64,128,256] or nHidden<20:
+   if nHidden in [64,128,256] or nHidden<20 or nHidden==100:
        residual_Q = True
        load_func_HYM = BiholoModelFuncGENERALforHYMinv3
    elif nHidden in [65,129, 257]:
@@ -723,7 +723,7 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
 
    activ=tfk.activations.gelu
    activ = tf.square
-   if nHidden in [64,128,256] or nHidden<20:
+   if nHidden in [64,128,256] or nHidden<20 or nHidden==100:
        residual_Q = True
        load_func_HYM = BiholoModelFuncGENERALforHYMinv3
    elif nHidden in [65,129, 257]:
@@ -957,7 +957,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    activ = tf.square
    #load_func = BiholoModelFuncGENERALforSigma2_m13
    #load_func = BiholoModelFuncGENERALforSigmaWNorm
-   if (nHidden ==64) or (nHidden ==128) or nHidden<20:
+   if (nHidden ==64) or (nHidden ==128) or nHidden<20 or nHidden==100:
        #load_func = BiholoBadSectionModel
        load_func =BiholoModelFuncGENERALforSigma2_m13
        #load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log
