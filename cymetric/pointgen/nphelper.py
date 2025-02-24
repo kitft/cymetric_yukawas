@@ -142,7 +142,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     if n_batches is None:
-        n_batches = n_p // 300000 if n_p // 300000 > 0 else 1
+        n_batches = n_p // 100000 if n_p // 100000 > 0 else 1
     print('Generating points using: ', n_batches, ' batches')
     base = n_p // n_batches
     rem = n_p % n_batches
