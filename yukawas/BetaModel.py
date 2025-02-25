@@ -630,8 +630,7 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     kappaover6 = tf.cast(kappaover6, real_dtype)
     weightsreal = tf.cast(weights[:,0], real_dtype)
     
-    print('kappa over 6 ')
-    print(kappaover6)
+    print(f'kappa over 6 : {kappaover6}')
     
     # Calculate volumes and slopes
     volfromCY = tf.math.real(tf.reduce_mean(weightsreal, axis=-1)) * kappaover6
@@ -676,7 +675,6 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
                         inv_mets_val=inv_mets_val,
                         sources_val=sources_val
                         )
-    print("print 'kappa/6'")
     return kappaover6  # point_gen.compute_kappa(points, weights, omega)
 
 def train_modelbeta(betamodel, data_train, optimizer=None, epochs=50, batch_sizes=[64, 10000],
