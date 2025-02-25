@@ -106,6 +106,10 @@ This will open jupyter in your web browser. Navigate to the folder where you dow
 ## Conventions and normalizations
 We summarize the mathematical conventions we use in [this .pdf file](./assets/conventions.pdf).
 
+## Good-to-know
+
+We use JAX only for point generation. For training, we use TensorFlow.
+
 ## Contributing
 
 We welcome contributions to the project. Those can be bug reports or new features, 

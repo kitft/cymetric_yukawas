@@ -121,6 +121,7 @@ class PointGenerator:
     def _set_seed(seed):
         # sets the numpy seed for point gen
         np.random.seed(seed)
+        
 
     def _generate_all_bases(self):
         r"""This function calls a bunch of others
@@ -832,7 +833,7 @@ class PointGenerator:
         self.BASIS['QB0'] = self.monomials
         self.BASIS['QF0'] = self.coefficients
 
-    def generate_points(self, n_p, nproc=-1, batch_size=5000):
+    def generate_points(self, n_p, nproc=-1, batch_size=5000, use_jax=True, process_parallel=False):
         r"""Generates complex points on the CY.
 
         The points are automatically scaled, such that the largest 
@@ -844,25 +845,38 @@ class PointGenerator:
                 uses all available resources.
             batch_size (int, optional): batch_size of Parallel. 
                 Defaults to 5000.
+            parallel (bool, optional): Whether to use parallel processing.
+                Defaults to True.
 
         Returns:
             ndarray[(n_p, ncoords), np.complex128]: rescaled points
         """
-        max_ts = np.max(self.selected_t)
-        max_degree = self.ambient[self.selected_t.astype(bool)] + 1
-        n_p_red = int(n_p / max_degree) + 1
-        pn_pnts = np.zeros((n_p_red, self.ncoords, max_ts + 1),
-                           dtype=np.complex128)
-        for i in range(len(self.ambient)):
-            for k in range(self.selected_t[i] + 1):
-                s = np.sum(self.ambient[:i]) + i
-                e = np.sum(self.ambient[:i + 1]) + i + 1
-                pn_pnts[:, s:e, k] += self.generate_pn_points(n_p_red, self.ambient[i])
-        # TODO: vectorize this nicely
-        points = Parallel(n_jobs=nproc, backend=self.backend, batch_size=batch_size)(
-            delayed(self._take_roots)(pi) for pi in pn_pnts)
-        points = np.vstack(points)
-        return self._rescale_points(points)
+        if use_jax:
+            print("using JAX: no batching at this level")
+            import cymetric.pointgen.pointgen_jax as pointgen_jax
+            numpy_seed = np.random.get_state()[1][0]# use the same seed as numpy for the jax seed
+            points = pointgen_jax.JAXPointGenerator(self).generate_points_jax(n_p, numpy_seed)
+            return points
+        else:
+            max_ts = np.max(self.selected_t)
+            max_degree = self.ambient[self.selected_t.astype(bool)] + 1
+            n_p_red = int(n_p / max_degree) + 1
+            pn_pnts = np.zeros((n_p_red, self.ncoords, max_ts + 1),
+                               dtype=np.complex128)
+            for i in range(len(self.ambient)):
+                for k in range(self.selected_t[i] + 1):
+                    s = np.sum(self.ambient[:i]) + i
+                    e = np.sum(self.ambient[:i + 1]) + i + 1
+                    pn_pnts[:, s:e, k] += self.generate_pn_points(n_p_red, self.ambient[i])
+            if not use_jax and process_parallel:
+                points = Parallel(n_jobs=nproc, backend=self.backend, batch_size=batch_size)(
+                    delayed(self._take_roots)(pi) for pi in pn_pnts)
+            elif not use_jax and not process_parallel:
+                # Sequential processing without parallelization
+                points = [self._take_roots(pi) for pi in pn_pnts]
+        
+            points = np.vstack(points)
+            return self._rescale_points(points)
 
     def _generate_points_Q(self, n_p, nproc=-1, batch_size=10000):
         r"""Generates complex points using a single intersecting line 
@@ -1010,7 +1024,6 @@ class PointGenerator:
         dtype = np.dtype(data_types)
         points = self.generate_points(n_pw)
 
-        #print('unthrow')
         #Throw away points for which the patch is ambiguous, since too many coordiantes are too close to 1
         inv_one_mask = np.isclose(points, complex(1, 0))
         bad_indices = np.where(np.sum(inv_one_mask, -1) != len(self.kmoduli))

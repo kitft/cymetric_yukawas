@@ -7,6 +7,8 @@ import pickle
 import itertools as it
 from sympy import LeviCivita
 from cymetric.config import real_dtype, complex_dtype
+import cProfile
+import pstats
 
 
 
@@ -82,7 +84,11 @@ def _prepare_dataset_batched(point_gen, batch_n_p, val_split, ltails, rtails, no
         tuple: (points, weights, omega, X_train, y_train, X_val, y_val, val_pullbacks)
     """
     new_np = int(round(batch_n_p/(1-ltails-rtails)))
+    import time
+    start_time = time.time()
     pwo = point_gen.generate_point_weights(new_np, omega=True)
+    print("generate_point_weights took", time.time() - start_time, "seconds")
+    start_time = time.time()
     if len(pwo) < new_np:
         new_np = int((new_np-len(pwo))/len(pwo)*new_np + 100)
         pwo2 = point_gen.generate_point_weights(new_np, omega=True)
@@ -142,7 +148,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     if n_batches is None and n_p > 300000:
-        n_batches = n_p // 50000 if n_p // 50000 > 0 else 1
+        n_batches = n_p // 300000 if n_p // 300000 > 0 else 1
     elif n_batches is None:
         n_batches = 1
     if n_batches > 1:
@@ -155,8 +161,23 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
     for i in range(n_batches):
         print(f'Generating {base + (1 if i < rem else 0)} points using {i}th batch')
         batch_n = base + (1 if i < rem else 0)
-        pts, w, om, X_tr, y_tr, X_v, y_v, val_pb = _prepare_dataset_batched(
-            point_gen, batch_n, val_split, ltails, rtails, normalize_to_vol_j)
+
+        if i == 0:
+            # Profile the function
+            profiler = cProfile.Profile()
+            profiler.enable()
+            pts, w, om, X_tr, y_tr, X_v, y_v, val_pb = _prepare_dataset_batched(
+                point_gen, batch_n, val_split, ltails, rtails, normalize_to_vol_j)
+            profiler.disable()
+            
+            # Print sorted results
+            stats = pstats.Stats(profiler).sort_stats('cumtime')
+            print("--------------------------------PROFILING--------------------------------")
+            stats.print_stats(20)  
+            print("--------------------------------PROFILED--------------------------------")
+        else:
+            pts, w, om, X_tr, y_tr, X_v, y_v, val_pb = _prepare_dataset_batched(
+                point_gen, batch_n, val_split, ltails, rtails, normalize_to_vol_j)
         all_points.append(pts)
         all_weights.append(w)
         all_omega.append(om)
