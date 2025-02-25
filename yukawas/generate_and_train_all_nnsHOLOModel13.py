@@ -166,8 +166,8 @@ def generate_points_and_save_using_defaults(free_coefficient,number_points,force
             print(f"wrong length {length_total}, want {number_points} - generating anyway")
             kappa = pg.prepare_dataset(number_points, dirname)
             pg.prepare_basis(dirname, kappa=kappa)
-      except:
-         print("error loading - generating anyway")
+      except Exception as e:
+         print(f"error loading - generating anyway  {e}")
          kappa = pg.prepare_dataset(number_points, dirname)
          pg.prepare_basis(dirname, kappa=kappa)
    

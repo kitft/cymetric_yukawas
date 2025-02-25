@@ -1302,7 +1302,7 @@ class PointGenerator:
             return self._pullbacks_legacy(points, j_elim)
     
     # cann
-    @staticmethod# cannot jit compile due to dunamics
+    @staticmethod
     def _pullbacks_jax(points, j_elim, DQDZB0, DQDZF0, nfold, nhyper, ncoords):
         """JAX implementation of pullbacks computation."""
         
@@ -1333,23 +1333,29 @@ class PointGenerator:
         
         for i in range(nhyper):
             # Compute p_i\alpha eq (5.24)
-            pia_polys = DQDZB0[z_indices, i]
-            pia_factors = DQDZF0[z_indices, i]
-            pia = jnp.power(jnp.expand_dims(
-                jnp.repeat(points, nfold, axis=0), 1), pia_polys)
+            pia_polys = DQDZB0[i, :len(z_indices)]
+            pia_factors = DQDZF0[i, :len(z_indices)]
+            
+            # Reshape points to match computation needs
+            points_repeated = jnp.take(points, x_indices, axis=0)
+            
+            pia = jnp.power(jnp.expand_dims(points_repeated, 1), pia_polys)
             pia = jnp.multiply.reduce(pia, axis=-1)
             pia = jnp.add.reduce(jnp.multiply(pia_factors, pia), axis=-1)
-            pia = jnp.reshape(pia, (-1, nfold))
+            pia = jnp.reshape(pia, (len(points), -1))
             dz_hyper = dz_hyper.at[:, i, :].add(pia)
             
             # Compute p_ifixed
-            pif_polys = DQDZB0[fixed_indices, i]
-            pif_factors = DQDZF0[fixed_indices, i]
-            pif = jnp.power(jnp.expand_dims(
-                jnp.repeat(points, nhyper, axis=0), 1), pif_polys)
+            j_elim_flat = jnp.reshape(j_elim, (-1))
+            points_for_fixed = jnp.take(points, jnp.repeat(jnp.arange(len(points)), nhyper), axis=0)
+            
+            pif_polys = DQDZB0[i, :len(j_elim_flat)]
+            pif_factors = DQDZF0[i, :len(j_elim_flat)]
+            
+            pif = jnp.power(jnp.expand_dims(points_for_fixed, 1), pif_polys)
             pif = jnp.multiply.reduce(pif, axis=-1)
             pif = jnp.add.reduce(jnp.multiply(pif_factors, pif), axis=-1)
-            pif = jnp.reshape(pif, (-1, nhyper))
+            pif = jnp.reshape(pif, (len(points), nhyper))
             B_matrix = B_matrix.at[:, i, :].add(pif)
             
         all_dzdz = jnp.einsum('xij,xjk->xki',
