@@ -511,8 +511,10 @@ if __name__ ==  '__main__':
         elements_12 =aux_weights * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH,vQ2,vU3)*omega_normalised_to_one 
         print("Max absolute value of elements_21:", tf.reduce_max(tf.abs(elements_21)))
         print("Mean of elements_21:", tf.reduce_mean(elements_21))
+        print("Mean of abs(elements_21):", tf.reduce_mean(tf.abs(elements_21)))
         print("Max absolute value of elements_12:", tf.reduce_max(tf.abs(elements_12)))
         print("Mean of elements_12:", tf.reduce_mean(elements_12))
+        print("Mean of abs(elements_12):", tf.reduce_mean(tf.abs(elements_12)))
         
         #print("Integral of omega_normalised_to_one = ", tf.reduce_mean(aux_weights * omega_normalised_to_one* tf.math.conj(omega_normalised_to_one))) # verified that this is correct!!!yes
         #this is the holomorphic Yukawa
