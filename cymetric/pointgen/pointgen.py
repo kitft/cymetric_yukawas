@@ -1068,8 +1068,7 @@ class PointGenerator:
         omega = np.add.reduce(self.BASIS['DQDZF0'][indices] * omega, axis=-1)
         # compute (dQ/dzj)**-1
         return 1 / omega
-
-    def _find_max_dQ_coords(self, points):
+    def _find_max_dQ_coords_legacy(self, points):
         r"""Finds the coordinates for which |dQ/dz| is largest.
 
         Args:
@@ -1081,6 +1080,44 @@ class PointGenerator:
         dQdz = np.abs(self._compute_dQdz(points))
         dQdz = dQdz * (~np.isclose(points, complex(1, 0)))
         return np.argmax(dQdz, axis=-1)
+    
+    @staticmethod
+    @jax_jit
+    def _find_max_dQ_coords_jax(points, DQDZB0, DQDZF0):
+        r"""JAX implementation to find coordinates for which |dQ/dz| is largest.
+
+        Args:
+            points (ndarray[(n_p, ncoords), jnp.complex128]): Points.
+            DQDZB0: Basis for dQdz computation
+            DQDZF0: Factors for dQdz computation
+
+        Returns:
+            ndarray[(n_p), int]: max(dQdz) indices
+        """
+        # Compute dQdz using JAX
+        p_exp = jnp.expand_dims(jnp.expand_dims(points, 1), 1)
+        dQdz = jnp.power(p_exp, DQDZB0)
+        dQdz = jnp.multiply.reduce(dQdz, axis=-1)
+        dQdz = jnp.multiply(DQDZF0, dQdz)
+        dQdz = jnp.add.reduce(dQdz, axis=-1)
+        
+        # Take absolute value and mask out points close to 1
+        dQdz_abs = jnp.abs(dQdz)
+        mask = ~jnp.isclose(points, complex(1, 0))
+        masked_dQdz = dQdz_abs * mask
+        
+        return jnp.argmax(masked_dQdz, axis=-1)
+    
+    def _find_max_dQ_coords(self, points):
+        r"""Finds the coordinates for which |dQ/dz| is largest.
+
+        Args:
+            points (ndarray[(n_p, ncoords), np.complex128]): Points.
+
+        Returns:
+            ndarray[(n_p), int]: max(dQdz) indices
+        """
+        return PointGenerator._find_max_dQ_coords_jax(points, self.BASIS['DQDZB0'], self.BASIS['DQDZF0'])
 
     def _find_good_coordinate_mask(self, points):
         r"""Computes a mask for points with True
