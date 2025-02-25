@@ -75,7 +75,7 @@ def generate_monomials(n, deg):
                 yield (i,) + j
 
 
-def _prepare_dataset_for_batching(point_gen, batch_n_p, val_split, ltails, rtails, normalize_to_vol_j):
+def _prepare_dataset_batched(point_gen, batch_n_p, val_split, ltails, rtails, normalize_to_vol_j):
     r"""Prepares a batch of training and validation data from point_gen.
 
     Returns:
@@ -142,7 +142,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     if n_batches is None and n_p > 300000:
-        n_batches = n_p // 100000 if n_p // 100000 > 0 else 1
+        n_batches = n_p // 50000 if n_p // 50000 > 0 else 1
     elif n_batches is None:
         n_batches = 1
     if n_batches > 1:
@@ -153,8 +153,9 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
     X_train_list, y_train_list = [], []
     X_val_list, y_val_list, val_pb_list = [], [], []
     for i in range(n_batches):
+        print(f'Generating {base + (1 if i < rem else 0)} points using {i}th batch')
         batch_n = base + (1 if i < rem else 0)
-        pts, w, om, X_tr, y_tr, X_v, y_v, val_pb = _prepare_dataset_for_batching(
+        pts, w, om, X_tr, y_tr, X_v, y_v, val_pb = _prepare_dataset_batched(
             point_gen, batch_n, val_split, ltails, rtails, normalize_to_vol_j)
         all_points.append(pts)
         all_weights.append(w)

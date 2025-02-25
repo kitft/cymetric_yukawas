@@ -669,7 +669,6 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation).numpy()
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("time to do that: ",time.time()-start)
-   print("\n\n")
 
    tf.keras.backend.clear_session()
    return betamodel,training_historyBeta, meanfailuretosolveequation
@@ -1172,7 +1171,6 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
 
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("time to do that: ",time.time()-start)
-   print("\n\n")
    TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model)
    print("trained coclosure divided by norm of v: " + str(TrainedDivTrained))
    print("avg/avg trained coclosure divided by norm of trained v: " + str(avgavagTrainedDivTrained))
@@ -1185,6 +1183,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    del dataHF, dataHF_train, dataHF_val_dict,  dataHF_val,valfinal,valraw,valzero
    #print("perm11")
    #print(perm.print_diff())
+   print("\n\n")
    return HFmodel,training_historyHF,meanfailuretosolveequation
 
 
