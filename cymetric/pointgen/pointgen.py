@@ -13,6 +13,7 @@ from sympy.geometry.util import idiff
 from joblib import Parallel, delayed
 import itertools
 from cymetric.config import real_dtype, complex_dtype
+import jax.numpy as jnp
 
 
 logging.basicConfig(format='%(name)s:%(levelname)s:%(message)s')
@@ -1097,8 +1098,23 @@ class PointGenerator:
         dQdz_mask = -1 * np.eye(self.ncoords)[indices]
         full_mask = one_mask + dQdz_mask
         return full_mask.astype(bool)
-
     def _compute_dQdz(self, points):
+        r"""Computes dQdz at each point.
+
+        Args:
+            points (ndarray([n_p, ncoords], np.complex128)): Points.
+
+        Returns:
+            ndarray([n_p, ncoords], np.complex): dQdz at each point.
+        """
+        p_exp = jnp.expand_dims(jnp.expand_dims(points, 1), 1)
+        dQdz = jnp.power(p_exp, self.BASIS['DQDZB0'])
+        dQdz = jnp.multiply.reduce(dQdz, axis=-1)
+        dQdz = jnp.multiply(self.BASIS['DQDZF0'], dQdz)
+        dQdz = jnp.add.reduce(dQdz, axis=-1)
+        return np.array(dQdz)
+    
+    def _compute_dQdz_legacy(self, points):
         r"""Computes dQdz at each point.
 
         Args:

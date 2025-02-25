@@ -145,6 +145,9 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
     Returns:
         np.float: kappa = vol_k / vol_cy computed from the combined data.
     """
+    # Set USE_PROFILER=1 in environment to enable
+    use_profiler = os.environ.get('USE_PROFILER', '0') == '1'
+
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     if n_batches is None and n_p > 300000:
@@ -162,7 +165,8 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
         print(f'Generating {base + (1 if i < rem else 0)} points using {i}th batch')
         batch_n = base + (1 if i < rem else 0)
 
-        if i == 0:
+        
+        if i == 0 and use_profiler:
             # Profile the function
             profiler = cProfile.Profile()
             profiler.enable()
