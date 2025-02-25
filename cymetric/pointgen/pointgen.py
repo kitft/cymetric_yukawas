@@ -1127,7 +1127,7 @@ class PointGenerator:
         # Check if points is a numpy array or a JAX array
         if isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray):
             # Use JAX for numpy arrays
-            return np.array(PointGenerator._compute_dQdz_jax(points, self.BASIS['DQDZB0'], self.BASIS['DQDZF0']))
+            return PointGenerator._compute_dQdz_jax(points, self.BASIS['DQDZB0'], self.BASIS['DQDZF0'])
         else:
             # Use TensorFlow for other types (assuming TF tensors)
             import tensorflow as tf
