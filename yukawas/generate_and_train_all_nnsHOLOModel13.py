@@ -432,6 +432,7 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    return phimodel,training_history, None
 
 def generate_points_and_save_using_defaultsHYM(free_coefficient,linebundleforHYM,number_pointsHYM,phimodel,force_generate=False,seed_set=0):
+   print("\n\n")
 
    lbstring = ''.join(str(e) for e in linebundleforHYM)
    dirnameHYM = folder_name+'/tetraquadricHYM_pg_with_'+str(free_coefficient)+'forLB_'+lbstring
@@ -837,6 +838,7 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
 
 
 def generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM,functionforbaseharmonicform_jbar,phimodel,betamodel,number_pointsHarmonic,force_generate=False,seed_set=0):
+   print("\n\n")
    # get names
    nameOfBaseHF=functionforbaseharmonicform_jbar.__name__
    lbstring = ''.join(str(e) for e in linebundleforHYM)

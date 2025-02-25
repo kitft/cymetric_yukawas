@@ -26,8 +26,11 @@ def delete_all_dicts_except(except_dict_name):
 
 
 
-
-def batch_process_helper_func(func, args, batch_indices=(0,), batch_size=10000):
+def batch_process_helper_func(func, args, batch_indices=(0,), batch_size=10000, compile_func=False):
+    # Optionally compile the function for better performance
+    if compile_func:
+        func = tf.function(func)
+        
     # Determine the number of batches based on the first batched argument
     num_batches = tf.math.ceil(tf.shape(args[batch_indices[0]])[0] / batch_size)
     results_list = []

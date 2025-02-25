@@ -581,15 +581,14 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     new_np = len(realpoints)
     t_i = int((1-val_split)*new_np)
 
-    #still need to generate pullbacks apparently
-    pullbacks = point_gen.pullbacks(points)
-    train_pullbacks=tf.cast(pullbacks[:t_i],complex_dtype) 
-    val_pullbacks=tf.cast(pullbacks[t_i:],complex_dtype) 
+    train_pullbacks=tf.cast(data['train_pullbacks'][:t_i],complex_dtype) 
+    val_pullbacks=tf.cast(data['train_pullbacks'][t_i:],complex_dtype) 
+    pullbacks=tf.concat((train_pullbacks,val_pullbacks),axis=0)
 
     # points = pwo['point'][mask]
 
     #batch to make more neat
-    mets = batch_process_helper_func(metricModel, (realpoints,), batch_indices=(0,), batch_size=10000)
+    mets = batch_process_helper_func(metricModel, (realpoints,), batch_indices=(0,), batch_size=10000, compile_func=True)
     absdets = tf.abs(tf.linalg.det(mets))
     inv_mets = tf.linalg.inv(mets)
     inv_mets_train = inv_mets[:t_i]
