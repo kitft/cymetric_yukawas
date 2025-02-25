@@ -6,6 +6,7 @@ import time
 import os
 start_time_of_process = time.time()
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+os.environ["USE_PROFILER"] = "1"
 from tensorflow.python.client import device_lib
 print(device_lib.list_local_devices())
 
