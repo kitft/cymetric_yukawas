@@ -174,7 +174,7 @@ class JAXPointGenerator:
         points = self._take_roots_jax(pn_pnts)
         points = jnp.vstack(points)
         rescaled_points = self._rescale_points(points)
-        return np.array(rescaled_points)
+        return rescaled_points
 
 import numpy as np
 from cymetric.pointgen.pointgen import PointGenerator

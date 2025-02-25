@@ -1067,6 +1067,7 @@ class PointGenerator:
         if isinstance(points, jnp.ndarray) or (isinstance(points, np.ndarray) and use_jax):
             return PointGenerator._holomorphic_volume_form_jax(points, j_elim, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']))
         else:
+            print(f"using legacy holomorphic volume form, {type(points)}")
             return self._holomorphic_volume_form_legacy(points, j_elim)
     
     @staticmethod
@@ -1143,6 +1144,7 @@ class PointGenerator:
         if isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray):
             return PointGenerator._find_max_dQ_coords_jax(points, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']))
         else:
+            print(f"using legacy find_max_dQ_coords, {type(points)}")
             return self._find_max_dQ_coords_legacy(points)
 
     def _find_good_coordinate_mask(self, points):
@@ -1314,7 +1316,7 @@ class PointGenerator:
             ndarray([n_p, nfold, ncoords], np.complex128): Pullback tensor 
                 at each point.
         """
-        if isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray):
+        if False:#isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray):
             return PointGenerator._pullbacks_jax(points, j_elim, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']), self.nfold, self.nhyper, self.ncoords)
         else:
             print("doing other, type:", type(points))
