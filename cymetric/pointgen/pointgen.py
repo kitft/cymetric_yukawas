@@ -856,7 +856,7 @@ class PointGenerator:
             ndarray[(n_p, ncoords), np.complex128]: rescaled points
         """
         if use_jax:
-            print("using JAX: no batching at this level")
+            print("using JAX: solving roots with jnp.roots")
             import cymetric.pointgen.pointgen_jax as pointgen_jax
             numpy_seed = np.random.get_state()[1][0]# use the same seed as numpy for the jax seed
             points = pointgen_jax.JAXPointGenerator(self).generate_points_jax(n_p, numpy_seed)

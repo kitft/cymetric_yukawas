@@ -538,37 +538,36 @@ class HarmonicFormModel(FSModel):
         # https://www.tensorflow.org/guide/keras/save_and_serialize#custom_objects
         self.model.save(filepath=filepath, **kwargs)
 
-
-convertcomptoreal=lambda test: tf.concat([tf.math.real(test),tf.math.imag(test)],-1)
-def compute_source_for_harmonicForm(pg,points,HYMmetric,harmonicform_jbar,invmetric,pullbacks):
-    ncoords = tf.shape(points[0])[-1] // 2 
-    pointstensor=tf.constant(points)
-    with tf.GradientTape(persistent=False) as tape1:
-        tape1.watch(pointstensor)
-        cpoints=point_vec_to_complex(pointstensor)
-        HNu=tf.einsum('x,xb->xb',tf.cast(HYMmetric(pointstensor),complex_dtype),tf.cast(harmonicform_jbar(tf.cast(cpoints,complex_dtype)),complex_dtype))#complexpoints vs noncomplex
-        real_part = tf.math.real(HNu)
-        imag_part = tf.math.imag(HNu)
-
-        # Stack them along a new dimension
-        Hnustack = tf.stack([real_part, imag_part], axis=1)# put at the 0 position
-    dHnu = tape1.batch_jacobian(Hnustack, pointstensor)
-    #dHnu = tape1.batch_jacobian(HNu, pointstensor)
-    #dx_Hnu, dy_Hnu = \
-    #    0.5*dHnu[:,:, :ncoords], \
-    #    0.5*dHnu[:,:, ncoords:]
-    #dz_Hnu = tf.complex(tf.math.real(dx_Hnu)+tf.math.imag(dy_Hnu),tf.math.imag(dx_Hnu)-tf.math.real(dy_Hnu)) #note that the derivative index is the second index (the last index, as seen from above)
-    dx_Hnu, dy_Hnu = \
-        0.5*dHnu[:,:,:, :ncoords], \
-        0.5*dHnu[:,:,:, ncoords:]
-    # this should be holo derivative on the second index
-    #dz_Hnu = tf.complex(tf.math.real(dx_Hnu)+tf.math.imag(dy_Hnu),tf.math.imag(dx_Hnu)-tf.math.real(dy_Hnu)) #note that the (holo) derivative index is the second d-index (the last index, as seen from above)
-    dz_Hnu = tf.complex(dx_Hnu[:,0]+dy_Hnu[:,1],dx_Hnu[:,1]-dy_Hnu[:,0])
-    #check - e.g.  Hnu might be x+iy = z. We want the derivative to be 1.
-    # so take Hnu = R + iY
-    # now do: dxR + dyI + i(dxI-dyR), gives 1/2 + 1/2  +0 + 0= 1
-    # same for iz, now get 0 + 0 + i( 1/2 -(-1/2)) =i 
-    return -tf.einsum('xba,xbj,xai,xji->x',invmetric,tf.math.conj(pullbacks),pullbacks,dz_Hnu) #the barred index is first, and the derivative index is second! Same is true, in fact, for the inverse metric
+def compute_source_for_harmonicForm(pg, points, HYMmetric, harmonicform_jbar, invmetric, pullbacks, batch_size=10000):
+    """Computes source term for harmonic form equation."""
+    ncoords = tf.shape(points)[1] // 2
+    
+    # Create wrapper function that has HYMmetric pre-defined
+    @tf.function
+    def compute_source_wrapper(pts, invmet, pbs):
+        with tf.GradientTape(persistent=False) as tape1:
+            tape1.watch(pts)
+            cpoints = point_vec_to_complex(pts)
+            HNu = tf.einsum('x,xb->xb', 
+                           tf.cast(HYMmetric(pts), complex_dtype),
+                           tf.cast(harmonicform_jbar(tf.cast(cpoints, complex_dtype)), complex_dtype))
+            real_part = tf.math.real(HNu)
+            imag_part = tf.math.imag(HNu)
+            Hnustack = tf.stack([real_part, imag_part], axis=1)
+            
+        dHnu = tape1.batch_jacobian(Hnustack, pts)
+        dx_Hnu, dy_Hnu = 0.5*dHnu[:,:,:, :ncoords], 0.5*dHnu[:,:,:, ncoords:]
+        dz_Hnu = tf.complex(dx_Hnu[:,0]+dy_Hnu[:,1], dx_Hnu[:,1]-dy_Hnu[:,0])
+        
+        return -tf.einsum('xba,xbj,xai,xji->x', invmet, tf.math.conj(pbs), pbs, dz_Hnu)
+    
+    # Process in batches to avoid OOM
+    return batch_process_helper_func(
+        compute_source_wrapper,
+        (points, invmetric, pullbacks),
+        batch_indices=(0,1,2),
+        batch_size=batch_size
+    )
 
 def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,linebundleforHYM,BASIS,functionforbaseharmonicform_jbar,HYMmetric,val_split=0.1, ltails=0, rtails=0, normalize_to_vol_j=True):
     r"""Prepares training and validation data from point_gen.
@@ -679,7 +678,6 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
     print('generating pullbacks')
 
     #still need to generate pullbacks apparently
-    pullbacks = point_gen.pullbacks(points)
     #print("TESTING METS")
     #test = tf.cast(np.array([[-1.58031970e-01, 1.00000000e+00, 5.12138605e-01, 1.00000000e+00,
     #1.00000000e+00, 2.60694236e-01, 1.00000000e+00, 4.38341200e-01,
@@ -694,13 +692,14 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
     #pullbacks_test_remove = metricModel.pullbacks(realpoints)
     #print(pullbacks_test_remove[0])
     #print("DONE TESTING PBS")
-    train_pullbacks=tf.cast(pullbacks[:t_i],complex_dtype) 
-    val_pullbacks=tf.cast(pullbacks[t_i:],complex_dtype) 
 
+    train_pullbacks=tf.cast(data['train_pullbacks'],complex_dtype) 
+    val_pullbacks=tf.cast(data['val_pullbacks'],complex_dtype) 
+    pullbacks=tf.concat((train_pullbacks,val_pullbacks),axis=0)
     print('generating mets')
 
         
-    mets = batch_process_helper_func(metricModel, (realpoints,), batch_indices=(0,), batch_size=10000)
+    mets = batch_process_helper_func(metricModel, (realpoints,), batch_indices=(0,), batch_size=10000, compile_func=True)
     
     absdets = tf.abs(tf.linalg.det(mets))
     inv_mets=tf.linalg.inv(mets)
@@ -756,10 +755,19 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
     print('sourcesfor harmonic - generating')
     print(functionforbaseharmonicform_jbar.__name__)
     print("linebundleforHYM", linebundleforHYM)
-    sourcesForHarmonic = batch_process_helper_func(
-        compute_source_for_harmonicForm,
-        (point_gen, realpoints, HYMmetric, functionforbaseharmonicform_jbar, inv_mets, tf.cast(pullbacks, complex_dtype)),
-        batch_indices=(1, 4, 5),
+    # sourcesForHarmonic = batch_process_helper_func(
+    #     compute_source_for_harmonicForm,
+    #     (point_gen, realpoints, HYMmetric, functionforbaseharmonicform_jbar, inv_mets, tf.cast(pullbacks, complex_dtype)),
+    #     batch_indices=(1, 4, 5),
+    #     batch_size=10000
+    # )
+    sourcesForHarmonic = compute_source_for_harmonicForm(
+        point_gen,
+        realpoints,
+        HYMmetric,
+        functionforbaseharmonicform_jbar,
+        inv_mets,
+        pullbacks,
         batch_size=10000
     )
 
