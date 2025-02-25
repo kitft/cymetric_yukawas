@@ -174,7 +174,12 @@ class JAXPointGenerator:
         points = self._take_roots_jax(pn_pnts)
         points = jnp.vstack(points)
         rescaled_points = self._rescale_points(points)
-        return rescaled_points
+        # Ensure we have generated at least n_p points
+        if len(rescaled_points) < n_p:
+            raise ValueError(f"Not enough points generated: {len(rescaled_points)} < {n_p}")
+            return rescaled_points[:n_p]  # This will fail if we don't have enough points
+        else:
+            return rescaled_points[:n_p]  # Return exactly n_p points
 
 import numpy as np
 from cymetric.pointgen.pointgen import PointGenerator

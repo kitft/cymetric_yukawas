@@ -1335,6 +1335,10 @@ class PointGenerator:
             nhyper (int): Number of hypersurfaces.
             ncoords (int): Number of coordinates.
         """
+        if nhyper>1:
+            raise ValueError("nhyper > 1 not implemented for JAX pullbacks")
+            print("nhyper > 1 not implemented for JAX pullbacks")
+            return self._pullbacks_legacy(points, j_elim)
         inv_one_mask = jnp.logical_not(jnp.isclose(points, 1 + 0j))
         if j_elim is None:
             j_elim = PointGenerator._find_max_dQ_coords_jax(points, DQDZB0, DQDZF0)
@@ -1353,26 +1357,37 @@ class PointGenerator:
         fixed_indices = jnp.reshape(j_elim, (-1,))
         for i in range(nhyper):
             # Compute p_iα (eq. 5.24)
-            pia_polys = DQDZB0[i][z_indices]
-            pia_factors = DQDZF0[i][z_indices]
+            pia_polys = DQDZB0[z_indices]
+            pia_factors = DQDZF0[z_indices]
             rep_pts = jnp.expand_dims(jnp.repeat(points, nfold, axis=0), 1)
+            print("rep_pts.shape = " + str(rep_pts.shape))
+            print("pia_polys.shape = " + str(pia_polys.shape))
+            print("pia_factors.shape = " + str(pia_factors.shape))
+
             pia = jnp.power(rep_pts, pia_polys)
+            print("pia.shape = " + str(pia.shape))
             pia = jnp.prod(pia, axis=-1)
             pia = jnp.sum(pia_factors * pia, axis=-1)
             pia = jnp.reshape(pia, (-1, nfold))
             dz_hyper = dz_hyper.at[:, i, :].add(pia)
             # Compute p_i(fixed)
-            pif_polys = DQDZB0[i][fixed_indices]
-            pif_factors = DQDZF0[i][fixed_indices]
+            pif_polys = DQDZB0[fixed_indices]
+            pif_factors = DQDZF0[fixed_indices]
             rep_pts_fixed = jnp.expand_dims(jnp.repeat(points, nhyper, axis=0), 1)
+            print("rep_pts_fixed.shape = " + str(rep_pts_fixed.shape))
+            print("pif_polys.shape = " + str(pif_polys.shape))
+            print("pif_factors.shape = " + str(pif_factors.shape))
             pif = jnp.power(rep_pts_fixed, pif_polys)
             pif = jnp.prod(pif, axis=-1)
             pif = jnp.sum(pif_factors * pif, axis=-1)
             pif = jnp.reshape(pif, (-1, nhyper))
             B_matrix = B_matrix.at[:, i, :].add(pif)
+            print("B_matrix.shape = " + str(B_matrix.shape))
         all_dzdz = jnp.einsum('xij,xjk->xki', jnp.linalg.inv(B_matrix), -1j * dz_hyper)
+        print("all_dzdz.shape = " + str(all_dzdz.shape))
         for i in range(nhyper):
             pullbacks = pullbacks.at[jnp.arange(points.shape[0]), :, j_elim[:, i]].add(all_dzdz[:, :, i])
+        print("pullbacks.shape = " + str(pullbacks.shape))
         return pullbacks
 
     def _pullbacks_legacy(self, points, j_elim=None):
@@ -1404,7 +1419,7 @@ class PointGenerator:
             full_mask[np.arange(len(points)), j_elim[:, i]] = np.zeros(len(points), dtype=bool)
 
         # fill the diagonal ones in pullback
-        x_indices, z_indices = np.where(full_mask)
+        x_indices, z_indices = np.where(full_mask)# row and column indices
         pullbacks = np.zeros((len(points), self.nfold, self.ncoords), dtype=np.complex128)
         y_indices = np.repeat(np.expand_dims(np.arange(self.nfold), 0), len(points), axis=0)
         y_indices = np.reshape(y_indices, (-1))
