@@ -2,12 +2,13 @@
 #    from multiprocessing import set_start_method
 #    set_start_method('spawn')
 #import multiprocessing
+import time
 import os
 start_time_of_process = time.time()
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 from tensorflow.python.client import device_lib
-print(device_lib.list_local_devices())
-
+if __name__ == '__main__':
+    print(device_lib.list_local_devices())
 
 import csv
 import numpy as np
@@ -29,14 +30,7 @@ import tensorflow as tf
 import tensorflow.keras as tfk
 
 if __name__ == '__main__':
-    if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testsmall', 'testmid']:
-        run_eagerly = False
-        if len(sys.argv) > 4 and str(sys.argv[4]) == 'actual':
-            run_eagerly = False
-    if len(sys.argv) > 5 and str(sys.argv[5]) in ['eager']:
-        run_eagerly = True
-    elif len(sys.argv) > 5 and str(sys.argv[5]) in ['noteager']:
-        run_eagerly = False
+    run_eagerly = False
 
     tf.config.run_functions_eagerly(run_eagerly)
 
@@ -51,7 +45,6 @@ if __name__ == '__main__':
     print("Running with double precision?:", double_precision)
     set_double_precision(double_precision)
 
-
     tf.get_logger().setLevel('ERROR')
 
 
@@ -64,117 +57,32 @@ from NewCustomMetrics import *
 from HarmonicFormModel import *
 from BetaModel import *
 from laplacian_funcs import *
-
 name_of_run = "model13"
 from OneAndTwoFormsForLineBundlesModel13 import *
 #from generate_and_train_all_nns import *
 from generate_and_train_all_nnsHOLOModel13 import *
-from custom_networks import *
 from auxiliary_funcs import *
 
-
-print_memory_usage(start_time_of_process=start_time_of_process)
+print_memory_usage(start_time_of_process=start_time_of_process, name = __name__)
 
 if __name__ == '__main__':
-    #print('fixed directory')
-
-    # nPoints=300000
-    # free_coefficient=1.# when the coefficient is 1, ensure that it's 1., not 1 for the sake of the filename
-    # nEpochsPhi=100
-    # nEpochsBeta=60
-    # nEpochsSigma=50
-
-
-    nPoints=300000
-    nPointsHF=300000
-    #nPoints=10000
-    #nPointsHF=10000
-    #nPoints=1000
-    #nPointsHF=1000
-    #nPoints=10000
-    #nPointsHF=10000
-
     tr_batchsize=64
     #free_coefficient=1.000000004# when the coefficient is 1, ensure that it's 1., not 1 for the sake of the filename
     import sys
     free_coefficient = float(sys.argv[1])
     seed_for_gen=int((int(free_coefficient*100000000000)+free_coefficient*1000000))%4294967294 # modulo largest seed
     print("seed for gen", seed_for_gen)
-    #free_coefficient=1.# when the coefficient is 1, ensure that it's 1., not 1 for the sake of the filename
-    #nEpochsPhi=100
-    #nEpochsPhi=10
-    #nEpochsBeta=10
-    #nEpochsSigma=40#changed below vH
-
-
-    nEpochsPhi=30
-    nEpochsBeta=50
-    nEpochsSigma=60#changed below vH
-    nEpochsSigma2=80#changed below vH
-
-
-    depthPhi=4
-    widthPhi=196#128 4 in the 1.0s
-    depthBeta=4
-    widthBeta=196
-    depthSigma=4
-    widthSigma=130 # up from 256
-    depthSigma2=4
-    widthSigma2=130 # up from 256
-
-
-    #depthPhi=4
-    #widthPhi=128#128 4 in the 1.0s
-    #depthBeta=3
-    #widthBeta=128
-    #depthSigma=3+2
-    #widthSigma=128//2 # up from 256
-    #depthSigma2=3+2
-    #widthSigma2=196//2 # up from 256
-
-    #nEpochsPhi=1
-    #nEpochsBeta=1
-    #nEpochsSigma=1#changed below vH
-    #nEpochsSigma2=1#changed below vH
-    #
-    #
-    #depthPhi=4
-    #widthPhi=128#128 4 in the 1.0s
-    #depthBeta=4
-    #widthBeta=128
-    #depthSigma=4
-    #widthSigma=128 # up from 256
-    #depthSigma2=4
-    #widthSigma2=128 # up from 256
-
 
 
     alphabeta=[1,10]
     alphasigma1=[1,10] # down form 50
     alphasigma2=[1,80] # down from 200
 
-
-    #lRatePhi= 0.0000005
-    #lRateBeta=0.0000005
-    #lRateSigma=0.0000005# perhaps best as 0.03
-
     lRatePhi= 0.005
     lRateBeta=0.005
-    lRateSigma=0.005# perhaps best as 0.03
-    lRateSigma=0.005//10# perhaps best as 0.03
-    lRateSigma2=0.003//10# perhaps best as 0.03
-
     lRateSigma=0.001# perhaps best as 0.03
     lRateSigma=0.001#//10# perhaps best as 0.03
     lRateSigma2=0.001#//10# perhaps best as 0.03
-
-    #lRatePhi= 0.00
-    #lRateBeta=0.00
-    #lRateSigma=0.0
-    #lRateSigma2=0.0
-
-
-
 
     print("Learning rate: phi:",lRatePhi)
     print("Learning rate: beta:",lRateBeta)
@@ -182,11 +90,11 @@ if __name__ == '__main__':
     print("Learning rate decays by a factor, typically 10, over the course of learning")
 
 
-
     # Use command-line arguments if provided, starting from the second argument
     start_from = sys.argv[2] if len(sys.argv) > 2 else 'phi'
-    training_flags = determine_training_flags(start_from)
 
+    training_flags = determine_training_flags(start_from)
+    
     # Unpack training flags
     train_phi, train_02m20, train_001m3, train_0m213, train_vH, train_vQ3, train_vU3, train_vQ1, train_vQ2, train_vU1, train_vU2 = (
         training_flags['phi'],
@@ -201,121 +109,71 @@ if __name__ == '__main__':
         training_flags['vU1'],
         training_flags['vU2']
     )
-
-
+    
+    
     stddev_Q12U12=1.0#0.5
     final_layer_scale_Q12U12=1.0#0.3#0.000001#0.01
     stddev_Q12U12=0.5#0.5
     final_layer_scale_Q12U12=0.01#0.3#0.000001#0.01
     #lRateSigma=0.0
-
-
+    
+    
     stddev_H33=0.5
     stddev_H33=1
     #stddev_H33=1
     #final_layer_scale_H33=0.1
     final_layer_scale_H33=0.01#0.01
-
-
-    if len(sys.argv) > 4 and str(sys.argv[4]) == 'skipall':
-        print("Requested to skip all measures")
-        skip_measuresPhi=True
-        skip_measuresBeta=True
-        skip_measuresHF=True
-    elif len(sys.argv) > 4 and str(sys.argv[4]) == 'skipnone':
-        skip_measuresPhi=False
-        skip_measuresBeta=False
-        skip_measuresHF=False
-        print("Requested to skip none of the measures")
-    else:
-        print("Requested to skip some of the measures")
-        skip_measuresPhi=True
-        skip_measuresBeta=True
-        skip_measuresHF=False
-
-    print(f"Skipping measures? phi? {skip_measuresPhi}, beta? {skip_measuresBeta}, HF? {skip_measuresHF}")
-
-        #skip_measuresHF
-
-    force_generate_phi=False
-    force_generate_HYM=False
-    force_generate_HF=False
-    force_generate_HF_2=False
-
+    
+    skip_measuresPhi=True
+    skip_measuresBeta=True
+    skip_measuresHF=True
+    
+    force_generate_phi=True
+    force_generate_HYM=True
+    force_generate_HF=True
+    force_generate_HF_2=True
+    
     return_zero_phi= True
     return_zero_HYM = True
     return_zero_HF = False
     return_zero_HF_2 = False
-
-    SecondBSize=50000
+    
+    SecondBSize=1000
     n_to_integrate=1000000
     #n_to_integrate=100000
-
+    
     use_zero_network_phi = True
-
-
-
-    if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall']:
-        # Override with small test values
-        if str(sys.argv[3]) == 'testsmall':
-            nPoints = 100
-            nPointsHF = 100
-            n_to_integrate = 100
-        elif sys.argv[3] == 'testmid':
-            nPoints = 100000
-            nPointsHF = 100000
-            n_to_integrate = 1000000
-        else:
-            nPoints = 300000
-            nPointsHF = 300000
-            n_to_integrate = 1000000
-        #tr_batchsize = 10
-        #SecondBSize = 10
-        nEpochsPhi = 1
-        nEpochsBeta = 1
-        nEpochsSigma = 1
-        nEpochsSigma2 = 1
-
-        depthPhi = 2
-        widthPhi = 10
-        depthBeta = 2
-        widthBeta = 10
-        depthSigma = 2
-        widthSigma = 10
-        depthSigma2 = 2
-        widthSigma2 = 10
-
-        return_random_phi = False
-        return_random_HYM = False
-        return_random_HF = True
-        return_random_HF_2 = True
-
-        if len(sys.argv) > 4 and str(sys.argv[4]) == 'actual':
-            nEpochsPhi = 1
-            nEpochsBeta = 1
-            if sys.argv[3] == 'testmid':
-                nEpochsSigma = 2
-                nEpochsSigma2 = 2
-            else:
-                nEpochsSigma = 5
-                nEpochsSigma2 = 5
-            depthPhi = 2
-            depthBeta = 2
-            depthSigma = 3
-            depthSigma2 = 3
-            widthPhi = 10
-            widthBeta = 10
-            widthSigma = 100
-            widthSigma2 = 100
-            return_random_phi = False
-            return_random_HYM = False
-            return_random_HF = False
-            return_random_HF_2 = False   
-
+    
+    nPoints = 1000
+    nPointsHF = 1000
+    if 'small' in sys.argv[1:]:
+        n_to_integrate = 1000
+    else:
+        n_to_integrate = 1000000
+    #tr_batchsize = 10
+    #SecondBSize = 10
+    nEpochsPhi = 1
+    nEpochsBeta = 1
+    nEpochsSigma = 1
+    nEpochsSigma2 = 1
+    
+    depthPhi = 2
+    widthPhi = 3
+    depthBeta = 2
+    widthBeta = 3
+    depthSigma = 2
+    widthSigma = 3
+    depthSigma2 = 2
+    widthSigma2 = 3
+    
+    return_random_phi = False
+    return_random_HYM = False
+    return_random_HF = True
+    return_random_HF_2 = True
+    
     print("Number of points: " + str(nPoints), "Number of points HF: " + str(nPointsHF), "Number of points to integrate: " + str(n_to_integrate))
-
-
-
+    
+    
 
 if __name__ ==  '__main__':
 
@@ -524,6 +382,11 @@ if __name__ ==  '__main__':
     Vol_reference_dijk_with_k_is_1=pg.get_volume_from_intersections(np.ones_like(kmoduli)) 
     #volCY_from_Om=tf.reduce_mean(dataEval['y_train'][:n_p,0])
     volCY_from_Om=tf.reduce_mean(dataEval['y_train'][:n_p,0])/6 #this is the actual volume of the CY computed from Omega.since J^J^J^ = K Om^Ombar?? not totally sure here:
+    #consider omega normalisation
+    omega = tf.cast(batch_process_helper_func(pg.holomorphic_volume_form, [pointsComplex], batch_indices=[0], batch_size=100000),complex_dtype)
+    #put the omega here, not the omegabar
+    omega_normalised_to_one=omega/tf.cast(np.sqrt(volCY_from_Om),complex_dtype) # this is the omega that's normalised to 1. VERIFIED yes.
+
     # this is integral omega wedge omegabar? yeah.
 
     aux_weights=(dataEval['y_train'][:n_p,0]/(dataEval['y_train'][:n_p,1]))*(1/(6))### these are the appropriate 'flat measure' so sum_i aux_weights f is int_X f(x)
@@ -633,11 +496,7 @@ if __name__ ==  '__main__':
         print("(U2,U1) = " + str(U2U1))
 
         print("Compute holomorphic Yukawas")
-        #consider omega normalisation
-        omega = tf.cast(batch_process_helper_func(pg.holomorphic_volume_form, [pointsComplex], batch_indices=[0], batch_size=100000),complex_dtype)
-        #put the omega here, not the omegabar
-        omega_normalised_to_one=omega/tf.cast(np.sqrt(volCY_from_Om),complex_dtype) # this is the omega that's normalised to 1. VERIFIED yes.
-
+     
         #print("Integral of omega_normalised_to_one = ", tf.reduce_mean(aux_weights * omega_normalised_to_one* tf.math.conj(omega_normalised_to_one))) # verified that this is correct!!!yes
         #this is the holomorphic Yukawa
         print('doing einsums')

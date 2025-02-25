@@ -890,12 +890,13 @@ class SquareDenseVar(tf.keras.layers.Layer):
     def __init__(self, input_dim, units, activation=tf.square, stddev=0.05,trainable=True,positive_init=True):
         super(SquareDenseVar, self).__init__()
         w_init = tf.random_normal_initializer(mean=0.0, stddev=stddev)
+        dtype = tf.as_dtype(real_dtype).name
         #self.w = tf.keras.Variable(
         #    initial_value=tf.math.abs(w_init(shape=(input_dim, units), dtype='float32')) if positive_init else w_init(shape=(input_dim, units), dtype='float32'),
         #    trainable=trainable,
         #)
         self.w = tf.keras.Variable(
-            initializer=tf.math.abs(w_init(shape=(input_dim, units), dtype='float32')) if positive_init else w_init(shape=(input_dim, units), dtype='float32'),
+            initializer=tf.math.abs(w_init(shape=(input_dim, units), dtype=dtype)) if positive_init else w_init(shape=(input_dim, units), dtype=dtype),
             trainable=trainable,
         )
         self.activation = activation 
@@ -907,6 +908,8 @@ class SquareDenseVarNoAct(tf.keras.layers.Layer):
     def __init__(self, input_dim, units, stddev=0.05,trainable=True,positive_init=True):
         super(SquareDenseVarNoAct, self).__init__()
         w_init = tf.random_normal_initializer(mean=0.0, stddev=stddev)
+        # Get dtype directly from real_dtype tensor to avoid string comparison
+        dtype = tf.as_dtype(real_dtype).name
         #self.w = tf.keras.Variable(
         #    #initial_value=tf.math.abs(w_init(shape=(input_dim, units), dtype='float32')),
         #    initial_value=tf.math.abs(w_init(shape=(input_dim, units), dtype='float32')) if positive_init else w_init(shape=(input_dim, units), dtype='float32'),
@@ -915,7 +918,7 @@ class SquareDenseVarNoAct(tf.keras.layers.Layer):
         #)
         self.w = tf.keras.Variable(
             #initial_value=tf.math.abs(w_init(shape=(input_dim, units), dtype='float32')),
-            initializer=tf.math.abs(w_init(shape=(input_dim, units), dtype='float32')) if positive_init else w_init(shape=(input_dim, units), dtype='float32'),
+            initializer=tf.math.abs(w_init(shape=(input_dim, units), dtype=dtype)) if positive_init else w_init(shape=(input_dim, units), dtype=dtype),
             #initial_value=w_init(shape=(input_dim, units), dtype='float32'),
             trainable=trainable,
         )
@@ -2204,29 +2207,6 @@ def make_nn(n_in,n_out,nlayer,nHidden,act='gelu',lastbias=False,use_zero_network
    return nn_phi
 
 
-
-
-def batch_process_helper_func(func, args, batch_indices=(0,), batch_size=10000):
-    # Determine the number of batches based on the first batched argument
-    num_batches = tf.math.ceil(tf.shape(args[batch_indices[0]])[0] / batch_size)
-    results_list = []
-
-    for i in range(tf.cast(num_batches, tf.int32)):
-        print(i)
-        start_idx = i * batch_size
-        end_idx = tf.minimum((i + 1) * batch_size, tf.shape(args[batch_indices[0]])[0])
-        
-        # Create batched arguments
-        batched_args = list(args)
-        for idx in batch_indices:
-            batched_args[idx] = args[idx][start_idx:end_idx]
-        
-        # Call the function with batched and static arguments
-        batch_results = func(*batched_args)
-        results_list.append(batch_results)
-
-    return tf.concat(results_list, axis=0)
-    
 
 
 class BiholoModelFuncGENERAL_Q(tf.keras.Model):

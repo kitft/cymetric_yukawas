@@ -506,7 +506,7 @@ def HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF,HYMmetric_model,metri
     trained_one_form_conj_times_metric = tf.math.sqrt(tf.math.abs(tf.einsum('x,xBa,xa,xB->x',HYMmetric_pts,trained_inv_metric,trained_one_form_conj,trained_one_form)))#trained is bbar indices
     FS_one_form_conj_times_metric = tf.math.sqrt(tf.math.abs(tf.einsum('x,xBa,xa,xB->x',FS_HYMmetric_pts,FS_inv_metric,FS_one_form_conj,FS_one_form)))#untrained is b indices
     print('average mean of trained coclosure: ',tf.reduce_mean(tf.math.abs(coclosuretrained)).numpy().item())
-    print('average mean of FS coclosure: ',tf.reduce_mean(tf.math.abs(coclosureofvFS)).numpy().item(), 'coclosure of FS direct: ',tf.reduce_mean(tf.math.abs(coclosureofFSdirect)).numpy().item())
+    print('average mean of FS coclosure: ',tf.reduce_mean(tf.math.abs(coclosureofvFS)).numpy().item(), 'coclosure of FS direct: ',tf.reduce_mean(tf.math.abs(coclosureofFSdirect)).numpy().item(), "(should be same)")
     print('average mean of trained one form: ',tf.reduce_mean(tf.math.abs(trained_one_form_conj_times_metric)).numpy().item())
     print('average mean of FS one form: ',tf.reduce_mean(tf.math.abs(FS_one_form_conj_times_metric)).numpy().item())
     

@@ -4,7 +4,7 @@ import gc
 import tensorflow as tf
 import tensorflow.keras as tfk
 from laplacian_funcs import *
-from custom_networks import batch_process_helper_func
+from auxiliary_funcs import *
 from BetaModel import *
 import os
 import numpy as np

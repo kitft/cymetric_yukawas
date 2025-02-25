@@ -23,7 +23,7 @@ from BetaModel import *
 from laplacian_funcs import *
 from OneAndTwoFormsForLineBundlesModel13 import *
 from custom_networks import *
-from custom_networks import batch_process_helper_func
+from auxiliary_funcs import *
 
 from pympler import tracker
 seed_set=0
@@ -104,7 +104,6 @@ def get_coefficients(free_coefficient):
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
       x, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
    return coefficients
-
 def generate_points_and_save_using_defaults_for_eval(free_coefficient,number_points,force_generate=False,seed_set=0):
    coefficients=get_coefficients(free_coefficient)
    kmoduli = kmoduliTQ 
@@ -121,8 +120,14 @@ def generate_points_and_save_using_defaults_for_eval(free_coefficient,number_poi
    elif os.path.exists(dirname):
       try:
          data = np.load(os.path.join(dirname, 'dataset.npz'))
-         length_total = len(data['X_train'])+len(data['X_val'])
-         if length_total!=number_points:
+         # Check if X_train dtype matches real_dtype or if length doesn't match
+         if data['X_train'].dtype != real_dtype:
+            print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
+            print("Regenerating dataset with correct dtype")
+            kappa = pg.prepare_dataset(number_points, dirname)
+            pg.prepare_basis(dirname, kappa=kappa)
+         elif len(data['X_train'])+len(data['X_val']) != number_points:
+            length_total = len(data['X_train'])+len(data['X_val'])
             print(f"wrong length {length_total}, want {number_points} - generating anyway")
             kappa = pg.prepare_dataset(number_points, dirname)
             pg.prepare_basis(dirname, kappa=kappa)
@@ -150,8 +155,14 @@ def generate_points_and_save_using_defaults(free_coefficient,number_points,force
       try:
          print("loading prexisting dataset")
          data = np.load(os.path.join(dirname, 'dataset.npz'))
-         length_total = len(data['X_train'])+len(data['X_val'])
-         if length_total!=number_points:
+         # Check if X_train dtype matches real_dtype or if length doesn't match
+         if data['X_train'].dtype != real_dtype:
+            print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
+            print("Regenerating dataset with correct dtype")
+            kappa = pg.prepare_dataset(number_points, dirname)
+            pg.prepare_basis(dirname, kappa=kappa)
+         elif len(data['X_train'])+len(data['X_val']) != number_points:
+            length_total = len(data['X_train'])+len(data['X_val'])
             print(f"wrong length {length_total}, want {number_points} - generating anyway")
             kappa = pg.prepare_dataset(number_points, dirname)
             pg.prepare_basis(dirname, kappa=kappa)
@@ -444,10 +455,15 @@ def generate_points_and_save_using_defaultsHYM(free_coefficient,linebundleforHYM
       try:
          print("loading prexisting dataset")
          data = np.load(os.path.join(dirnameHYM, 'dataset.npz'))
-         length_total = len(data['X_train'])+len(data['X_val'])
-         if length_total!=number_pointsHYM:
+         # Check if X_train dtype matches real_dtype or if length doesn't match
+         if data['X_train'].dtype != real_dtype:
+            print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
+            print("Regenerating dataset with correct dtype")
+            kappaHYM = prepare_dataset_HYM(pg,data,number_pointsHYM, dirnameHYM,phimodel,linebundleforHYM,BASIS,normalize_to_vol_j=True)
+         elif len(data['X_train'])+len(data['X_val']) != number_pointsHYM:
+            length_total = len(data['X_train'])+len(data['X_val'])
             print(f"wrong length {length_total}, want {number_pointsHYM} - generating anyway")
-            kappaHYM = prepare_dataset_HYM(pg,data,number_pointsHYM, dirnameHYM,phimodel,linebundleforHYM,BASIS,normalize_to_vol_j=True);
+            kappaHYM = prepare_dataset_HYM(pg,data,number_pointsHYM, dirnameHYM,phimodel,linebundleforHYM,BASIS,normalize_to_vol_j=True)
       except:
          print("problem loading data - generating anyway")
          kappaHYM = prepare_dataset_HYM(pg,data,number_pointsHYM, dirnameHYM,phimodel,linebundleforHYM,BASIS,normalize_to_vol_j=True);
@@ -849,15 +865,13 @@ def generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM,
          data = np.load(os.path.join(dirnameHarmonic, 'dataset.npz'))
          print(phimodel.BASIS['KMODULI'])
 
-         #print("CHECKING PHIMODEL:")
-         #print(data['X_train'][0:1])
-         #print(phimodel(data['X_train'][0:1]))
-         #print(phimodel.fubini_study_pb(data['X_train'][0:1]))
-         #print(tf.linalg.inv(data['inv_mets_train'][0]))
-         #print("DONE")
-
-         length_total = len(data['X_train'])+len(data['X_val'])
-         if length_total!=number_pointsHarmonic:
+         # Check if X_train dtype matches real_dtype or if length doesn't match
+         if data['X_train'].dtype != real_dtype:
+            print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
+            print("Regenerating dataset with correct dtype")
+            kappaHarmonic=prepare_dataset_HarmonicForm(pg,data,number_pointsHarmonic,dirnameHarmonic,phimodel,linebundleforHYM,BASIS,functionforbaseharmonicform_jbar,betamodel)
+         elif len(data['X_train'])+len(data['X_val']) != number_pointsHarmonic:
+            length_total = len(data['X_train'])+len(data['X_val'])
             print(f"wrong length {length_total}, want {number_pointsHarmonic} - generating anyway")
             kappaHarmonic=prepare_dataset_HarmonicForm(pg,data,number_pointsHarmonic,dirnameHarmonic,phimodel,linebundleforHYM,BASIS,functionforbaseharmonicform_jbar,betamodel)
       except:

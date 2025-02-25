@@ -1,7 +1,7 @@
-from cymetric.config import real_dtype, complex_dtype
+
 from cymetric.models.fubinistudy import FSModel
 from laplacian_funcs import *
-from custom_networks import batch_process_helper_func
+from auxiliary_funcs import *
 import tensorflow as tf
 import os
 import numpy as np
@@ -608,7 +608,9 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     sourcesCY_complex = tf.einsum('xba,xab->x', tf.cast(inv_mets, complex_dtype), tf.cast(F_forsource_pb, complex_dtype))
     # Check if imaginary part exceeds numerical precision threshold
     imag_part = tf.abs(tf.math.imag(sourcesCY_complex))
-    tf.debugging.assert_less(imag_part, 1e-3, message="Error: Imaginary component exceeds numerical precision")
+    tf.debugging.assert_less(imag_part, tf.constant(1e-3, dtype=real_dtype), message="Error: Imaginary component exceeds numerical precision")
+    print("Max imaginary part, should be small: ", tf.reduce_max(imag_part))
+
     # Convert to real if safe
     sourcesCY = tf.cast(tf.math.real(sourcesCY_complex), real_dtype)
     
