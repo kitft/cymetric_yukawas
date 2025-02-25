@@ -147,11 +147,7 @@ if __name__ == '__main__':
     
     nPoints = 1000
     nPointsHF = 1000
-    if 'alltiny' in sys.argv[1:]:
-        nPoints = 100
-        nPointsHF = 100
-        n_to_integrate = 100
-    elif 'small' in sys.argv[1:]:
+    if 'small' in sys.argv[1:]:
         n_to_integrate = 1000
     elif 'allbig' in sys.argv[1:]:
         nPoints = 100000
@@ -511,8 +507,9 @@ if __name__ ==  '__main__':
 
         tfsqrtandcast=lambda x: tf.cast(tf.math.sqrt(x),complex_dtype)
         print("CONSIDERING A PARTICULAR ELEMENT:")
-        elements_21= aux_weights * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vU2)*omega_normalised_to_one
-        elements_12 =aux_weights * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH,vQ2,vU3)*omega_normalised_to_one 
+        factor =(1/(8*np.sqrt(30))) *   2*np.sqrt(2)/4
+        elements_21= factor * aux_weights * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vU2)*omega_normalised_to_one
+        elements_12 =factor * aux_weights * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH,vQ2,vU3)*omega_normalised_to_one 
         print("Max absolute value of elements_21:", tf.reduce_max(tf.abs(elements_21)))
         print("Mean of elements_21:", tf.reduce_mean(elements_21))
         print("Mean of abs(elements_21):", tf.reduce_mean(tf.abs(elements_21)))

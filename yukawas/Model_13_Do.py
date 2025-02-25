@@ -32,14 +32,10 @@ import tensorflow as tf
 import tensorflow.keras as tfk
 
 if __name__ == '__main__':
-    if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testsmall', 'testmid']:
-        run_eagerly = False
-        if len(sys.argv) > 4 and str(sys.argv[4]) == 'actual':
-            run_eagerly = False
-    if len(sys.argv) > 5 and str(sys.argv[5]) in ['eager']:
+    # Default to not eager unless explicitly requested
+    run_eagerly = False
+    if len(sys.argv) > 5 and 'eager' in str(sys.argv[5]):
         run_eagerly = True
-    elif len(sys.argv) > 5 and str(sys.argv[5]) in ['noteager']:
-        run_eagerly = False
 
     tf.config.run_functions_eagerly(run_eagerly)
 
@@ -258,8 +254,12 @@ if __name__ == '__main__':
 
 
 
-    if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall']:
+    if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall', 'testtiny']:
         # Override with small test values
+        if str(sys.argv[3]) == 'testtiny':
+            nPoints = 100
+            nPointsHF = 100
+            n_to_integrate = 100
         if str(sys.argv[3]) == 'testsmall':
             nPoints = 100
             nPointsHF = 100
