@@ -1316,7 +1316,7 @@ class PointGenerator:
             ndarray([n_p, nfold, ncoords], np.complex128): Pullback tensor 
                 at each point.
         """
-        if False:#isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray):
+        if isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray):
             return PointGenerator._pullbacks_jax(points, j_elim, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']), self.nfold, self.nhyper, self.ncoords)
         else:
             print("using legacy pullbacks, input type:", type(points))
@@ -1325,69 +1325,56 @@ class PointGenerator:
     # cann
     @staticmethod
     def _pullbacks_jax(points, j_elim, DQDZB0, DQDZF0, nfold, nhyper, ncoords):
-        """JAX implementation of pullbacks computation."""
+        """JAX version of pullbacks computation.
         
-        inv_one_mask = ~jnp.isclose(points, complex(1, 0))
+        Args:
+            points (jnp.ndarray): Array of points.
+            j_elim (jnp.ndarray): Indices to eliminate.
+            DQDZB0, DQDZF0: Sequences of basis arrays.
+            nfold (int): Number of folds.
+            nhyper (int): Number of hypersurfaces.
+            ncoords (int): Number of coordinates.
+        """
+        inv_one_mask = jnp.logical_not(jnp.isclose(points, 1 + 0j))
         if j_elim is None:
             j_elim = PointGenerator._find_max_dQ_coords_jax(points, DQDZB0, DQDZF0)
-        if len(j_elim.shape) == 1:
+        if j_elim.ndim == 1:
             j_elim = jnp.reshape(j_elim, (-1, 1))
-        full_mask = jnp.copy(inv_one_mask)
-        
-        # Create mask for eliminated coordinates
+        full_mask = jnp.array(inv_one_mask)
         for i in range(nhyper):
-            full_mask = full_mask.at[jnp.arange(len(points)), j_elim[:, i]].set(jnp.zeros(len(points), dtype=bool))
-
-        # Fill the diagonal ones in pullback
+            full_mask = full_mask.at[jnp.arange(points.shape[0]), j_elim[:, i]].set(False)
         x_indices, z_indices = jnp.where(full_mask)
-        pullbacks = jnp.zeros((len(points), nfold, ncoords), dtype=jnp.complex128)
-        y_indices = jnp.repeat(jnp.expand_dims(jnp.arange(nfold), 0), len(points), axis=0)
-        y_indices = jnp.reshape(y_indices, (-1))
-        
-        # Set ones at appropriate indices
-        pullbacks = pullbacks.at[x_indices, y_indices, z_indices].set(jnp.ones(nfold * len(points), dtype=jnp.complex128))
-        
-        # Next fill the dzdz from every hypersurface
-        B_matrix = jnp.zeros((len(points), nhyper, nhyper), dtype=jnp.complex128)
-        dz_hyper = jnp.zeros((len(points), nhyper, nfold), dtype=jnp.complex128)
-        fixed_indices = jnp.reshape(j_elim, (-1))
-        
+        pullbacks = jnp.zeros((points.shape[0], nfold, ncoords), dtype=jnp.complex128)
+        y_indices = jnp.repeat(jnp.expand_dims(jnp.arange(nfold), 0), points.shape[0], axis=0)
+        y_indices = jnp.reshape(y_indices, (-1,))
+        pullbacks = pullbacks.at[x_indices, y_indices, z_indices].set(1 + 0j)
+        B_matrix = jnp.zeros((points.shape[0], nhyper, nhyper), dtype=jnp.complex128)
+        dz_hyper = jnp.zeros((points.shape[0], nhyper, nfold), dtype=jnp.complex128)
+        fixed_indices = jnp.reshape(j_elim, (-1,))
         for i in range(nhyper):
-            # Compute p_i\alpha eq (5.24)
-            pia_polys = DQDZB0[i, :len(z_indices)]
-            pia_factors = DQDZF0[i, :len(z_indices)]
-            
-            # Reshape points to match computation needs
-            points_repeated = jnp.take(points, x_indices, axis=0)
-            
-            pia = jnp.power(jnp.expand_dims(points_repeated, 1), pia_polys)
-            pia = jnp.multiply.reduce(pia, axis=-1)
-            pia = jnp.add.reduce(jnp.multiply(pia_factors, pia), axis=-1)
-            pia = jnp.reshape(pia, (len(points), -1))
+            # Compute p_iα (eq. 5.24)
+            pia_polys = DQDZB0[i][z_indices]
+            pia_factors = DQDZF0[i][z_indices]
+            rep_pts = jnp.expand_dims(jnp.repeat(points, nfold, axis=0), 1)
+            pia = jnp.power(rep_pts, pia_polys)
+            pia = jnp.prod(pia, axis=-1)
+            pia = jnp.sum(pia_factors * pia, axis=-1)
+            pia = jnp.reshape(pia, (-1, nfold))
             dz_hyper = dz_hyper.at[:, i, :].add(pia)
-            
-            # Compute p_ifixed
-            j_elim_flat = jnp.reshape(j_elim, (-1))
-            points_for_fixed = jnp.take(points, jnp.repeat(jnp.arange(len(points)), nhyper), axis=0)
-            
-            pif_polys = DQDZB0[i, :len(j_elim_flat)]
-            pif_factors = DQDZF0[i, :len(j_elim_flat)]
-            
-            pif = jnp.power(jnp.expand_dims(points_for_fixed, 1), pif_polys)
-            pif = jnp.multiply.reduce(pif, axis=-1)
-            pif = jnp.add.reduce(jnp.multiply(pif_factors, pif), axis=-1)
-            pif = jnp.reshape(pif, (len(points), nhyper))
+            # Compute p_i(fixed)
+            pif_polys = DQDZB0[i][fixed_indices]
+            pif_factors = DQDZF0[i][fixed_indices]
+            rep_pts_fixed = jnp.expand_dims(jnp.repeat(points, nhyper, axis=0), 1)
+            pif = jnp.power(rep_pts_fixed, pif_polys)
+            pif = jnp.prod(pif, axis=-1)
+            pif = jnp.sum(pif_factors * pif, axis=-1)
+            pif = jnp.reshape(pif, (-1, nhyper))
             B_matrix = B_matrix.at[:, i, :].add(pif)
-            
-        all_dzdz = jnp.einsum('xij,xjk->xki',
-                             jnp.linalg.inv(B_matrix),
-                             complex(-1., 0.) * dz_hyper)
-                             
+        all_dzdz = jnp.einsum('xij,xjk->xki', jnp.linalg.inv(B_matrix), -1j * dz_hyper)
         for i in range(nhyper):
-            pullbacks = pullbacks.at[jnp.arange(len(points)), :, j_elim[:, i]].add(all_dzdz[:, :, i])
-            
+            pullbacks = pullbacks.at[jnp.arange(points.shape[0]), :, j_elim[:, i]].add(all_dzdz[:, :, i])
         return pullbacks
-    
+
     def _pullbacks_legacy(self, points, j_elim=None):
         r"""Legacy numpy implementation of pullbacks computation.
         

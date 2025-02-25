@@ -390,6 +390,7 @@ if __name__ ==  '__main__':
     Vol_from_dijk_J=pg.get_volume_from_intersections(kmoduli)
     Vol_reference_dijk_with_k_is_1=pg.get_volume_from_intersections(np.ones_like(kmoduli)) 
     #volCY_from_Om=tf.reduce_mean(dataEval['y_train'][:n_p,0])
+    print("Compute holomorphic Yukawas")
     volCY_from_Om=tf.reduce_mean(dataEval['y_train'][:n_p,0])/6 #this is the actual volume of the CY computed from Omega.since J^J^J^ = K Om^Ombar?? not totally sure here:
     #consider omega normalisation
     omega = tf.cast(batch_process_helper_func(pg.holomorphic_volume_form, [pointsComplex], batch_indices=[0], batch_size=100000),complex_dtype)
@@ -504,15 +505,21 @@ if __name__ ==  '__main__':
         U2U1=(-1j/2)*(-1j/2)**2*(-2j)**3*(-1)*tf.reduce_mean(aux_weights[0:n_p]*tf.einsum('xab,xcd,xe,xf,acf,bde->x',mets[:n_p],mets[:n_p],vU2[:n_p],hvU1b[:n_p],lc_c,lc_c))
         print("(U2,U1) = " + str(U2U1))
 
-        print("Compute holomorphic Yukawas")
-     
+        tfsqrtandcast=lambda x: tf.cast(tf.math.sqrt(x),complex_dtype)
+        print("CONSIDERING A PARTICULAR ELEMENT:")
+        elements_21= aux_weights * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vU2)*omega_normalised_to_one
+        elements_12 =aux_weights * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH,vQ2,vU3)*omega_normalised_to_one 
+        print("Max absolute value of elements_21:", tf.reduce_max(tf.abs(elements_21)))
+        print("Mean of elements_21:", tf.reduce_mean(elements_21))
+        print("Max absolute value of elements_12:", tf.reduce_max(tf.abs(elements_12)))
+        print("Mean of elements_12:", tf.reduce_mean(elements_12))
+        
         #print("Integral of omega_normalised_to_one = ", tf.reduce_mean(aux_weights * omega_normalised_to_one* tf.math.conj(omega_normalised_to_one))) # verified that this is correct!!!yes
         #this is the holomorphic Yukawa
         print('doing einsums')
         m = [[0,0,0],[0,0,0],[0,0,0]]
         mwoH = [[0,0,0],[0,0,0],[0,0,0]]
 
-        tfsqrtandcast=lambda x: tf.cast(tf.math.sqrt(x),complex_dtype)
 
         mwoH[0][0] = tf.reduce_mean(aux_weights * tf.einsum("abc,xa,xb,xc->x",lc_c,vH,vQ1,vU1)*omega_normalised_to_one)
         mwoH[0][1] = tf.reduce_mean(aux_weights * tf.einsum("abc,xa,xb,xc->x",lc_c,vH,vQ1,vU2)*omega_normalised_to_one)
