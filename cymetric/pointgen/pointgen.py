@@ -17,7 +17,7 @@ import jax.numpy as jnp
 from jax import jit as jax_jit
 from jax import vmap as jax_vmap
 from functools import partial
-import jax.config as jaxconfig
+from jax import config as jaxconfig
 
 jaxconfig.update("jax_enable_x64", True)
 
