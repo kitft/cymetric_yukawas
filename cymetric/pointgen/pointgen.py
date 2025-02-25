@@ -1067,7 +1067,7 @@ class PointGenerator:
         if isinstance(points, jnp.ndarray) or (isinstance(points, np.ndarray) and use_jax):
             return PointGenerator._holomorphic_volume_form_jax(points, j_elim, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']))
         else:
-            print(f"using legacy holomorphic volume form, {type(points)}")
+            print(f"using legacy holomorphic volume form, {type(points)}, use_jax = {use_jax}")
             return self._holomorphic_volume_form_legacy(points, j_elim)
     
     @staticmethod
@@ -1132,7 +1132,7 @@ class PointGenerator:
         
         return jnp.argmax(masked_dQdz, axis=-1)
     
-    def _find_max_dQ_coords(self, points):
+    def _find_max_dQ_coords(self, points, use_jax=True):
         r"""Finds the coordinates for which |dQ/dz| is largest.
 
         Args:
@@ -1141,10 +1141,10 @@ class PointGenerator:
         Returns:
             ndarray[(n_p), int]: max(dQdz) indices
         """
-        if isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray):
+        if use_jax and (isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray)):
             return PointGenerator._find_max_dQ_coords_jax(points, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']))
         else:
-            print(f"using legacy find_max_dQ_coords, {type(points)}")
+            print(f"using legacy find_max_dQ_coords, {type(points)}, use_jax = {use_jax}")
             return self._find_max_dQ_coords_legacy(points)
 
     def _find_good_coordinate_mask(self, points):
@@ -1182,7 +1182,7 @@ class PointGenerator:
         dQdz = jnp.multiply(DQDZF0, dQdz)
         dQdz = jnp.add.reduce(dQdz, axis=-1)
         return dQdz
-    def _compute_dQdz(self, points):
+    def _compute_dQdz(self, points, use_jax=True):
         r"""Computes dQdz at each point.
 
         Args:
@@ -1192,10 +1192,11 @@ class PointGenerator:
             ndarray([n_p, ncoords], np.complex): dQdz at each point.
         """
         # Check if points is a numpy array or a JAX array
-        if isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray):
+        if use_jax and (isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray)):
             # Use JAX for numpy arrays
             return PointGenerator._compute_dQdz_jax(points, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']))
         else:
+            print(f"using legacy compute_dQdz, {type(points)}, use_jax = {use_jax}")
             # Use TensorFlow for other types (assuming TF tensors)
             import tensorflow as tf
             p_exp = tf.expand_dims(tf.expand_dims(points, 1), 1)
@@ -1204,6 +1205,7 @@ class PointGenerator:
             dQdz = tf.multiply(tf.constant(self.BASIS['DQDZF0'], dtype=points.dtype), dQdz)
             dQdz = tf.reduce_sum(dQdz, axis=-1)
             return dQdz.numpy() if hasattr(dQdz, 'numpy') else dQdz
+
     def _compute_dQdz_legacy(self, points):
         r"""Computes dQdz at each point.
 
@@ -1316,10 +1318,10 @@ class PointGenerator:
             ndarray([n_p, nfold, ncoords], np.complex128): Pullback tensor 
                 at each point.
         """
-        if isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray):
+        if use_jax and (isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray)):
             return PointGenerator._pullbacks_jax(points, j_elim, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']), self.nfold, self.nhyper, self.ncoords)
         else:
-            print("using legacy pullbacks, input type:", type(points))
+            print("using legacy pullbacks, input type:", type(points), "use_jax = ", use_jax)
             return self._pullbacks_legacy(points, j_elim)
     
     # cann

@@ -819,6 +819,17 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
     # print(volfromFSmetric)
     # print(slopefromvolFSrhoFS)
     #print(tf.reduce_mean(weights[:,0], axis=-1))
+    # Verify data dimensions consistency
+    print("\nData dimensions:")
+    print(f"Train: {len(X_train)} samples")
+    print(f"Val: {len(X_val)} samples")
+    
+    # Verify all train arrays have same length
+    assert len(X_train) == len(y_train) == len(train_pullbacks) == len(inv_mets_train) == len(sources_train)
+
+    # Verify all validation arrays have same length
+    assert len(X_val) == len(y_val) == len(val_pullbacks) == len(inv_mets_val) == len(sources_val)
+
     
     # save everything to compressed dict.
     np.savez_compressed(os.path.join(dirname, 'dataset'),
