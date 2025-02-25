@@ -256,7 +256,7 @@ if __name__ == '__main__':
 
     if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall', 'testtiny']:
         # Override with small test values
-        if str(sys.argv[3]) == 'testtiny':
+        if str(sys.argv[3]) == 'alltiny':
             nPoints = 100
             nPointsHF = 100
             n_to_integrate = 100

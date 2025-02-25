@@ -10,6 +10,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Cancel in-progress runs when a new commit is pushed
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     
     steps:
     - uses: actions/checkout@v3
@@ -64,5 +68,5 @@ jobs:
         TF_CPP_MIN_LOG_LEVEL: "2"   # Reduce TensorFlow logging
       run: |
         cd yukawas
-        python Model_13_Do.py -1.2324123412 'phi' 'testtiny' || { echo "Command failed with exit code $?"; exit 1; }
-      timeout-minutes: 10  # Set a timeout to prevent long-running tests 
+        python Model_13_Do.py -1.2324123412 'phi' 'alltiny' 'skipnone' || { echo "Command failed with exit code $?"; exit 1; }
+      timeout-minutes: 20  # Set a timeout to prevent long-running tests 
