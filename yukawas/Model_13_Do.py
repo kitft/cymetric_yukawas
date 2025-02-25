@@ -8,7 +8,8 @@ start_time_of_process = time.time()
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ["USE_PROFILER"] = "1"
 from tensorflow.python.client import device_lib
-print(device_lib.list_local_devices())
+if __name__ == '__main__':
+    print(device_lib.list_local_devices())
 
 
 import csv
