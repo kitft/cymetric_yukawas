@@ -1107,13 +1107,24 @@ class PointGenerator:
         Returns:
             ndarray([n_p, ncoords], np.complex): dQdz at each point.
         """
-        p_exp = jnp.expand_dims(jnp.expand_dims(np.array(points), 1), 1)
-        dQdz = jnp.power(p_exp, self.BASIS['DQDZB0'])
-        dQdz = jnp.multiply.reduce(dQdz, axis=-1)
-        dQdz = jnp.multiply(self.BASIS['DQDZF0'], dQdz)
-        dQdz = jnp.add.reduce(dQdz, axis=-1)
-        return np.array(dQdz)
-    
+        # Check if points is a numpy array or a JAX array
+        if isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray):
+            # Use JAX for numpy arrays
+            p_exp = jnp.expand_dims(jnp.expand_dims(jnp.array(points), 1), 1)
+            dQdz = jnp.power(p_exp, self.BASIS['DQDZB0'])
+            dQdz = jnp.multiply.reduce(dQdz, axis=-1)
+            dQdz = jnp.multiply(self.BASIS['DQDZF0'], dQdz)
+            dQdz = jnp.add.reduce(dQdz, axis=-1)
+            return np.array(dQdz)
+        else:
+            # Use TensorFlow for other types (assuming TF tensors)
+            import tensorflow as tf
+            p_exp = tf.expand_dims(tf.expand_dims(points, 1), 1)
+            dQdz = tf.pow(p_exp, tf.constant(self.BASIS['DQDZB0'], dtype=points.dtype))
+            dQdz = tf.reduce_prod(dQdz, axis=-1)
+            dQdz = tf.multiply(tf.constant(self.BASIS['DQDZF0'], dtype=points.dtype), dQdz)
+            dQdz = tf.reduce_sum(dQdz, axis=-1)
+            return dQdz.numpy() if hasattr(dQdz, 'numpy') else dQdz
     def _compute_dQdz_legacy(self, points):
         r"""Computes dQdz at each point.
 

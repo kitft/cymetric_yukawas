@@ -149,6 +149,10 @@ if __name__ == '__main__':
     nPointsHF = 1000
     if 'small' in sys.argv[1:]:
         n_to_integrate = 1000
+    elif 'allbig' in sys.argv[1:]:
+        nPoints = 100000
+        nPointsHF = 100000
+        n_to_integrate = 100000
     else:
         n_to_integrate = 1000000
     #tr_batchsize = 10
