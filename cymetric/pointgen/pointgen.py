@@ -1068,6 +1068,8 @@ class PointGenerator:
         omega = np.add.reduce(self.BASIS['DQDZF0'][indices] * omega, axis=-1)
         # compute (dQ/dzj)**-1
         return 1 / omega
+
+
     def _find_max_dQ_coords_legacy(self, points):
         r"""Finds the coordinates for which |dQ/dz| is largest.
 
@@ -1117,7 +1119,10 @@ class PointGenerator:
         Returns:
             ndarray[(n_p), int]: max(dQdz) indices
         """
-        return PointGenerator._find_max_dQ_coords_jax(points, self.BASIS['DQDZB0'], self.BASIS['DQDZF0'])
+        if isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray):
+            return PointGenerator._find_max_dQ_coords_jax(points, self.BASIS['DQDZB0'], self.BASIS['DQDZF0'])
+        else:
+            return self._find_max_dQ_coords_legacy(points)
 
     def _find_good_coordinate_mask(self, points):
         r"""Computes a mask for points with True
