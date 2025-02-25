@@ -14,6 +14,7 @@ from joblib import Parallel, delayed
 import itertools
 from cymetric.config import real_dtype, complex_dtype
 import jax.numpy as jnp
+from jax import jit as jax_jit
 
 
 logging.basicConfig(format='%(name)s:%(levelname)s:%(message)s')
@@ -1098,6 +1099,22 @@ class PointGenerator:
         dQdz_mask = -1 * np.eye(self.ncoords)[indices]
         full_mask = one_mask + dQdz_mask
         return full_mask.astype(bool)
+    @jax_jit
+    def _compute_dQdz_jax(points, DQDZB0, DQDZF0):
+        r"""Computes dQdz at each point using JAX.
+
+        Args:
+            points (ndarray[(n_p, ncoords), np.complex128]): Points.
+
+        Returns:
+            ndarray[(n_p, ncoords), np.complex128]: dQdz at each point.
+        """
+        p_exp = jnp.expand_dims(jnp.expand_dims(points, 1), 1)
+        dQdz = jnp.power(p_exp, DQDZB0)
+        dQdz = jnp.multiply.reduce(dQdz, axis=-1)
+        dQdz = jnp.multiply(DQDZF0, dQdz)
+        dQdz = jnp.add.reduce(dQdz, axis=-1)
+        return dQdz
     def _compute_dQdz(self, points):
         r"""Computes dQdz at each point.
 
@@ -1110,12 +1127,7 @@ class PointGenerator:
         # Check if points is a numpy array or a JAX array
         if isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray):
             # Use JAX for numpy arrays
-            p_exp = jnp.expand_dims(jnp.expand_dims(jnp.array(points), 1), 1)
-            dQdz = jnp.power(p_exp, self.BASIS['DQDZB0'])
-            dQdz = jnp.multiply.reduce(dQdz, axis=-1)
-            dQdz = jnp.multiply(self.BASIS['DQDZF0'], dQdz)
-            dQdz = jnp.add.reduce(dQdz, axis=-1)
-            return np.array(dQdz)
+            return np.array(PointGenerator._compute_dQdz_jax(points, self.BASIS['DQDZB0'], self.BASIS['DQDZF0']))
         else:
             # Use TensorFlow for other types (assuming TF tensors)
             import tensorflow as tf
