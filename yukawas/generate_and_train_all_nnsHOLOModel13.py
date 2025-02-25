@@ -121,7 +121,7 @@ def generate_points_and_save_using_defaults_for_eval(free_coefficient,number_poi
       try:
          data = np.load(os.path.join(dirname, 'dataset.npz'))
          # Check if X_train dtype matches real_dtype or if length doesn't match
-         if data['X_train'].dtype != real_dtype:
+         if data['X_train'].dtype != 'float64':#real_dtype: if it's a bare cymetric file, it should always be float64
             print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
             print("Regenerating dataset with correct dtype")
             kappa = pg.prepare_dataset(number_points, dirname)
@@ -156,7 +156,7 @@ def generate_points_and_save_using_defaults(free_coefficient,number_points,force
          print("loading prexisting dataset")
          data = np.load(os.path.join(dirname, 'dataset.npz'))
          # Check if X_train dtype matches real_dtype or if length doesn't match
-         if data['X_train'].dtype != real_dtype:
+         if data['X_train'].dtype != 'float64':#real_dtype: if it's a bare cymetric file, it should always be float64
             print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
             print("Regenerating dataset with correct dtype")
             kappa = pg.prepare_dataset(number_points, dirname)
@@ -456,8 +456,8 @@ def generate_points_and_save_using_defaultsHYM(free_coefficient,linebundleforHYM
          print("loading prexisting dataset")
          data = np.load(os.path.join(dirnameHYM, 'dataset.npz'))
          # Check if X_train dtype matches real_dtype or if length doesn't match
-         if data['X_train'].dtype != real_dtype:
-            print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
+         if False:#f data['X_train'].dtype != real_dtype:
+            print(f"Warning: X_train dtype is not 64-bit, it should b: {data['X_train'].dtype} ")
             print("Regenerating dataset with correct dtype")
             kappaHYM = prepare_dataset_HYM(pg,data,number_pointsHYM, dirnameHYM,phimodel,linebundleforHYM,BASIS,normalize_to_vol_j=True)
          elif len(data['X_train'])+len(data['X_val']) != number_pointsHYM:
@@ -866,7 +866,7 @@ def generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM,
          print(phimodel.BASIS['KMODULI'])
 
          # Check if X_train dtype matches real_dtype or if length doesn't match
-         if data['X_train'].dtype != real_dtype:
+         if False:#data['X_train'].dtype != real_dtype:
             print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
             print("Regenerating dataset with correct dtype")
             kappaHarmonic=prepare_dataset_HarmonicForm(pg,data,number_pointsHarmonic,dirnameHarmonic,phimodel,linebundleforHYM,BASIS,functionforbaseharmonicform_jbar,betamodel)

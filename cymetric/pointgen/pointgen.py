@@ -1319,7 +1319,7 @@ class PointGenerator:
         if False:#isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray):
             return PointGenerator._pullbacks_jax(points, j_elim, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']), self.nfold, self.nhyper, self.ncoords)
         else:
-            print("doing other, type:", type(points))
+            print("using legacy pullbacks, input type:", type(points))
             return self._pullbacks_legacy(points, j_elim)
     
     # cann
