@@ -76,12 +76,11 @@ def generate_monomials(n, deg):
             for j in generate_monomials(n - 1, deg - i):
                 yield (i,) + j
 
-
-def _prepare_dataset_batched(point_gen, batch_n_p, val_split, ltails, rtails, normalize_to_vol_j):
-    r"""Prepares a batch of training and validation data from point_gen.
+def _prepare_dataset_batched(point_gen, batch_n_p, ltails, rtails):
+    r"""Prepares a batch of data from point_gen without splitting or normalizing.
 
     Returns:
-        tuple: (points, weights, omega, X_train, y_train, X_val, y_val, val_pullbacks)
+        tuple: (points, weights, omega)
     """
     new_np = int(round(batch_n_p/(1-ltails-rtails)))
     import time
@@ -101,25 +100,9 @@ def _prepare_dataset_batched(point_gen, batch_n_p, val_split, ltails, rtails, no
     weights = np.expand_dims(pwo['weight'][mask], -1)
     omega = np.expand_dims(pwo['omega'][mask], -1)
     omega = np.real(omega * np.conj(omega))
-    
-    n_mask = len(weights)
-    t_i = int((1-val_split)*n_mask)
     points = pwo['point'][mask]
-    
-    if normalize_to_vol_j:
-        pbs = point_gen.pullbacks(points)
-        fs_ref = point_gen.fubini_study_metrics(points, vol_js=np.ones_like(point_gen.kmoduli))
-        fs_ref_pb = np.einsum('xai,xij,xbj->xab', pbs, fs_ref, np.conj(pbs))
-        aux_weights = omega.flatten() / weights.flatten()
-        norm_fac = point_gen.vol_j_norm / np.mean(np.real(np.linalg.det(fs_ref_pb)) / aux_weights)
-        weights = norm_fac * weights
-
-    X_train = np.concatenate((points[:t_i].real, points[:t_i].imag), axis=-1)
-    y_train = np.concatenate((weights[:t_i], omega[:t_i]), axis=1)
-    X_val = np.concatenate((points[t_i:].real, points[t_i:].imag), axis=-1)
-    y_val = np.concatenate((weights[t_i:], omega[t_i:]), axis=1)
-    val_pullbacks = point_gen.pullbacks(points[t_i:])
-    return points, weights, omega, X_train, y_train, X_val, y_val, val_pullbacks
+    pullbacks = point_gen.pullbacks(points)
+    return points, weights, omega, pullbacks
 
 
 def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltails=0, rtails=0, normalize_to_vol_j=True):
@@ -158,20 +141,18 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
         print(f'Generating {n_p} points using {n_batches} batches')
     base = n_p // n_batches
     rem = n_p % n_batches
-    all_points, all_weights, all_omega = [], [], []
-    X_train_list, y_train_list = [], []
-    X_val_list, y_val_list, val_pb_list = [], [], []
+    all_points, all_weights, all_omega, all_pullbacks = [], [], [], []
+    
     for i in range(n_batches):
         print(f'Generating {base + (1 if i < rem else 0)} points using {i}th batch')
         batch_n = base + (1 if i < rem else 0)
-
         
         if i == 0 and use_profiler:
             # Profile the function
             profiler = cProfile.Profile()
             profiler.enable()
-            pts, w, om, X_tr, y_tr, X_v, y_v, val_pb = _prepare_dataset_batched(
-                point_gen, batch_n, val_split, ltails, rtails, normalize_to_vol_j)
+            pts, w, om = _prepare_dataset_batched(
+                point_gen, batch_n, ltails, rtails)
             profiler.disable()
             
             # Print sorted results
@@ -180,30 +161,48 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
             stats.print_stats(20)  
             print("--------------------------------PROFILED--------------------------------")
         else:
-            pts, w, om, X_tr, y_tr, X_v, y_v, val_pb = _prepare_dataset_batched(
-                point_gen, batch_n, val_split, ltails, rtails, normalize_to_vol_j)
+            pts, w, om = _prepare_dataset_batched(
+                point_gen, batch_n, ltails, rtails)
         all_points.append(pts)
         all_weights.append(w)
         all_omega.append(om)
-        X_train_list.append(X_tr)
-        y_train_list.append(y_tr)
-        X_val_list.append(X_v)
-        y_val_list.append(y_v)
-        val_pb_list.append(val_pb)
-    X_train = np.concatenate(X_train_list, axis=0)
-    y_train = np.concatenate(y_train_list, axis=0)
-    X_val = np.concatenate(X_val_list, axis=0)
-    y_val = np.concatenate(y_val_list, axis=0)
-    val_pullbacks = np.concatenate(val_pb_list, axis=0)
+        all_pullbacks.append(pb)
+    # Concatenate all batches
     all_points = np.concatenate(all_points, axis=0)
     all_weights = np.concatenate(all_weights, axis=0)
     all_omega = np.concatenate(all_omega, axis=0)
+    all_pullbacks = np.concatenate(all_pullbacks, axis=0)
+    # Normalize weights if requested (after all batches are combined)
+    if normalize_to_vol_j:
+        fs_ref = point_gen.fubini_study_metrics(all_points, vol_js=np.ones_like(point_gen.kmoduli))
+        fs_ref_pb = np.einsum('xai,xij,xbj->xab', all_pullbacks, fs_ref, np.conj(all_pullbacks))
+        aux_weights = all_omega.flatten() / all_weights.flatten()
+        norm_fac = point_gen.vol_j_norm / np.mean(np.real(np.linalg.det(fs_ref_pb)) / aux_weights)
+        all_weights = norm_fac * all_weights
+    
+    # Split into train and validation sets after all processing
+    n_total = len(all_points)
+    t_i = int((1-val_split) * n_total)
+    
+    # Create train/val datasets
+    X_train = np.concatenate((all_points[:t_i].real, all_points[:t_i].imag), axis=-1)
+    y_train = np.concatenate((all_weights[:t_i], all_omega[:t_i]), axis=1)
+    X_val = np.concatenate((all_points[t_i:].real, all_points[t_i:].imag), axis=-1)
+    y_val = np.concatenate((all_weights[t_i:], all_omega[t_i:]), axis=1)
+    
+    # Generate pullbacks for train and validation sets
+    train_pullbacks = all_pullbacks[:t_i]
+    val_pullbacks = all_pullbacks[t_i:]
+    
+    # Save the dataset
     np.savez_compressed(os.path.join(dirname, 'dataset'),
                         X_train=X_train,
                         y_train=y_train,
                         X_val=X_val,
                         y_val=y_val,
+                        train_pullbacks=train_pullbacks,
                         val_pullbacks=val_pullbacks)
+    
     return point_gen.compute_kappa(all_points, all_weights, all_omega)
 
 
