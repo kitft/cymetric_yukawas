@@ -1349,10 +1349,14 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,function
    #     batch_size=50
    # )
    import time
+   start = time.time()
    print("computing mean failure to solve equation", time.strftime("%H:%M:%S", time.localtime()))
    meanfailuretosolveequation,_,_ = HYM_measure_val_with_H(HFmodel,dataHF)
    meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation).numpy().item()
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
+   print("TIME to compute mean failure to solve equation: ", time.time()-start)
+   start = time.time()
+   print("computing trained coclosure divided by norm of v", time.strftime("%H:%M:%S", time.localtime()))
    TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model)
    print("trained coclosure divided by norm of v: " + str(TrainedDivTrained))
    print("avg/avg trained coclosure divided by norm of trained v: " + str(avgavagTrainedDivTrained))
@@ -1360,6 +1364,7 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,function
    print("avg/avg trained coclosure divided by norm of v_FS: " + str(avgavagTrainedDivFS))
    print("FS coclosure divided by norm of v_FS: " + str(FS_DivFS))
    print("avg/avg FS coclosure divided by norm of v_FS: " + str(avgavagFS_DivFS))
+   print("TIME to compute trained coclosure divided by norm of v: ", time.time()-start)
    print("\n\n")
    return HFmodel,training_historyHF, meanfailuretosolveequation
 
