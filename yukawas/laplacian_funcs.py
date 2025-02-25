@@ -29,9 +29,9 @@ def laplacian(betamodel,points,pullbacks,invmetrics):
         tf.tensor([bSize], real_dtype): Laplacian of φ at each point.
     """
     ncoords = tf.shape(points[0])[-1] // 2 
-    with tf.GradientTape(persistent=False) as tape1:#why persistent?
+    with tf.GradientTape(persistent=False,watch_accessed_variables=False) as tape1:#why persistent?
         tape1.watch(points)
-        with tf.GradientTape(persistent=False) as tape2:
+        with tf.GradientTape(persistent=False,watch_accessed_variables=False) as tape2:
             tape2.watch(points)
             # Need to disable training here, because batch norm
             # and dropout mix the batches, such that batch_jacobian
@@ -165,9 +165,9 @@ def laplacian(betamodel,points,pullbacks,invmetrics):
 @tf.function
 def laplacianWithH(sigmamodel,points,pullbacks,invmetrics,Hfunc,training=False):
     ncoords = tf.shape(points[0])[-1] // 2 
-    with tf.GradientTape(persistent=False) as tape1:
+    with tf.GradientTape(persistent=False,watch_accessed_variables=False) as tape1:
         tape1.watch(points)
-        with tf.GradientTape(persistent=False) as tape2:
+        with tf.GradientTape(persistent=False,watch_accessed_variables=False) as tape2:
             tape2.watch(points)
             # Need to disable training here, because batch norm
             # and dropout mix the batches, such that batch_jacobian
@@ -231,7 +231,7 @@ def laplacianWithH(sigmamodel,points,pullbacks,invmetrics,Hfunc,training=False):
 def coclosure_check(points,HYMmetric,harmonicform_jbar,sigma,invmetric,pullbacks):
     ncoords = tf.shape(points[0])[-1] // 2 
     pointstensor=points#tf.constant(points)
-    with tf.GradientTape(persistent=True) as tape1:
+    with tf.GradientTape(persistent=True,watch_accessed_variables=False) as tape1:
         tape1.watch(pointstensor)
         cpoints=point_vec_to_complex(pointstensor)
         dbarsigma = extder_jbar_for_sigma(pointstensor,sigma)
@@ -265,7 +265,7 @@ def closure_check(points,harmonicform_jbar,sigma,pullbacks):
     #break
     ncoords = tf.shape(points[0])[-1] // 2 
     pointstensor=points#tf.constant(points)
-    with tf.GradientTape(persistent=True) as tape1:
+    with tf.GradientTape(persistent=True,watch_accessed_variables=False) as tape1:
         tape1.watch(pointstensor)
         cpoints=point_vec_to_complex(pointstensor)
         dbarsigma = extder_jbar_for_sigma(pointstensor,sigma)
@@ -302,9 +302,9 @@ def extder_jbar_for_sigma(points,sigma):
     ncoords = tf.shape(points[0])[-1] // 2 
     #pointstensor=tf.constant(points)
     pointstensor=points
-    with tf.GradientTape(persistent=False) as tape2:
+    with tf.GradientTape(persistent=False,watch_accessed_variables=False) as tape2:
         tape2.watch(pointstensor)
-        cpoints=point_vec_to_complex(pointstensor)
+        #cpoints=point_vec_to_complex(pointstensor)
         #HNu=tf.einsum('x,xb->xb',tf.cast(HYMmetric(pointstensor),complex_dtype),tf.cast(harmonicform_jbar(tf.cast(cpoints,complex_dtype)),complex_dtype))#complexpoints vs noncomplex
         sigma = sigma(pointstensor)
         real_part = tf.math.real(sigma)
@@ -346,7 +346,7 @@ def antiholo_extder_for_nu_w_dzbar(points,nu):
     ncoords = tf.shape(points[0])[-1] // 2 
     #pointstensor=tf.constant(points)
     pointstensor=points
-    with tf.GradientTape(persistent=False) as tape2:
+    with tf.GradientTape(persistent=False,watch_accessed_variables=False) as tape2:
         tape2.watch(pointstensor)
         cpoints=point_vec_to_complex(pointstensor)
         #HNu=tf.einsum('x,xb->xb',tf.cast(HYMmetric(pointstensor),complex_dtype),tf.cast(harmonicform_jbar(tf.cast(cpoints,complex_dtype)),complex_dtype))#complexpoints vs noncomplex
