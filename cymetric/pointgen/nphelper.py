@@ -151,7 +151,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
             # Profile the function
             profiler = cProfile.Profile()
             profiler.enable()
-            pts, w, om = _prepare_dataset_batched(
+            pts, w, om, pb = _prepare_dataset_batched(
                 point_gen, batch_n, ltails, rtails)
             profiler.disable()
             
