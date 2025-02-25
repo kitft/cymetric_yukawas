@@ -1360,12 +1360,7 @@ class PointGenerator:
             pia_polys = DQDZB0[z_indices]
             pia_factors = DQDZF0[z_indices]
             rep_pts = jnp.expand_dims(jnp.repeat(points, nfold, axis=0), 1)
-            print("rep_pts.shape = " + str(rep_pts.shape))
-            print("pia_polys.shape = " + str(pia_polys.shape))
-            print("pia_factors.shape = " + str(pia_factors.shape))
-
             pia = jnp.power(rep_pts, pia_polys)
-            print("pia.shape = " + str(pia.shape))
             pia = jnp.prod(pia, axis=-1)
             pia = jnp.sum(pia_factors * pia, axis=-1)
             pia = jnp.reshape(pia, (-1, nfold))
@@ -1374,20 +1369,14 @@ class PointGenerator:
             pif_polys = DQDZB0[fixed_indices]
             pif_factors = DQDZF0[fixed_indices]
             rep_pts_fixed = jnp.expand_dims(jnp.repeat(points, nhyper, axis=0), 1)
-            print("rep_pts_fixed.shape = " + str(rep_pts_fixed.shape))
-            print("pif_polys.shape = " + str(pif_polys.shape))
-            print("pif_factors.shape = " + str(pif_factors.shape))
             pif = jnp.power(rep_pts_fixed, pif_polys)
             pif = jnp.prod(pif, axis=-1)
             pif = jnp.sum(pif_factors * pif, axis=-1)
             pif = jnp.reshape(pif, (-1, nhyper))
             B_matrix = B_matrix.at[:, i, :].add(pif)
-            print("B_matrix.shape = " + str(B_matrix.shape))
         all_dzdz = jnp.einsum('xij,xjk->xki', jnp.linalg.inv(B_matrix), -1j * dz_hyper)
-        print("all_dzdz.shape = " + str(all_dzdz.shape))
         for i in range(nhyper):
             pullbacks = pullbacks.at[jnp.arange(points.shape[0]), :, j_elim[:, i]].add(all_dzdz[:, :, i])
-        print("pullbacks.shape = " + str(pullbacks.shape))
         return pullbacks
 
     def _pullbacks_legacy(self, points, j_elim=None):
