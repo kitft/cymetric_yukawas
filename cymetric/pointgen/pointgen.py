@@ -17,6 +17,9 @@ import jax.numpy as jnp
 from jax import jit as jax_jit
 from jax import vmap as jax_vmap
 from functools import partial
+import jax.config as jaxconfig
+
+jaxconfig.update("jax_enable_x64", True)
 
 
 logging.basicConfig(format='%(name)s:%(levelname)s:%(message)s')

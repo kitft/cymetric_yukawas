@@ -670,6 +670,7 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
     ys=tf.concat((y_train,y_val),axis=0)
     weights=tf.cast(tf.expand_dims(ys[:,0],axis=-1),real_dtype)
     omega=tf.cast(tf.expand_dims(ys[:,1],axis=-1),real_dtype)
+    weightsreal = tf.math.real(weights[:,0])
 
     realpoints=tf.concat((X_train,X_val),axis=0)
     points=tf.complex(realpoints[:,0:ncoords],realpoints[:,ncoords:])
@@ -733,16 +734,16 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
     #print("hi")
     det_over_omega = det / omega[:,0]
     #print("hi")
-    volume_cy = tf.math.reduce_mean(weights[:,0], axis=-1)# according to raw CY omega calculation and sampling...
+    volume_cy = tf.math.reduce_mean(weightsreal, axis=-1)# according to raw CY omega calculation and sampling...
     #print("hi")
     #including the 6
-    vol_k = tf.math.reduce_mean(det_over_omega * weights[:,0], axis=-1)
+    vol_k = tf.math.reduce_mean(det_over_omega * weightsreal, axis=-1)
     #print("hi")
     kappaover6 = tf.cast(vol_k,real_dtype) / tf.cast(volume_cy,real_dtype)
     #rint(ratio)
     #print("hi")
     tf.cast(kappaover6,real_dtype)
-    weightscomp=tf.cast(weights[:,0],complex_dtype)
+    #weightscomp=tf.cast(weightsreal,complex_dtype)
     #print("hi")
     det = tf.cast(det,real_dtype)
     print('kappa over 6, returned as kappa: '+ str(kappaover6))
@@ -828,16 +829,18 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
     # print(slopefromvolFSrhoFS)
     #print(tf.reduce_mean(weights[:,0], axis=-1))
     # Verify data dimensions consistency
-    print("\nData dimensions:")
-    print(f"Train: {len(X_train)} samples")
-    print(f"Val: {len(X_val)} samples")
+
+    # Calculate effective sample size and error
+    ess = tf.square(tf.reduce_sum(weightsreal)) / tf.reduce_sum(tf.square(weightsreal))
+    error = 1/tf.sqrt(ess)
+    print(f"ESS: {ess}, error: {error}")
+    print(f"Data dimensions: Train: {len(X_train)} samples, Val: {len(X_val)} samples")
     
-    # Verify all train arrays have same length
+    # Verify all train, val arrays have same length
     assert len(X_train) == len(y_train) == len(train_pullbacks) == len(inv_mets_train) == len(sources_train)
-
-    # Verify all validation arrays have same length
     assert len(X_val) == len(y_val) == len(val_pullbacks) == len(inv_mets_val) == len(sources_val)
-
+    
+    # Save everything to co
     
     # save everything to compressed dict.
     np.savez_compressed(os.path.join(dirname, 'dataset'),

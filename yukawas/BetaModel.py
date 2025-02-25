@@ -649,17 +649,11 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     # Calculate effective sample size and error
     ess = tf.square(tf.reduce_sum(weightsreal)) / tf.reduce_sum(tf.square(weightsreal))
     error = 1/tf.sqrt(ess)
-    print("ESS: ", ess)
-    print("error: ", error)
-    # Verify data dimensions consistency
-    print("\nData dimensions:")
-    print(f"Train: {len(X_train)} samples")
-    print(f"Val: {len(X_val)} samples")
+    print(f"ESS: {ess}, error: {error}")
+    print(f"Data dimensions: Train: {len(X_train)} samples, Val: {len(X_val)} samples")
     
-    # Verify all train arrays have same length
+    # Verify all train, val arrays have same length
     assert len(X_train) == len(y_train) == len(train_pullbacks) == len(inv_mets_train) == len(sources_train)
-
-    # Verify all validation arrays have same length
     assert len(X_val) == len(y_val) == len(val_pullbacks) == len(inv_mets_val) == len(sources_val)
     
     # Save everything to compressed dict
