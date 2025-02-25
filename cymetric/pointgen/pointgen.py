@@ -15,6 +15,8 @@ import itertools
 from cymetric.config import real_dtype, complex_dtype
 import jax.numpy as jnp
 from jax import jit as jax_jit
+from jax import vmap as jax_vmap
+from functools import partial
 
 
 logging.basicConfig(format='%(name)s:%(levelname)s:%(message)s')
@@ -1120,7 +1122,7 @@ class PointGenerator:
             ndarray[(n_p), int]: max(dQdz) indices
         """
         if isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray):
-            return PointGenerator._find_max_dQ_coords_jax(points, self.BASIS['DQDZB0'], self.BASIS['DQDZF0'])
+            return PointGenerator._find_max_dQ_coords_jax(points, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']))
         else:
             return self._find_max_dQ_coords_legacy(points)
 
@@ -1141,6 +1143,8 @@ class PointGenerator:
         dQdz_mask = -1 * np.eye(self.ncoords)[indices]
         full_mask = one_mask + dQdz_mask
         return full_mask.astype(bool)
+
+    @staticmethod
     @jax_jit
     def _compute_dQdz_jax(points, DQDZB0, DQDZF0):
         r"""Computes dQdz at each point using JAX.
@@ -1169,7 +1173,7 @@ class PointGenerator:
         # Check if points is a numpy array or a JAX array
         if isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray):
             # Use JAX for numpy arrays
-            return PointGenerator._compute_dQdz_jax(points, self.BASIS['DQDZB0'], self.BASIS['DQDZF0'])
+            return PointGenerator._compute_dQdz_jax(points, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']))
         else:
             # Use TensorFlow for other types (assuming TF tensors)
             import tensorflow as tf
@@ -1269,10 +1273,96 @@ class PointGenerator:
             norm_fac = self.vol_j_norm / np.mean(np.real(np.linalg.det(fs_ref_pb)) / detg_norm)
             weight = norm_fac * weight
         return weight
-
-    def pullbacks(self, points, j_elim=None):
+    def pullbacks(self, points, j_elim=None, use_jax=True):
         r"""Computes the pullback from ambient space to local CY coordinates
         at each point. 
+        
+        Denote the ambient space coordinates with z_i and the CY
+        coordinates with x_a then
+
+        .. math::
+
+            J^i_a = \frac{dz_i}{dx_a}
+
+        Args:
+            points (ndarray([n_p, ncoords], np.complex128)): Points.
+            j_elim (ndarray([n_p, nhyper], int)): Index to be eliminated. 
+                Defaults to None. If None eliminates max(dQdz).
+            use_jax (bool, optional): Whether to use JAX implementation.
+                Defaults to True.
+
+        Returns:
+            ndarray([n_p, nfold, ncoords], np.complex128): Pullback tensor 
+                at each point.
+        """
+        if isinstance(points, np.ndarray) or isinstance(points, jnp.ndarray):
+            return PointGenerator._pullbacks_jax(points, j_elim, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']), self.nfold, self.nhyper, self.ncoords)
+        else:
+            print("doing other, type:", type(points))
+            return self._pullbacks_legacy(points, j_elim)
+    
+    # cann
+    @staticmethod# cannot jit compile due to dunamics
+    def _pullbacks_jax(points, j_elim, DQDZB0, DQDZF0, nfold, nhyper, ncoords):
+        """JAX implementation of pullbacks computation."""
+        
+        inv_one_mask = ~jnp.isclose(points, complex(1, 0))
+        if j_elim is None:
+            j_elim = PointGenerator._find_max_dQ_coords_jax(points, DQDZB0, DQDZF0)
+        if len(j_elim.shape) == 1:
+            j_elim = jnp.reshape(j_elim, (-1, 1))
+        full_mask = jnp.copy(inv_one_mask)
+        
+        # Create mask for eliminated coordinates
+        for i in range(nhyper):
+            full_mask = full_mask.at[jnp.arange(len(points)), j_elim[:, i]].set(jnp.zeros(len(points), dtype=bool))
+
+        # Fill the diagonal ones in pullback
+        x_indices, z_indices = jnp.where(full_mask)
+        pullbacks = jnp.zeros((len(points), nfold, ncoords), dtype=jnp.complex128)
+        y_indices = jnp.repeat(jnp.expand_dims(jnp.arange(nfold), 0), len(points), axis=0)
+        y_indices = jnp.reshape(y_indices, (-1))
+        
+        # Set ones at appropriate indices
+        pullbacks = pullbacks.at[x_indices, y_indices, z_indices].set(jnp.ones(nfold * len(points), dtype=jnp.complex128))
+        
+        # Next fill the dzdz from every hypersurface
+        B_matrix = jnp.zeros((len(points), nhyper, nhyper), dtype=jnp.complex128)
+        dz_hyper = jnp.zeros((len(points), nhyper, nfold), dtype=jnp.complex128)
+        fixed_indices = jnp.reshape(j_elim, (-1))
+        
+        for i in range(nhyper):
+            # Compute p_i\alpha eq (5.24)
+            pia_polys = DQDZB0[z_indices, i]
+            pia_factors = DQDZF0[z_indices, i]
+            pia = jnp.power(jnp.expand_dims(
+                jnp.repeat(points, nfold, axis=0), 1), pia_polys)
+            pia = jnp.multiply.reduce(pia, axis=-1)
+            pia = jnp.add.reduce(jnp.multiply(pia_factors, pia), axis=-1)
+            pia = jnp.reshape(pia, (-1, nfold))
+            dz_hyper = dz_hyper.at[:, i, :].add(pia)
+            
+            # Compute p_ifixed
+            pif_polys = DQDZB0[fixed_indices, i]
+            pif_factors = DQDZF0[fixed_indices, i]
+            pif = jnp.power(jnp.expand_dims(
+                jnp.repeat(points, nhyper, axis=0), 1), pif_polys)
+            pif = jnp.multiply.reduce(pif, axis=-1)
+            pif = jnp.add.reduce(jnp.multiply(pif_factors, pif), axis=-1)
+            pif = jnp.reshape(pif, (-1, nhyper))
+            B_matrix = B_matrix.at[:, i, :].add(pif)
+            
+        all_dzdz = jnp.einsum('xij,xjk->xki',
+                             jnp.linalg.inv(B_matrix),
+                             complex(-1., 0.) * dz_hyper)
+                             
+        for i in range(nhyper):
+            pullbacks = pullbacks.at[jnp.arange(len(points)), :, j_elim[:, i]].add(all_dzdz[:, :, i])
+            
+        return pullbacks
+    
+    def _pullbacks_legacy(self, points, j_elim=None):
+        r"""Legacy numpy implementation of pullbacks computation.
         
         Denote the ambient space coordinates with z_i and the CY
         coordinates with x_a then
