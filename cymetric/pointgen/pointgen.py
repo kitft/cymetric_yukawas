@@ -1043,8 +1043,7 @@ class PointGenerator:
         if omega:
             point_weights['omega'] = self.holomorphic_volume_form(points[0:n_p])
         return point_weights
-
-    def holomorphic_volume_form(self, points, j_elim=None):
+    def holomorphic_volume_form(self, points, j_elim=None, use_jax=True):
         r"""We compute the holomorphic volume form
         at all points by solving the residue theorem:
 
@@ -1059,10 +1058,30 @@ class PointGenerator:
             points (ndarray[(n_p, ncoords), np.complex128]): Points.
             j_elim (ndarray([n_p], int)): index to be eliminated. 
                 Defaults not None. If None eliminates max(dQdz).
+            use_jax (bool, optional): Whether to use JAX implementation.
+                Defaults to True.
 
         Returns:
             ndarray[(n_p), np.complex128]: Omega evaluated at each point.
         """
+        if isinstance(points, jnp.ndarray) or (isinstance(points, np.ndarray) and use_jax):
+            return PointGenerator._holomorphic_volume_form_jax(points, j_elim, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']))
+        else:
+            return self._holomorphic_volume_form_legacy(points, j_elim)
+    
+    @staticmethod
+    @jax_jit
+    def _holomorphic_volume_form_jax(points, j_elim, DQDZB0, DQDZF0):
+        """JAX implementation of holomorphic volume form computation."""
+        indices = PointGenerator._find_max_dQ_coords_jax(points, DQDZB0, DQDZF0) if j_elim is None else j_elim
+        omega = jnp.power(jnp.expand_dims(points, 1), DQDZB0[indices])
+        omega = jnp.multiply.reduce(omega, axis=-1)
+        omega = jnp.add.reduce(DQDZF0[indices] * omega, axis=-1)
+        # compute (dQ/dzj)**-1
+        return 1 / omega
+    
+    def _holomorphic_volume_form_legacy(self, points, j_elim=None):
+        """Legacy numpy implementation of holomorphic volume form computation."""
         indices = self._find_max_dQ_coords(points) if j_elim is None else j_elim
         omega = np.power(np.expand_dims(points, 1),
                          self.BASIS['DQDZB0'][indices])
