@@ -1107,7 +1107,7 @@ class PointGenerator:
         Returns:
             ndarray([n_p, ncoords], np.complex): dQdz at each point.
         """
-        p_exp = jnp.expand_dims(jnp.expand_dims(points, 1), 1)
+        p_exp = jnp.expand_dims(jnp.expand_dims(np.array(points), 1), 1)
         dQdz = jnp.power(p_exp, self.BASIS['DQDZB0'])
         dQdz = jnp.multiply.reduce(dQdz, axis=-1)
         dQdz = jnp.multiply(self.BASIS['DQDZF0'], dQdz)
