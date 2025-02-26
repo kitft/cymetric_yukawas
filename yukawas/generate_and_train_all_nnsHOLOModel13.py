@@ -228,7 +228,7 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,stddev=0.
    #opt = tfk.optimizers.legacy.Adam(learning_rate=lRate)
    opt = create_adam_optimizer_with_decay(
     initial_learning_rate=lRate,
-    nEpochs=nEpochs*(len(data['X_train'])//bSizes[0]),
+    nEpochs=nEpochs*np.ceil(len(data['X_train'])//bSizes[0]),
     final_lr_factor=2  # This will decay to lRate/10
 )
    # compile so we can test on validation set before training
@@ -584,7 +584,7 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    #opt = tfk.optimizers.legacy.Adam(learning_rate=lRate)
    opt = create_adam_optimizer_with_decay(
     initial_learning_rate=lRate,
-    nEpochs=nEpochs*(len(databeta['X_train'])//bSizes[0]),
+    nEpochs=nEpochs*np.ceil(len(databeta['X_train'])//bSizes[0]),
     final_lr_factor=2  # This will decay to lRate/10
     )
    # compile so we can test on validation set before training
@@ -631,7 +631,7 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
                  initial_learning_rate=newLR,
                  #nEpochs=nEpochs,
                  #nEpochs=nEpochs*(len(data['X_train'])//bSizes[0]),
-                 nEpochs=nEpochs*(len(databeta['X_train'])//bSizes[0]),
+                 nEpochs=nEpochs*np.ceil(len(databeta['X_train'])//bSizes[0]),
                  final_lr_factor=2  # This will decay to lRate/10
                  )
          #betamodel= BetaModel(nn_beta,BASIS, linebundleforHYM,alpha=alpha,norm = [1. for _ in range(2)])
@@ -1012,7 +1012,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    #opt = tfk.optimizers.legacy.Adam(learning_rate=lRate)
    opt = create_adam_optimizer_with_decay(
            initial_learning_rate=lRate,
-           nEpochs=nEpochs*(len(dataHF['X_train'])//bSizes[0]),
+           nEpochs=nEpochs*np.ceil(len(dataHF['X_train'])//bSizes[0]),
            final_lr_factor=2#2  # This will decay to lRate/10
            )
    # compile so we can test on validation set before training
@@ -1080,7 +1080,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
              print("new LR " + str(newLR))
          opt = create_adam_optimizer_with_decay(
                  initial_learning_rate=newLR,
-                 nEpochs=nEpochs*(len(dataHF['X_train'])//bSizes[0]),
+                 nEpochs=nEpochs*np.ceil(len(dataHF['X_train'])//bSizes[0]),
                  final_lr_factor=2  # This will decay to lRate/10
                  )
          #cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF)
