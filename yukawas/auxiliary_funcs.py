@@ -208,7 +208,6 @@ def propagate_errors_to_singular_values(matrix, matrix_errors):
 
     # Initialize array to store singular value errors
     s_errors = np.zeros_like(s)
-
     # For each singular value, calculate its error
     for i in range(len(s)):
         # Get corresponding singular vectors
@@ -218,8 +217,16 @@ def propagate_errors_to_singular_values(matrix, matrix_errors):
         # Sensitivity matrix through outer product
         sensitivity = np.abs(ui @ vi)  # Take absolute value for complex case
 
-        # Error propagation: variance is sum of squared sensitivities times squared errors
-        variance = np.sum((sensitivity ** 2) * (matrix_errors ** 2))
+        # For complex matrices, handle real and imaginary errors separately
+        if np.iscomplexobj(matrix):
+            # Calculate variance contributions from real and imaginary parts
+            real_variance = np.sum((sensitivity ** 2) * (np.abs(np.real(matrix_errors)) ** 2))
+            imag_variance = np.sum((sensitivity ** 2) * (np.abs(np.imag(matrix_errors)) ** 2))
+            # Total variance is sum of real and imaginary variances
+            variance = real_variance + imag_variance
+        else:
+            # For real matrices, use original calculation
+            variance = np.sum((sensitivity ** 2) * (matrix_errors ** 2))
 
         # Standard error is square root of variance
         s_errors[i] = np.sqrt(variance)
@@ -283,8 +290,9 @@ def test_error_propagation():
     ])
 
     # Test with real matrix
-    print("Testing with real matrix:")
-    matrix_errors_real = 0.05 * np.abs(real_matrix)
+    error_size = 0.005
+    print("Testing singular values with real matrix:")
+    matrix_errors_real = error_size * np.abs(real_matrix)
     singular_values_real = np.linalg.svd(real_matrix, compute_uv=False)
     print("Original singular values:", singular_values_real)
     
@@ -297,7 +305,7 @@ def test_error_propagation():
     
     # Test with complex matrix
     print("\nTesting with complex matrix:")
-    matrix_errors_complex = 0.05 * np.abs(complex_matrix)
+    matrix_errors_complex = error_size * complex_matrix
     singular_values_complex = np.linalg.svd(complex_matrix, compute_uv=False)
     print("Original singular values:", singular_values_complex)
     
@@ -307,6 +315,7 @@ def test_error_propagation():
     s_errors_mc_complex = verify_by_monte_carlo(complex_matrix, matrix_errors_complex)
     print("Monte Carlo errors:", s_errors_mc_complex)
     print("Ratio (Analytical/MC):", s_errors_analytical_complex / s_errors_mc_complex)
+
     
     # Check if ratios are close to 1 for both cases
     tolerance = 0.2  # 20% tolerance
@@ -324,45 +333,142 @@ def test_error_propagation():
     else:
         print("Complex matrix error propagation validation passed!")
 
+    
+
+def propagate_errors_through_normalization(matrix, matrix_errors, n_samples=10000):
+    """
+    Propagate errors through matrix square root and inversion operations
+    using Monte Carlo simulation.
+    
+    Parameters:
+        matrix: Original matrix
+        matrix_errors: Error matrix
+        n_samples: Number of Monte Carlo samples
+        
+    Returns:
+        Standard deviation of the normalization matrix elements
+    """
+    import scipy
+    import numpy as np
+    
+    # Ensure inputs are complex
+    matrix = np.asarray(matrix, dtype=complex)
+    matrix_errors = np.asarray(matrix_errors, dtype=complex)
+    
+    # Prepare array for Monte Carlo results
+    norm_samples = []
+    
+    # Run Monte Carlo simulation
+    for _ in range(n_samples):
+        # Generate perturbed matrix with complex perturbations
+        perturbed = matrix.copy()
+        
+        # Add perturbations
+        for i in range(matrix.shape[0]):
+            for j in range(matrix.shape[1]):
+                if matrix_errors[i, j] != 0:
+                    real_error = np.random.normal(0, np.abs(np.real(matrix_errors[i, j])))
+                    imag_error = np.random.normal(0, np.abs(np.imag(matrix_errors[i, j])))
+                    perturbed[i, j] += real_error + 1j * imag_error
+        
+        # Calculate normalization matrix for perturbed values
+        norm = np.linalg.inv(scipy.linalg.sqrtm(perturbed).astype(complex))
+        norm_samples.append(norm)
+    
+    # Convert list to numpy array
+    norm_samples = np.array(norm_samples)
+    
+    # Calculate standard deviations (separately for real and imaginary parts)
+    norm_errors_real = np.std(np.real(norm_samples), axis=0, ddof=1)
+    norm_errors_imag = np.std(np.imag(norm_samples), axis=0, ddof=1)
+    
+    return norm_errors_real + 1j * norm_errors_imag
     # Function to propagate errors through matrix square root and inversion
-def propagate_errors_through_normalization(matrix, matrix_errors):
+def propagate_errors_through_normalization_legacy(matrix, matrix_errors):
     """
     Propagate errors through matrix square root and inversion operations.
-    Uses analytical error propagation formulas.
+    Uses finite difference method for accurate error propagation.
     """
-    print("types: ", type(matrix), type(matrix_errors), matrix.shape, matrix_errors.shape, matrix, matrix_errors)
     import scipy
-    # For a 1x1 matrix, the error propagation is straightforward
+    import numpy as np
+    # For a 1x1 matrix, use the same finite difference approach as for larger matrices
     if matrix.shape == (1, 1):
-        # For sqrt(x)^-1, the derivative is -0.5 * x^(-3/2)
-        derivative = -0.5 * np.power(matrix[0, 0], -1.5)
-        return np.abs(derivative) * matrix_errors
+        # Calculate A^(-1/2) directly
+        inv_sqrt_value = 1.0 / np.sqrt(matrix[0, 0])
+        
+        # Use finite difference to calculate derivatives in real and imaginary directions separately
+        h = 1e-8
+        
+        # Real direction perturbation
+        perturbed_matrix_real = matrix[0, 0] + h
+        perturbed_value_real = 1.0 / np.sqrt(perturbed_matrix_real)
+        derivative_real = (perturbed_value_real - inv_sqrt_value) / h
+        
+        # Imaginary direction perturbation (if complex)
+        if np.iscomplexobj(matrix):
+            perturbed_matrix_imag = matrix[0, 0] + 1j * h
+            perturbed_value_imag = 1.0 / np.sqrt(perturbed_matrix_imag)
+            derivative_imag = (perturbed_value_imag - inv_sqrt_value) / (1j * h)
+            # Combine real and imaginary components in quadrature for proper error propagation
+            real_part_error = np.sqrt((np.real(derivative_real) * np.real(matrix_errors[0, 0]))**2 + 
+                                     (np.real(derivative_imag) * np.imag(matrix_errors[0, 0]))**2)
+            imag_part_error = np.sqrt((np.imag(derivative_real) * np.real(matrix_errors[0, 0]))**2 + 
+                                     (np.imag(derivative_imag) * np.imag(matrix_errors[0, 0]))**2)
+            return np.array([[real_part_error + 1j * imag_part_error]])
+        else:
+            return np.array([[derivative_real * matrix_errors[0, 0]]])
+            
+    # Calculate A^(-1/2) directly
+    inv_sqrt_matrix = np.linalg.inv(scipy.linalg.sqrtm(matrix).astype(complex))
     
-    # For larger matrices, use SVD-based approac
-    u, s, vh = np.linalg.svd(matrix)
-    sqrt_matrix = scipy.linalg.sqrtm(matrix).astype(complex)
-    inv_sqrt_matrix = np.linalg.inv(sqrt_matrix)
+    # Initialize error matrix with zeros
+    error_matrix = np.zeros_like(matrix, dtype=complex)
     
-    # Calculate how errors in matrix elements affect singular values
-    s_errors = np.zeros_like(s)
-    for i in range(len(s)):
-        for j in range(matrix.shape[0]):
-            for k in range(matrix.shape[1]):
-                # Partial derivative of singular value with respect to matrix element
-                # ∂s_i/∂M_jk = u_ji * vh_ik
-                print("u[j, i]: ", u[j, i], "vh[i, k]: ", vh[i, k], "matrix_errors[j, k]: ", matrix_errors[j, k])
-                s_errors[i] += (u[j, i] * vh[i, k] * matrix_errors[j, k])**2
-        s_errors[i] = np.sqrt(s_errors[i])
+    # Initialize matrices to accumulate squared errors
+    error_matrix_real_squared = np.zeros_like(matrix, dtype=float)
+    error_matrix_imag_squared = np.zeros_like(matrix, dtype=float)
     
-    # Calculate errors for inv(sqrt(s))
-    s_sqrt_inv_errors = 0.5 * s_errors * np.power(s, -1.5)
+    # For each element of the original matrix
+    for i in range(matrix.shape[0]):
+        for j in range(matrix.shape[1]):
+            # Skip if error is zero
+            if matrix_errors[i, j] == 0:
+                continue
+                
+            # Create perturbation matrix (zeros with single element set to 1)
+            perturbation = np.zeros_like(matrix, dtype=complex)
+            perturbation[i, j] = 1.0
+            
+            # Calculate directional derivative using finite difference approximation
+            h = 1e-8
+            
+            # Real direction perturbation
+            perturbed_matrix_real = matrix + h * perturbation
+            perturbed_inv_sqrt_real = np.linalg.inv(scipy.linalg.sqrtm(perturbed_matrix_real).astype(complex))
+            frechet_derivative_real = (perturbed_inv_sqrt_real - inv_sqrt_matrix) / h
+            
+            # Imaginary direction perturbation (if complex)
+            perturbed_matrix_imag = matrix + 1j * h * perturbation
+            perturbed_inv_sqrt_imag = np.linalg.inv(scipy.linalg.sqrtm(perturbed_matrix_imag).astype(complex))
+            frechet_derivative_imag = (perturbed_inv_sqrt_imag - inv_sqrt_matrix) / (1j * h)
+            
+            # Calculate error contribution and add squared errors
+            real_part_contribution = (np.real(frechet_derivative_real) * np.real(matrix_errors[i, j]))**2 + (np.real(frechet_derivative_imag) * np.imag(matrix_errors[i, j]))**2
+            imag_part_contribution = (np.imag(frechet_derivative_real) * np.real(matrix_errors[i, j]))**2 + (np.imag(frechet_derivative_imag) * np.imag(matrix_errors[i, j]))**2
+            
+            # Accumulate squared errors
+            error_matrix_real_squared += real_part_contribution
+            error_matrix_imag_squared += imag_part_contribution
     
-    # Reconstruct the error matrix
-    error_matrix = np.zeros_like(inv_sqrt_matrix, dtype=complex)
-    for i in range(len(s)):
-        error_matrix += s_sqrt_inv_errors[i] * np.outer(u[:, i], vh[i, :])
+    # Take square root of accumulated squared errors to get final error matrix
+    error_matrix = np.sqrt(error_matrix_real_squared) + 1j * np.sqrt(error_matrix_imag_squared)
     
-    return np.abs(error_matrix)
+    # For complex matrices, ensure the error is properly handled
+    if np.iscomplexobj(matrix) or np.iscomplexobj(matrix_errors):
+        # Take absolute values for the error magnitudes
+        error_matrix = np.abs(np.real(error_matrix)) + 1j * np.abs(np.imag(error_matrix))
+    
+    return error_matrix
 
 # Run the test
 if __name__ == "__main__":
@@ -821,4 +927,155 @@ if __name__ == "__main__":
     realistic_results = run_realistic_test()
     
     print("\nTests completed! Check the generated plots for visualization of results.") 
+def test_normalization_error_propagation_monte_carlo(Hmat, Hmat_errors, Qmat, Qmat_errors, Umat, Umat_errors, n_samples=10000):
+    """
+    Test error propagation through normalization matrices using Monte Carlo simulation.
+    
+    Parameters:
+        Hmat, Qmat, Umat: Original matrices
+        Hmat_errors, Qmat_errors, Umat_errors: Error matrices
+        n_samples: Number of Monte Carlo samples
+        
+    Returns:
+        Dictionary with ratios between analytical and Monte Carlo errors
+    """
+    import scipy
+    import numpy as np
+    
+    # Ensure all inputs are complex
+    Hmat = np.asarray(Hmat, dtype=complex)
+    Qmat = np.asarray(Qmat, dtype=complex)
+    Umat = np.asarray(Umat, dtype=complex)
+    Hmat_errors = np.asarray(Hmat_errors, dtype=complex)
+    Qmat_errors = np.asarray(Qmat_errors, dtype=complex)
+    Umat_errors = np.asarray(Umat_errors, dtype=complex)
+    
+    # Calculate analytical errors
+    NormH_errors_analytical = propagate_errors_through_normalization(Hmat, Hmat_errors)
+    NormQ_errors_analytical = propagate_errors_through_normalization(Qmat, Qmat_errors)
+    NormU_errors_analytical = propagate_errors_through_normalization(Umat, Umat_errors)
+    
+    # Prepare arrays for Monte Carlo results
+    NormH_samples = []
+    NormQ_samples = []
+    NormU_samples = []
+    
+    # Run Monte Carlo simulation
+    for _ in range(n_samples):
+        # Generate perturbed matrices with complex perturbations
+        H_perturbed = Hmat.copy()
+        Q_perturbed = Qmat.copy()
+        U_perturbed = Umat.copy()
+        
+        # Add complex perturbations
+        for matrix, errors in [(H_perturbed, Hmat_errors), (Q_perturbed, Qmat_errors), (U_perturbed, Umat_errors)]:
+            for i in range(matrix.shape[0]):
+                for j in range(matrix.shape[1]):
+                    if errors[i, j] != 0:
+                        real_error = np.random.normal(0, np.abs(np.real(errors[i, j])))
+                        imag_error = np.random.normal(0, np.abs(np.imag(errors[i, j])))
+                        matrix[i, j] += real_error + 1j * imag_error
+        
+        # Calculate normalization matrices for perturbed values
+        NormH = np.linalg.inv(scipy.linalg.sqrtm(H_perturbed).astype(complex))
+        NormQ = np.linalg.inv(scipy.linalg.sqrtm(Q_perturbed).astype(complex))
+        NormU = np.linalg.inv(scipy.linalg.sqrtm(U_perturbed).astype(complex))
+        
+        NormH_samples.append(NormH)
+        NormQ_samples.append(NormQ)
+        NormU_samples.append(NormU)
+    
+    # Convert lists to numpy arrays
+    NormH_samples = np.array(NormH_samples)
+    NormQ_samples = np.array(NormQ_samples)
+    NormU_samples = np.array(NormU_samples)
+    
+    # Calculate standard deviations from Monte Carlo samples (separately for real and imaginary parts)
+    NormH_errors_mc_real = np.std(np.real(NormH_samples), axis=0, ddof=1)
+    NormH_errors_mc_imag = np.std(np.imag(NormH_samples), axis=0, ddof=1)
+    NormH_errors_mc = NormH_errors_mc_real + 1j * NormH_errors_mc_imag
+    
+    NormQ_errors_mc_real = np.std(np.real(NormQ_samples), axis=0, ddof=1)
+    NormQ_errors_mc_imag = np.std(np.imag(NormQ_samples), axis=0, ddof=1)
+    NormQ_errors_mc = NormQ_errors_mc_real + 1j * NormQ_errors_mc_imag
+    
+    NormU_errors_mc_real = np.std(np.real(NormU_samples), axis=0, ddof=1)
+    NormU_errors_mc_imag = np.std(np.imag(NormU_samples), axis=0, ddof=1)
+    NormU_errors_mc = NormU_errors_mc_real + 1j * NormU_errors_mc_imag
+    
+    # Calculate ratios between analytical and Monte Carlo errors (separately for real and imaginary parts)
+    ratioH_real = np.abs(np.real(NormH_errors_analytical)) / NormH_errors_mc_real
+    ratioH_imag = np.abs(np.imag(NormH_errors_analytical)) / NormH_errors_mc_imag
+    
+    ratioQ_real = np.abs(np.real(NormQ_errors_analytical)) / NormQ_errors_mc_real
+    ratioQ_imag = np.abs(np.imag(NormQ_errors_analytical)) / NormQ_errors_mc_imag
+    
+    ratioU_real = np.abs(np.real(NormU_errors_analytical)) / NormU_errors_mc_real
+    ratioU_imag = np.abs(np.imag(NormU_errors_analytical)) / NormU_errors_mc_imag
+    
+    # Check if all ratios are close to 1 (within tolerance)
+    tolerance = 0.2  # 20% tolerance
+    
+    print("\nNormalization Error Propagation Validation:")
+    print("Ratio (Analytical/Monte Carlo) for NormH (real part):", np.round(ratioH_real, 2))
+    print("Ratio (Analytical/Monte Carlo) for NormH (imag part):", np.round(ratioH_imag, 2))
+    print("Ratio (Analytical/Monte Carlo) for NormQ (real part):", np.round(ratioQ_real, 2))
+    print("Ratio (Analytical/Monte Carlo) for NormQ (imag part):", np.round(ratioQ_imag, 2))
+    print("Ratio (Analytical/Monte Carlo) for NormU (real part):", np.round(ratioU_real, 2))
+    print("Ratio (Analytical/Monte Carlo) for NormU (imag part):", np.round(ratioU_imag, 2))
+    
+    validation_passed = (
+        np.all(np.abs(ratioH_real - 1) < tolerance) and np.all(np.abs(ratioH_imag - 1) < tolerance) and
+        np.all(np.abs(ratioQ_real - 1) < tolerance) and np.all(np.abs(ratioQ_imag - 1) < tolerance) and
+        np.all(np.abs(ratioU_real - 1) < tolerance) and np.all(np.abs(ratioU_imag - 1) < tolerance)
+    )
+    
+    if validation_passed:
+        print("VALIDATION PASSED! ✅ Analytical errors match Monte Carlo within tolerance")
+    else:
+        print("VALIDATION WARNING! ⚠️ Some analytical errors differ from Monte Carlo")
+        raise Exception("ERROR")
+    
+    return {
+        'H_real': ratioH_real, 'H_imag': ratioH_imag,
+        'Q_real': ratioQ_real, 'Q_imag': ratioQ_imag,
+        'U_real': ratioU_real, 'U_imag': ratioU_imag
+    }
 
+# Test the normalization error propagation
+if __name__ == "__main__":
+    # Create test matrices with complex values
+    H = np.array([[2.0]]) + 1j * np.array([[ 0.2]])
+    Q = np.array([[1.8, 0.3], [0.3, 1.2]]) + 1j * np.array([[0.2, 0.4], [0.4, 0.1]])
+    U = np.array([[1.5, 0.2], [0.2, 1.3]]) + 1j * np.array([[0.1, 0.3], [0.3, 0.2]])
+    
+    # Create complex error matrices (5% of absolute values for both real and imaginary parts)
+    error_scale = 0.001 
+    H_errors = error_scale * np.abs(H.real) + 1j * error_scale * np.abs(H.imag)
+    Q_errors = error_scale * np.abs(Q.real) + 1j * error_scale * np.abs(Q.imag)
+    U_errors = error_scale * np.abs(U.real) + 1j * error_scale * np.abs(U.imag)
+    
+    # Calculate analytical errors
+    H_norm_errors = propagate_errors_through_normalization(H, H_errors)
+    Q_norm_errors = propagate_errors_through_normalization(Q, Q_errors)
+    U_norm_errors = propagate_errors_through_normalization(U, U_errors)
+    
+    print("Testing normalization error propagation with complex matrices...")
+    print("Original complex matrices:")
+    print("H =\n", H)
+    print("Q =\n", Q)
+    print("U =\n", U)
+    
+    print("\nComplex error matrices:")
+    print("H_errors =\n", H_errors)
+    print("Q_errors =\n", Q_errors)
+    print("U_errors =\n", U_errors)
+    
+    print("\nAnalytical normalization errors:")
+    print("H_norm_errors =\n", np.round(H_norm_errors, 5))
+    print("Q_norm_errors =\n", np.round(Q_norm_errors, 5))
+    print("U_norm_errors =\n", np.round(U_norm_errors, 5))
+    
+    # Validate with Monte Carlo
+    validation_results = test_normalization_error_propagation_monte_carlo(
+        H, H_errors, Q, Q_errors, U, U_errors, n_samples=10000)

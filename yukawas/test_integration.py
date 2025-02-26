@@ -858,7 +858,7 @@ if __name__ ==  '__main__':
         # Results matrices
         'physical_yukawas': np.array(mats),
         'singular_values': np.array(masses_trained_and_ref),
-        'holomorphic_yukawas': np.array(holomorphic_Yukawa_trained_and_ref),
+        'holomorphic_yukawas': np.array(holomorphic_Yukawas_trained_and_ref),
         'holomorphic_yukawas_errors': m_errors,
         
         # Statistical error information
