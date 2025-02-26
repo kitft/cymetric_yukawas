@@ -23,7 +23,6 @@ import os
 import re
 import logging
 import pickle
-import sys
 #sys.path.append("/Users/kit/Documents/Phys_Working/MF metric")
 
 logging.basicConfig(stream=sys.stdout)
@@ -137,6 +136,7 @@ if __name__ == '__main__':
     force_generate_HYM=True
     force_generate_HF=True
     force_generate_HF_2=True
+    force_generate_eval=True
     
     return_zero_phi= True
     return_zero_HYM = True
@@ -186,7 +186,7 @@ if __name__ == '__main__':
     widthSigma = 3
     depthSigma2 = 2
     widthSigma2 = 3
-    if 'largenetwork' in sys.argv[1:]:
+    if 'largenetworks' in sys.argv[1:]:
         depthPhi = 4
         widthPhi = 100
         depthBeta = 4
@@ -202,7 +202,7 @@ if __name__ == '__main__':
     return_random_HF_2 = True
     
     print("Number of points: " + str(nPoints), "Number of points HF: " + str(nPointsHF), "Number of points to integrate: " + str(n_to_integrate))
-    print("Network sizes: phi: " + str(depthPhi) + "x" + str(widthPhi), "beta: " + str(depthBeta) + "x" + str(widthBeta), "sigma: " + str(depthSigma) + "x" + str(widthSigma), "sigma2: " + str(depthSigma2) + "x" + str(widthSigma2))
+    print(f"shapes, phi: {depthPhi}x{widthPhi}, beta: {depthBeta}x{widthBeta}, HF: {depthSigma}x{widthSigma}, HF2: {depthSigma2}x{widthSigma2}")
     
     
 
@@ -386,7 +386,7 @@ if __name__ ==  '__main__':
 
 
 
-    pg,kmoduli=generate_points_and_save_using_defaults_for_eval(free_coefficient,n_to_integrate,seed_set=seed_for_gen)
+    pg,kmoduli=generate_points_and_save_using_defaults_for_eval(free_coefficient,n_to_integrate,seed_set=seed_for_gen,force_generate=force_generate_eval)
     dataEval=np.load(os.path.join('dataM13/tetraquadric_pg_for_eval_with_'+str(free_coefficient), 'dataset.npz'))
     n_p = n_to_integrate 
     phi = phimodel1
@@ -435,7 +435,7 @@ if __name__ ==  '__main__':
     for use_trained in [True,False]:
         print("using trained? " + str(use_trained))
         if use_trained:
-            mets = batch_process_helper_func(phi, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
+            mets = batch_process_helper_func(phi, (real_pts,), batch_indices=(0,), batch_size=10000, compile_func=True)
             print('got mets', flush=True)
             dets = tf.linalg.det(mets)
             # Batch process corrected harmonic forms
