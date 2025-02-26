@@ -254,7 +254,7 @@ if __name__ == '__main__':
 
 
     print("sys.argv: ", sys.argv)
-    if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall', 'testtiny']:
+    if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall', 'alltiny']:
         # Override with small test values
         if str(sys.argv[3]) == 'alltiny':
             nPoints = 100
