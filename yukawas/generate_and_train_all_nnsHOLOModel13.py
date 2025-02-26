@@ -152,6 +152,7 @@ def generate_points_and_save_using_defaults(free_coefficient,number_points,force
       print("Generating: forced? " + str(force_generate))
       kappa = pg.prepare_dataset(number_points, dirname)
       pg.prepare_basis(dirname, kappa=kappa)
+      print(f"Generated dataset: kappa: {kappa}")
    elif os.path.exists(dirname):
       try:
          print("loading prexisting dataset")

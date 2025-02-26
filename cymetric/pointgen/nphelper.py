@@ -204,7 +204,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
                         y_val=y_val,
                         train_pullbacks=train_pullbacks,
                         val_pullbacks=val_pullbacks)
-    
+    print('computing kappa')
     return point_gen.compute_kappa(all_points, all_weights, all_omega)
 
 
