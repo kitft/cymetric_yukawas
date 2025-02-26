@@ -782,13 +782,14 @@ if __name__ ==  '__main__':
     import csv
     csv_file = f'{name_of_run}_results/masses.csv'
     
+    
     # Create header if file doesn't exist
     if not os.path.exists(csv_file):
         with open(csv_file, 'w', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(['run_id', 'learned_mass1', 'learned_mass2', 'learned_mass3', 'ref_mass1', 'ref_mass2', 'ref_mass3'])
+            writer.writerow(['run_id', 'learned_mass1', 'learned_mass2', 'learned_mass3', 'ref_mass1', 'ref_mass2', 'ref_mass3', 'coefficient', 'n_to_integrate'])
     
     # Append masses for this run
     with open(csv_file, 'a', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow([run_id] + list(masses_ref_and_learned[0]) + list(masses_ref_and_learned[1]))
+        writer.writerow([run_id] + list(masses_ref_and_learned[0]) + list(masses_ref_and_learned[1]) + [free_coefficient] + [n_to_integrate])

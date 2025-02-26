@@ -442,7 +442,7 @@ def get_monomial_indices(example,degree):
     reshaped_indices = tf.reshape(unique_indices, (-1, degree))
     return reshaped_indices
 
-def monomials(degree,cpoints):
+def get_monomials(degree,cpoints):
     # Gather the variables for each unique combination of indices
     if degree==0:
         return tf.ones_like(cpoints[:,0:1])#returna  list of a single variable, which is 1

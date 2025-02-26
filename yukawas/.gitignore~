@@ -11,4 +11,5 @@ __pycache__/
 *.npz.zip
 *.ipynb
 model13_results/*
-model**results/*
+model*results/*
+*results/*

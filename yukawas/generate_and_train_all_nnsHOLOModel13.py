@@ -26,49 +26,47 @@ from custom_networks import *
 from auxiliary_funcs import *
 
 from pympler import tracker
-seed_set=0
+
 use_symmetry_reduced_TQ=False
 determine_n_funcs=2
 
-ambient = np.array([1,1,1,1])
-monomials = np.array([[2, 0, 2, 0, 2, 0, 2, 0], [2, 0, 2, 0, 2, 0, 1, 1], [2, 0, 2, 0, 2, 
-  0, 0, 2], [2, 0, 2, 0, 1, 1, 2, 0], [2, 0, 2, 0, 1, 1, 1, 1], [2, 0,
-   2, 0, 1, 1, 0, 2], [2, 0, 2, 0, 0, 2, 2, 0], [2, 0, 2, 0, 0, 2, 1, 
-  1], [2, 0, 2, 0, 0, 2, 0, 2], [2, 0, 1, 1, 2, 0, 2, 0], [2, 0, 1, 1,
-   2, 0, 1, 1], [2, 0, 1, 1, 2, 0, 0, 2], [2, 0, 1, 1, 1, 1, 2, 
-  0], [2, 0, 1, 1, 1, 1, 1, 1], [2, 0, 1, 1, 1, 1, 0, 2], [2, 0, 1, 1,
-   0, 2, 2, 0], [2, 0, 1, 1, 0, 2, 1, 1], [2, 0, 1, 1, 0, 2, 0, 
-  2], [2, 0, 0, 2, 2, 0, 2, 0], [2, 0, 0, 2, 2, 0, 1, 1], [2, 0, 0, 2,
-   2, 0, 0, 2], [2, 0, 0, 2, 1, 1, 2, 0], [2, 0, 0, 2, 1, 1, 1, 
-  1], [2, 0, 0, 2, 1, 1, 0, 2], [2, 0, 0, 2, 0, 2, 2, 0], [2, 0, 0, 2,
-   0, 2, 1, 1], [2, 0, 0, 2, 0, 2, 0, 2], [1, 1, 2, 0, 2, 0, 2, 
-  0], [1, 1, 2, 0, 2, 0, 1, 1], [1, 1, 2, 0, 2, 0, 0, 2], [1, 1, 2, 0,
-   1, 1, 2, 0], [1, 1, 2, 0, 1, 1, 1, 1], [1, 1, 2, 0, 1, 1, 0, 
-  2], [1, 1, 2, 0, 0, 2, 2, 0], [1, 1, 2, 0, 0, 2, 1, 1], [1, 1, 2, 0,
-   0, 2, 0, 2], [1, 1, 1, 1, 2, 0, 2, 0], [1, 1, 1, 1, 2, 0, 1, 
-  1], [1, 1, 1, 1, 2, 0, 0, 2], [1, 1, 1, 1, 1, 1, 2, 0], [1, 1, 1, 1,
-   1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 2], [1, 1, 1, 1, 0, 2, 2, 
-  0], [1, 1, 1, 1, 0, 2, 1, 1], [1, 1, 1, 1, 0, 2, 0, 2], [1, 1, 0, 2,
-   2, 0, 2, 0], [1, 1, 0, 2, 2, 0, 1, 1], [1, 1, 0, 2, 2, 0, 0, 
-  2], [1, 1, 0, 2, 1, 1, 2, 0], [1, 1, 0, 2, 1, 1, 1, 1], [1, 1, 0, 2,
-   1, 1, 0, 2], [1, 1, 0, 2, 0, 2, 2, 0], [1, 1, 0, 2, 0, 2, 1, 
-  1], [1, 1, 0, 2, 0, 2, 0, 2], [0, 2, 2, 0, 2, 0, 2, 0], [0, 2, 2, 0,
-   2, 0, 1, 1], [0, 2, 2, 0, 2, 0, 0, 2], [0, 2, 2, 0, 1, 1, 2, 
-  0], [0, 2, 2, 0, 1, 1, 1, 1], [0, 2, 2, 0, 1, 1, 0, 2], [0, 2, 2, 0,
-   0, 2, 2, 0], [0, 2, 2, 0, 0, 2, 1, 1], [0, 2, 2, 0, 0, 2, 0, 
-  2], [0, 2, 1, 1, 2, 0, 2, 0], [0, 2, 1, 1, 2, 0, 1, 1], [0, 2, 1, 1,
-   2, 0, 0, 2], [0, 2, 1, 1, 1, 1, 2, 0], [0, 2, 1, 1, 1, 1, 1, 
-  1], [0, 2, 1, 1, 1, 1, 0, 2], [0, 2, 1, 1, 0, 2, 2, 0], [0, 2, 1, 1,
-   0, 2, 1, 1], [0, 2, 1, 1, 0, 2, 0, 2], [0, 2, 0, 2, 2, 0, 2, 
-  0], [0, 2, 0, 2, 2, 0, 1, 1], [0, 2, 0, 2, 2, 0, 0, 2], [0, 2, 0, 2,
-   1, 1, 2, 0], [0, 2, 0, 2, 1, 1, 1, 1], [0, 2, 0, 2, 1, 1, 0, 
-  2], [0, 2, 0, 2, 0, 2, 2, 0], [0, 2, 0, 2, 0, 2, 1, 1], [0, 2, 0, 2,
-   0, 2, 0, 2]])
+# ambient = np.array([1,1,1,1])
+# monomials = np.array([[2, 0, 2, 0, 2, 0, 2, 0], [2, 0, 2, 0, 2, 0, 1, 1], [2, 0, 2, 0, 2, 
+#   0, 0, 2], [2, 0, 2, 0, 1, 1, 2, 0], [2, 0, 2, 0, 1, 1, 1, 1], [2, 0,
+#    2, 0, 1, 1, 0, 2], [2, 0, 2, 0, 0, 2, 2, 0], [2, 0, 2, 0, 0, 2, 1, 
+#   1], [2, 0, 2, 0, 0, 2, 0, 2], [2, 0, 1, 1, 2, 0, 2, 0], [2, 0, 1, 1,
+#    2, 0, 1, 1], [2, 0, 1, 1, 2, 0, 0, 2], [2, 0, 1, 1, 1, 1, 2, 
+#   0], [2, 0, 1, 1, 1, 1, 1, 1], [2, 0, 1, 1, 1, 1, 0, 2], [2, 0, 1, 1,
+#    0, 2, 2, 0], [2, 0, 1, 1, 0, 2, 1, 1], [2, 0, 1, 1, 0, 2, 0, 
+#   2], [2, 0, 0, 2, 2, 0, 2, 0], [2, 0, 0, 2, 2, 0, 1, 1], [2, 0, 0, 2,
+#    2, 0, 0, 2], [2, 0, 0, 2, 1, 1, 2, 0], [2, 0, 0, 2, 1, 1, 1, 
+#   1], [2, 0, 0, 2, 1, 1, 0, 2], [2, 0, 0, 2, 0, 2, 2, 0], [2, 0, 0, 2,
+#    0, 2, 1, 1], [2, 0, 0, 2, 0, 2, 0, 2], [1, 1, 2, 0, 2, 0, 2, 
+#   0], [1, 1, 2, 0, 2, 0, 1, 1], [1, 1, 2, 0, 2, 0, 0, 2], [1, 1, 2, 0,
+#    1, 1, 2, 0], [1, 1, 2, 0, 1, 1, 1, 1], [1, 1, 2, 0, 1, 1, 0, 
+#   2], [1, 1, 2, 0, 0, 2, 2, 0], [1, 1, 2, 0, 0, 2, 1, 1], [1, 1, 2, 0,
+#    0, 2, 0, 2], [1, 1, 1, 1, 2, 0, 2, 0], [1, 1, 1, 1, 2, 0, 1, 
+#   1], [1, 1, 1, 1, 2, 0, 0, 2], [1, 1, 1, 1, 1, 1, 2, 0], [1, 1, 1, 1,
+#    1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 2], [1, 1, 1, 1, 0, 2, 2, 
+#   0], [1, 1, 1, 1, 0, 2, 1, 1], [1, 1, 1, 1, 0, 2, 0, 2], [1, 1, 0, 2,
+#    2, 0, 2, 0], [1, 1, 0, 2, 2, 0, 1, 1], [1, 1, 0, 2, 2, 0, 0, 
+#   2], [1, 1, 0, 2, 1, 1, 2, 0], [1, 1, 0, 2, 1, 1, 1, 1], [1, 1, 0, 2,
+#    1, 1, 0, 2], [1, 1, 0, 2, 0, 2, 2, 0], [1, 1, 0, 2, 0, 2, 1, 
+#   1], [1, 1, 0, 2, 0, 2, 0, 2], [0, 2, 2, 0, 2, 0, 2, 0], [0, 2, 2, 0,
+#    2, 0, 1, 1], [0, 2, 2, 0, 2, 0, 0, 2], [0, 2, 2, 0, 1, 1, 2, 
+#   0], [0, 2, 2, 0, 1, 1, 1, 1], [0, 2, 2, 0, 1, 1, 0, 2], [0, 2, 2, 0,
+#    0, 2, 2, 0], [0, 2, 2, 0, 0, 2, 1, 1], [0, 2, 2, 0, 0, 2, 0, 
+#   2], [0, 2, 1, 1, 2, 0, 2, 0], [0, 2, 1, 1, 2, 0, 1, 1], [0, 2, 1, 1,
+#    2, 0, 0, 2], [0, 2, 1, 1, 1, 1, 2, 0], [0, 2, 1, 1, 1, 1, 1, 
+#   1], [0, 2, 1, 1, 1, 1, 0, 2], [0, 2, 1, 1, 0, 2, 2, 0], [0, 2, 1, 1,
+#    0, 2, 1, 1], [0, 2, 1, 1, 0, 2, 0, 2], [0, 2, 0, 2, 2, 0, 2, 
+#   0], [0, 2, 0, 2, 2, 0, 1, 1], [0, 2, 0, 2, 2, 0, 0, 2], [0, 2, 0, 2,
+#    1, 1, 2, 0], [0, 2, 0, 2, 1, 1, 1, 1], [0, 2, 0, 2, 1, 1, 0, 
+#   2], [0, 2, 0, 2, 0, 2, 2, 0], [0, 2, 0, 2, 0, 2, 1, 1], [0, 2, 0, 2,
+#    0, 2, 0, 2]])
 
-kmoduliTQ = np.array([1,(np.sqrt(7)-2)/3,(np.sqrt(7)-2)/3,1])
-#kmoduliTQ = np.array([1,1,1,1])
-folder_name = "dataM13"
-
+# kmoduliTQ = np.array([1,(np.sqrt(7)-2)/3,(np.sqrt(7)-2)/3,1])
+# #kmoduliTQ = np.array([1,1,1,1])
 
 def create_adam_optimizer_with_decay(initial_learning_rate, nEpochs, final_lr_factor=2):
     """
@@ -93,25 +91,11 @@ def create_adam_optimizer_with_decay(initial_learning_rate, nEpochs, final_lr_fa
 
     return tf.keras.optimizers.Adam(learning_rate=initial_learning_rate)#lr_schedule)
 
-def get_coefficients(free_coefficient):
-   x = free_coefficient
-   coefficients=np.array([1, 0, 2, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, \
-0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, \
-0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, \
-0, 0, 0, 1, 0, 2, 0, 0, 0, 2, 0, 1]) +\
-    np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, x, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-      x, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-   return coefficients
-
-def generate_points_and_save_using_defaults_for_eval(free_coefficient,number_points,force_generate=False,seed_set=0):
-   coefficients=get_coefficients(free_coefficient)
-   kmoduli = kmoduliTQ 
-   ambient = np.array([1,1,1,1])
+def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,number_points,force_generate=False,seed_set=0):
+   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    pg = PointGenerator(monomials, coefficients, kmoduli, ambient)
    pg._set_seed(seed_set)
-   dirname =folder_name+ '/tetraquadric_pg_for_eval_with_'+str(free_coefficient) 
+   dirname =foldername + '/tetraquadric_pg_for_eval_with_'+str(unique_id_or_coeff) 
    print("dirname: " + dirname)
    #test if the directory exists, if not, create it
    if force_generate or (not os.path.exists(dirname)):
@@ -140,13 +124,11 @@ def generate_points_and_save_using_defaults_for_eval(free_coefficient,number_poi
    return pg,kmoduli
 
 
-def generate_points_and_save_using_defaults(free_coefficient,number_points,force_generate=False,seed_set=0):
-   coefficients=get_coefficients(free_coefficient)
-   kmoduli = kmoduliTQ
-   ambient = np.array([1,1,1,1])
+def generate_points_and_save_using_defaults(manifold_name_and_data,number_points,force_generate=False,seed_set=0):
+   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = manifold_name_and_data
    pg = PointGenerator(monomials, coefficients, kmoduli, ambient)
    pg._set_seed(seed_set)
-   dirname = folder_name+'/tetraquadric_pg_with_'+str(free_coefficient) 
+   dirname = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff) 
    print("dirname: " + dirname)
    #test if the directory exists, if not, create it
    if force_generate or (not os.path.exists(dirname)):
@@ -188,8 +170,9 @@ def getcallbacksandmetrics(data):
    cmetrics = [TotalLoss(), SigmaLoss()]#, RicciLoss()]
    return cb_list, cmetrics
 
-def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,stddev=0.1,bSizes=[192,50000],lRate=0.001,use_zero_network=False):
-   dirname = folder_name +'/tetraquadric_pg_with_'+str(free_coefficient)
+def train_and_save_nn(manifold_name_and_data,nlayer=3,nHidden=128,nEpochs=50,stddev=0.1,bSizes=[192,50000],lRate=0.001,use_zero_network=False):
+   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
+   dirname = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff)
    name = 'phimodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(bSizes[1]) + 's' + str(nlayer) + 'x' +str(nHidden)
    print('dirname: ' + dirname)
    print('name: ' + name)
@@ -215,10 +198,11 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,stddev=0.
    nfirstlayer= tf.reduce_prod((np.array(ambient)+determine_n_funcs)).numpy().item() if use_symmetry_reduced_TQ else tf.reduce_prod((np.array(ambient)+1)**2).numpy().item() 
    shapeofinternalnetwork=[nHidden]*nlayer
    shapeofnetwork=[nfirstlayer]+shapeofinternalnetwork+[1]
+   load_func = BiholoModelFuncGENERAL  
 
-   print("network shape: " + str(shapeofnetwork))
-   nn_phi = BiholoModelFuncGENERAL(shapeofnetwork,BASIS,stddev=stddev,use_zero_network=use_zero_network,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
-   nn_phi_zero =BiholoModelFuncGENERAL(shapeofnetwork,BASIS,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+   print("network shape: " + str(shapeofnetwork), "load_func: " + str(load_func))
+   nn_phi = load_func(shapeofnetwork,BASIS,stddev=stddev,use_zero_network=use_zero_network,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+   nn_phi_zero = load_func(shapeofnetwork,BASIS,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
    phimodel = PhiFSModel(nn_phi, BASIS, alpha=alpha)
    phimodelzero = PhiFSModel(nn_phi_zero, BASIS, alpha=alpha)
@@ -296,8 +280,9 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,stddev=0.
    print("\n\n")
    return phimodel,training_history, None
 
-def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[192,50000],stddev=0.1,lRate=0.001,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
-   dirname = folder_name+ '/tetraquadric_pg_with_'+str(free_coefficient)
+def load_nn_phimodel(manifold_name_and_data,nlayer=3,nHidden=128,nEpochs=50,bSizes=[192,50000],stddev=0.1,lRate=0.001,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
+   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
+   dirname = foldername + '/tetraquadric_pg_with_'+str(unique_id_or_coeff)
    name = 'phimodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(bSizes[1]) + 's' + str(nlayer) + 'x' +str(nHidden)
    print(dirname)
    print(name)
@@ -325,11 +310,14 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    nfirstlayer= tf.reduce_prod((np.array(ambient)+determine_n_funcs)).numpy().item() if use_symmetry_reduced_TQ else tf.reduce_prod((np.array(ambient)+1)**2).numpy().item() 
    shapeofinternalnetwork=[nHidden]*nlayer
    shapeofnetwork=[nfirstlayer]+shapeofinternalnetwork+[1]
+   load_func = BiholoModelFuncGENERAL
 
-   print("network shape: " + str(shapeofnetwork))
-   nn_phi = BiholoModelFuncGENERAL(shapeofnetwork,BASIS,stddev=stddev,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
-   nn_phi_zero =BiholoModelFuncGENERAL(shapeofnetwork,BASIS,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+   print("network shape: " + str(shapeofnetwork), "load_func: " + str(load_func))
+   nn_phi = load_func(shapeofnetwork,BASIS,stddev=stddev,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+   nn_phi_zero =load_func(shapeofnetwork,BASIS,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
+   print(nn_phi(data['X_train'][0:1]))
+   print(nn_phi_zero(data['X_train'][0:1]))
    print("nns made")
 
    datacasted=[data['X_val'],data['y_val']]
@@ -434,19 +422,15 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    tf.keras.backend.clear_session()
    return phimodel,training_history, None
 
-def generate_points_and_save_using_defaultsHYM(free_coefficient,linebundleforHYM,number_pointsHYM,phimodel,force_generate=False,seed_set=0):
+def generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundleforHYM,number_pointsHYM,phimodel,force_generate=False,seed_set=0):
    print("\n\n")
-
+   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameHYM = folder_name+'/tetraquadricHYM_pg_with_'+str(free_coefficient)+'forLB_'+lbstring
-   dirnameForMetric = folder_name+'/tetraquadric_pg_with_'+str(free_coefficient)
+   dirnameHYM = foldername +'/tetraquadricHYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring
+   dirnameForMetric = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff)
    print("dirname for beta: " + dirnameHYM)
 
    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameForMetric, 'basis.pickle'), allow_pickle=True))
-   
-   coefficients=get_coefficients(free_coefficient)
-   kmoduli = kmoduliTQ 
-   ambient = np.array([1,1,1,1])
    
    pg = PointGenerator(monomials, coefficients, kmoduli, ambient)
    pg._set_seed(seed_set)
@@ -492,11 +476,11 @@ def convert_to_tensor_dict(data):
     for key, value in data.items()
    }
    
-def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],stddev=0.1,lRate=0.001,use_zero_network=False,alpha=[1,1],load_network=False):
-   
+def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],stddev=0.1,lRate=0.001,use_zero_network=False,alpha=[1,1],load_network=False):
+   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameHYM = folder_name+'/tetraquadricHYM_pg_with_'+str(free_coefficient)+'forLB_'+lbstring
-   dirnameForMetric = folder_name+'/tetraquadric_pg_with_'+str(free_coefficient)
+   dirnameHYM = foldername +'/tetraquadricHYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring
+   dirnameForMetric = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff)
 
    #data = np.load(os.path.join(dirname, 'dataset.npz'))
    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameForMetric, 'basis.pickle'), allow_pickle=True))
@@ -692,13 +676,13 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    tf.keras.backend.clear_session()
    return betamodel,training_historyBeta, meanfailuretosolveequation
 
-def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],stddev=0.1,lRate=0.001,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
-   
+def load_nn_HYM(manifold_name_and_data,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],stddev=0.1,lRate=0.001,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
+   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameHYM = folder_name+'/tetraquadricHYM_pg_with_'+str(free_coefficient)+'forLB_'+lbstring
-   dirnameForMetric = folder_name+'/tetraquadric_pg_with_'+str(free_coefficient)
+   dirnameHYM = foldername +'/tetraquadricHYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring
+   dirnameForMetric = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff)
    name = 'betamodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(nlayer) + 'x' +str(nHidden)
-   print("name: " + name)
+   print("name of network of line bundle: " + name)
 
    #data = np.load(os.path.join(dirname, 'dataset.npz'))
    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameForMetric, 'basis.pickle'), allow_pickle=True))
@@ -830,22 +814,20 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
    return betamodel,training_historyBeta, meanfailuretosolveequation
 
 
-def generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM,functionforbaseharmonicform_jbar,phimodel,betamodel,number_pointsHarmonic,force_generate=False,seed_set=0):
+def generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM,functionforbaseharmonicform_jbar,phimodel,betamodel,number_pointsHarmonic,force_generate=False,seed_set=0):
+   if not all(functionforbaseharmonicform_jbar.line_bundle == linebundleforHYM):
+      raise ValueError("Line bundle not set for harmonic form, or not equal: " + str(functionforbaseharmonicform_jbar.line_bundle) + " != " + str(linebundleforHYM))
    print("\n\n")
-   # get names
+   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    nameOfBaseHF=functionforbaseharmonicform_jbar.__name__
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameForMetric = folder_name+'/tetraquadric_pg_with_'+str(free_coefficient)
-   dirnameHYM = folder_name+'/tetraquadricHYM_pg_with_'+str(free_coefficient)+'forLB_'+lbstring
-   dirnameHarmonic = folder_name+'/tetraquadricHarmonicH_pg'+str(free_coefficient)+'forLB_'+lbstring+nameOfBaseHF
+   dirnameForMetric = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff)
+   dirnameHYM = foldername +'/tetraquadricHYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring
+   dirnameHarmonic = foldername +'/tetraquadricHarmonicH_pg'+str(unique_id_or_coeff)+'forLB_'+lbstring+nameOfBaseHF
    print("dirname for harmonic form: " + dirnameHarmonic)
 
    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameForMetric, 'basis.pickle'), allow_pickle=True))
-   
-   coefficients=get_coefficients(free_coefficient)
-   kmoduli = kmoduliTQ
-   ambient = np.array([1,1,1,1])
-   
+      
    pg = PointGenerator(monomials, coefficients, kmoduli, ambient)
    pg._set_seed(seed_set)
    data=np.load(os.path.join(dirnameForMetric, 'dataset.npz'))
@@ -886,17 +868,17 @@ def getcallbacksandmetricsHF(dataHF):
    return cb_listHF, cmetricsHF
 
    
-def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,functionforbaseharmonicform_jbar,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],lRate=0.001,alpha=[1,500],use_zero_network=False,load_network=False,stddev=0.05,final_layer_scale=1.0,norm_momentum=0.999):
-   
-   perm= tracker.SummaryTracker()
+def train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,functionforbaseharmonicform_jbar,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],lRate=0.001,alpha=[1,500],use_zero_network=False,load_network=False,stddev=0.05,final_layer_scale=1.0,norm_momentum=0.999):
+   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
+   #perm= tracker.SummaryTracker()
    #print("perm1")
    #print(perm.print_diff())
 
    nameOfBaseHF=functionforbaseharmonicform_jbar.__name__
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameHYM = folder_name+'/tetraquadricHYM_pg_with_'+str(free_coefficient)+'forLB_'+lbstring
-   dirnameForMetric = folder_name+'/tetraquadric_pg_with_'+str(free_coefficient)
-   dirnameHarmonic = folder_name+'/tetraquadricHarmonicH_pg'+str(free_coefficient)+'forLB_'+lbstring+nameOfBaseHF
+   dirnameHYM = foldername +'/tetraquadricHYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring
+   dirnameForMetric = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff)
+   dirnameHarmonic = foldername +'/tetraquadricHarmonicH_pg'+str(unique_id_or_coeff)+'forLB_'+lbstring+nameOfBaseHF
    name = 'HFmodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+  str(nlayer) + 'x' +str(nHidden)
    print("dirname: " + dirnameHarmonic)
    print("name: " + name)
@@ -1188,18 +1170,19 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    del dataHF, dataHF_train, dataHF_val_dict, valfinal,valraw,valzero
    #print("perm11")
    #print(perm.print_diff())
+   print("--------------------------------")
    print("\n\n")
    return HFmodel,training_historyHF,meanfailuretosolveequation
 
 
 
-def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,functionforbaseharmonicform_jbar,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],lRate=0.001,alpha=[1,1],set_weights_to_zero=False,set_weights_to_random=False,final_layer_scale=1.0,skip_measures=False,norm_momentum=0.999):
-   
+def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,functionforbaseharmonicform_jbar,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],lRate=0.001,alpha=[1,1],set_weights_to_zero=False,set_weights_to_random=False,final_layer_scale=1.0,skip_measures=False,norm_momentum=0.999):
+   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    nameOfBaseHF=functionforbaseharmonicform_jbar.__name__
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameHYM = folder_name+'/tetraquadricHYM_pg_with_'+str(free_coefficient)+'forLB_'+lbstring
-   dirnameForMetric = folder_name+'/tetraquadric_pg_with_'+str(free_coefficient)
-   dirnameHarmonic = folder_name+'/tetraquadricHarmonicH_pg'+str(free_coefficient)+'forLB_'+lbstring+nameOfBaseHF
+   dirnameHYM = foldername +'/tetraquadricHYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring
+   dirnameForMetric = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff)
+   dirnameHarmonic = foldername +'/tetraquadricHarmonicH_pg'+str(unique_id_or_coeff)+'forLB_'+lbstring+nameOfBaseHF
    name = 'HFmodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+  str(nlayer) + 'x' +str(nHidden)
    print("dirname: " + dirnameHarmonic)
    print("name: " + name)

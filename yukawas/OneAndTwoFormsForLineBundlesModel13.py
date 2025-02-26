@@ -9,12 +9,14 @@ def compute_dzi(cpoints,which_i):#tensordot with axes =0 is outer product
     return tf.tensordot(cpoints[:,(which_i-1)*2],tf.cast(tf.eye(8)[(which_i-1)*2+1],complex_dtype),axes=0)-tf.tensordot(cpoints[:,(which_i-1)*2+1],tf.cast(tf.eye(8)[(which_i-1)*2],complex_dtype),axes=0)
 
 
-
 def functionforbaseharmonicform_jbar_for_vH(cpoints):
+    """Line bundle: [0, 2, -2, 0]"""
     K3 = compute_kappa(cpoints,3)
     y0y1=tf.reduce_prod(cpoints[:,2:4],axis=-1)
     dz3b=tf.math.conj(compute_dzi(cpoints,3))
     return tf.einsum('x,xj->xj',K3**(-2)*y0y1,dz3b)
+
+functionforbaseharmonicform_jbar_for_vH.line_bundle = np.array([0, 2, -2, 0])
 
 
 def functionforbaseharmonicform_jbar_for_vU3(cpoints):
@@ -29,6 +31,9 @@ def functionforbaseharmonicform_jbar_for_vQ3(cpoints):
     polynomial=(cpoints[:,4]*tf.math.conj(cpoints[:,7]) + cpoints[:,5]*tf.math.conj(cpoints[:,6]))
     dz4b=tf.math.conj(compute_dzi(cpoints,4))
     return tf.einsum('x,xj->xj',K4**(-3)*polynomial,dz4b)
+
+functionforbaseharmonicform_jbar_for_vU3.line_bundle = np.array([0,0,1,-3]) 
+functionforbaseharmonicform_jbar_for_vQ3.line_bundle = np.array([0,0,1,-3])
 
 def functionforbaseharmonicform_jbar_for_vQ1(cpoints):
     K2 = compute_kappa(cpoints,2)
@@ -56,6 +61,11 @@ def functionforbaseharmonicform_jbar_for_vU2(cpoints):
     polynomial=cpoints[:,4]*((cpoints[:,6]**2)* cpoints[:,7] - cpoints[:,7]**3) - cpoints[:,5]*((cpoints[:,7]**2)* cpoints[:,6] - cpoints[:,6]**3)
     dz2b=tf.math.conj(compute_dzi(cpoints,2))
     return tf.einsum('x,xj->xj',K2**(-2)*polynomial,dz2b)
+
+functionforbaseharmonicform_jbar_for_vU1.line_bundle = np.array([0,-2,1,3])
+functionforbaseharmonicform_jbar_for_vU2.line_bundle = np.array([0,-2,1,3])  
+functionforbaseharmonicform_jbar_for_vQ1.line_bundle = np.array([0,-2,1,3])
+functionforbaseharmonicform_jbar_for_vQ2.line_bundle = np.array([0,-2,1,3])
 
 # def functionforbaseharmonicform_jbar_for_vH_34a(cpoints):
 #     K3 = compute_kappa(cpoints,3)
