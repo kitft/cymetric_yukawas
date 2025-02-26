@@ -253,7 +253,7 @@ if __name__ == '__main__':
     use_zero_network_phi = True
 
 
-
+    print("sys.argv: ", sys.argv)
     if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall', 'testtiny']:
         # Override with small test values
         if str(sys.argv[3]) == 'alltiny':
