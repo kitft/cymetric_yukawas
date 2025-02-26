@@ -769,7 +769,8 @@ def train_modelbeta(betamodel, data_train, optimizer=None, epochs=50, batch_size
     # Set up sample weights if needed
     sample_weights = None  # Disabled sample weights as per commented code
     batched_data_train=tf.data.Dataset.from_tensor_slices(data_train)
-    batched_data_train=batched_data_train.shuffle(buffer_size=1024).batch(batch_sizes[0],drop_remainder=True)
+    batch_size_adjusted = min(batch_sizes[0], len(data_train['X_train']))
+    batched_data_train=batched_data_train.shuffle(buffer_size=1024).batch(batch_size_adjusted,drop_remainder=True)
     
     # Create optimizer if not provided
     if optimizer is None:
@@ -786,7 +787,6 @@ def train_modelbeta(betamodel, data_train, optimizer=None, epochs=50, batch_size
     history = betamodel.fit(
         batched_data_train,
         epochs=epochs, 
-        batch_size=min(batch_sizes[0], len(data_train['X_train'])), 
         verbose=verbose,
         callbacks=callbacks, 
         sample_weight=sample_weights

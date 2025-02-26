@@ -889,7 +889,8 @@ def train_modelHF(HFmodel, data_train, optimizer=None, epochs=50, batch_sizes=[6
     # Set up sample weights if needed
     sample_weights = data_train['y_train'][:, -2] if sw else None
     batched_data_train=tf.data.Dataset.from_tensor_slices(data_train)
-    batched_data_train=batched_data_train.shuffle(buffer_size=1024).batch(batch_sizes[0],drop_remainder=True)
+    batch_size_adjusted = min(batch_sizes[0], len(data_train['X_train']))
+    batched_data_train=batched_data_train.shuffle(buffer_size=1024).batch(batch_size_adjusted,drop_remainder=True)
     
     # Create optimizer if not provided
     if optimizer is None:
@@ -904,9 +905,8 @@ def train_modelHF(HFmodel, data_train, optimizer=None, epochs=50, batch_sizes=[6
     
     # Train for all epochs at once
     history = HFmodel.fit(
-        data_train,
+        batched_data_train,
         epochs=epochs, 
-        batch_size=min(batch_sizes[0], len(data_train['X_train'])), 
         verbose=verbose,
         callbacks=callbacks, 
         sample_weight=sample_weights
