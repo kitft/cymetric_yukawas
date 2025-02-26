@@ -88,7 +88,7 @@ def train_model(fsmodel, data, optimizer=None, epochs=50, batch_sizes=[64, 10000
         fsmodel.learn_ricci_val = learn_ricci_val
         fsmodel.learn_volk = tf.cast(False, dtype=tf.bool)
         
-        steps_per_epoch = len(data['X_train']) // batch_size
+        steps_per_epoch = (len(data['X_train']) // batch_size) + 1
         batched_dataset = dataset1.batch(batch_size).prefetch(tf.data.AUTOTUNE)
         
         history = fsmodel.fit(
