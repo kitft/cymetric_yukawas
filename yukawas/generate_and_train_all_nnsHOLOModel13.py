@@ -92,6 +92,7 @@ def create_adam_optimizer_with_decay(initial_learning_rate, nEpochs, final_lr_fa
     return tf.keras.optimizers.Adam(learning_rate=initial_learning_rate)#lr_schedule)
 
 def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,number_points,force_generate=False,seed_set=0):
+   print("\n\n")
    coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    pg = PointGenerator(monomials, coefficients, kmoduli, ambient)
    pg._set_seed(seed_set)
