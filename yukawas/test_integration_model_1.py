@@ -327,7 +327,14 @@ if __name__ ==  '__main__':
 
 
 
-
+    def functionforbaseharmonicform_jbar_for_vQ1(x):
+        return getTypeIIs(x,phi,'vQ1')
+    def functionforbaseharmonicform_jbar_for_vQ2(x):
+        return getTypeIIs(x,phi,'vQ2')
+    def functionforbaseharmonicform_jbar_for_vU1(x):
+        return getTypeIIs(x,phi,'vU1')
+    def functionforbaseharmonicform_jbar_for_vU2(x):
+        return getTypeIIs(x,phi,'vU2')
 
 
     generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM_0m213,functionforbaseharmonicform_jbar_for_vQ1,phi,betamodel_0m213,nPointsHF,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
