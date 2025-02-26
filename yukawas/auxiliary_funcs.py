@@ -330,6 +330,7 @@ def propagate_errors_through_normalization(matrix, matrix_errors):
     Propagate errors through matrix square root and inversion operations.
     Uses analytical error propagation formulas.
     """
+    print("types: ", type(matrix), type(matrix_errors), matrix.shape, matrix_errors.shape, matrix, matrix_errors)
     import scipy
     # For a 1x1 matrix, the error propagation is straightforward
     if matrix.shape == (1, 1):
@@ -349,6 +350,7 @@ def propagate_errors_through_normalization(matrix, matrix_errors):
             for k in range(matrix.shape[1]):
                 # Partial derivative of singular value with respect to matrix element
                 # ∂s_i/∂M_jk = u_ji * vh_ik
+                print("u[j, i]: ", u[j, i], "vh[i, k]: ", vh[i, k], "matrix_errors[j, k]: ", matrix_errors[j, k])
                 s_errors[i] += (u[j, i] * vh[i, k] * matrix_errors[j, k])**2
         s_errors[i] = np.sqrt(s_errors[i])
     
@@ -411,7 +413,8 @@ def weighted_mean_and_standard_error(values, weights):
         imag_se = tf.sqrt(imag_weighted_variance / n_eff)
         
         # Return complex standard error
-        return weighted_mean, tf.complex(real_se, imag_se), n_eff, {'value': weighted_mean.numpy(), 'std_error': real_se.numpy(), 'eff_n': n_eff.numpy()}
+        complex_std_error = tf.complex(real_se, imag_se)
+        return weighted_mean, complex_std_error, n_eff, {'value': weighted_mean.numpy(), 'std_error': complex_std_error.numpy(), 'eff_n': n_eff.numpy()}
     else:
         # Return real standard error
         return weighted_mean, real_se, n_eff, {'value': weighted_mean.numpy(), 'std_error': real_se.numpy(), 'eff_n': n_eff.numpy()} 
@@ -622,38 +625,38 @@ def test_yukawa_error_propagation_monte_carlo(NormH, NormH_errors, NormQ, NormQ_
     
     # # Optionally visualize results
     # plt.figure(figsize=(10, 8))
-    # plt.suptitle('Yukawa Error Propagation: Analytical vs Monte Carlo')
+    # # plt.suptitle('Yukawa Error Propagation: Analytical vs Monte Carlo')
     
-    rows, cols = physical_yukawas.shape
-    for i in range(rows):
-        for j in range(cols):
-            plt.subplot(rows, cols, i*cols + j + 1)
+    # rows, cols = physical_yukawas.shape
+    # for i in range(rows):
+    #     for j in range(cols):
+    #         plt.subplot(rows, cols, i*cols + j + 1)
             
-            if is_complex:
-                # Plot real and imaginary parts separately
-                real_vals = np.real(all_physical_yukawas[:, i, j])
-                imag_vals = np.imag(all_physical_yukawas[:, i, j])
+    #         if is_complex:
+    #             # Plot real and imaginary parts separately
+    #             real_vals = np.real(all_physical_yukawas[:, i, j])
+    #             imag_vals = np.imag(all_physical_yukawas[:, i, j])
                 
-                plt.hist(real_vals, bins=50, alpha=0.5, label='Real')
-                plt.hist(imag_vals, bins=50, alpha=0.5, label='Imag')
+    #             plt.hist(real_vals, bins=50, alpha=0.5, label='Real')
+    #             plt.hist(imag_vals, bins=50, alpha=0.5, label='Imag')
                 
-                plt.axvline(np.real(physical_yukawas[i, j]), color='r', linestyle='--', 
-                            label=f'Real Mean: {np.real(physical_yukawas[i, j]):.2e}')
-                plt.axvline(np.imag(physical_yukawas[i, j]), color='g', linestyle='--', 
-                            label=f'Imag Mean: {np.imag(physical_yukawas[i, j]):.2e}')
+    #             plt.axvline(np.real(physical_yukawas[i, j]), color='r', linestyle='--', 
+    #                         label=f'Real Mean: {np.real(physical_yukawas[i, j]):.2e}')
+    #             plt.axvline(np.imag(physical_yukawas[i, j]), color='g', linestyle='--', 
+    #                         label=f'Imag Mean: {np.imag(physical_yukawas[i, j]):.2e}')
                 
-                plt.title(f'Y[{i},{j}], Ratio={np.real(ratio[i, j]):.2f}')
-            else:
-                plt.hist(all_physical_yukawas[:, i, j], bins=50)
-                plt.axvline(physical_yukawas[i, j], color='r', linestyle='--', 
-                            label=f'Mean: {physical_yukawas[i, j]:.2e}')
-                plt.title(f'Y[{i},{j}], Ratio={ratio[i, j]:.2f}')
+    #             plt.title(f'Y[{i},{j}], Ratio={np.real(ratio[i, j]):.2f}')
+    #         else:
+    #             plt.hist(all_physical_yukawas[:, i, j], bins=50)
+    #             plt.axvline(physical_yukawas[i, j], color='r', linestyle='--', 
+    #                         label=f'Mean: {physical_yukawas[i, j]:.2e}')
+    #             plt.title(f'Y[{i},{j}], Ratio={ratio[i, j]:.2f}')
             
-            if i == rows-1 and j == 0:
-                plt.legend()
+    #         if i == rows-1 and j == 0:
+    #             plt.legend()
     
-    plt.tight_layout()
-    # Ensure data directory exists before saving
+    # plt.tight_layout()
+    # # Ensure data directory exists before saving
     # import os
     # os.makedirs('data', exist_ok=True)
     # plt.savefig('data/yukawa_error_propagation_test.png')
