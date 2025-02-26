@@ -633,14 +633,7 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     
         # Get omega^2 from training data
         omega_squared_from_data = ys[:sample_size, 1]
-    
-        # Print comparison
-        print("First 2 examples comparison:")
-        for i in range(1):
-            print(f"Example {i+1}:")
-            print(f"  omega from point_gen (conjugated): {omega_from_pg[i]*omega_conj[i]}")
-            print(f"  omega^2 from training data: {omega_squared_from_data[i]}")
-
+   
         # Calculate difference to verify
         omega_diff = tf.abs(tf.math.real(omega_conj*omega_from_pg) - omega_squared_from_data)
         is_close_omega = tf.reduce_all(omega_diff < 1e-5)
@@ -648,6 +641,14 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     
         if not is_close_omega:
             max_diff_omega = tf.reduce_max(omega_diff)
+             
+            # Print comparison
+            print("First N examples comparison:")
+            for i in range(1):
+                print(f"Example {i+1}:")
+                print(f"  omega from point_gen (conjugated): {omega_from_pg[i]*omega_conj[i]}")
+                print(f"  omega^2 from training data: {omega_squared_from_data[i]}")
+
             print(f"Maximum difference in omega values: {max_diff_omega}")
             raise Exception("Omega verification failed")
 
