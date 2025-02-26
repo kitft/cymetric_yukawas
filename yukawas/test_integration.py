@@ -148,9 +148,9 @@ if __name__ == '__main__':
     nPoints = 1000
     nPointsHF = 1000
     if 'alltiny' in sys.argv[1:]:
-        nPoints = 30
-        nPointsHF = 30
-        n_to_integrate = 30
+        nPoints = 100
+        nPointsHF = 100
+        n_to_integrate = 100
     elif 'small' in sys.argv[1:]:
         n_to_integrate = 1000
     elif 'allbig' in sys.argv[1:]:
