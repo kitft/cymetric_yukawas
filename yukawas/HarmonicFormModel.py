@@ -902,7 +902,7 @@ def train_modelHF(HFmodel, data_train, optimizer=None, epochs=50, batch_sizes=[6
     
     # Train for all epochs at once
     history = HFmodel.fit(
-        data_train,
+        data_train.repeat(),
         epochs=epochs, 
         batch_size=batch_sizes[0], 
         verbose=verbose,

@@ -611,7 +611,7 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    # continue looping if >10 or is nan
    #while (training_historyBeta['laplacian_loss'][-1]>1.9) or (np.isnan( training_historyBeta['laplacian_loss'][-1])):
    while i==0 or (i<=1 and (np.isnan( training_historyBeta['laplacian_loss'][-1]))):
-      print("trying i "+str(i))
+      print("trying iteration "+str(i))
       if i >0:
 
          print('trying again laplacian_loss too big')

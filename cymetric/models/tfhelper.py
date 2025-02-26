@@ -87,19 +87,17 @@ def train_model(fsmodel, data, optimizer=None, epochs=50, batch_sizes=[64, 10000
         fsmodel.learn_ricci = learn_ricci
         fsmodel.learn_ricci_val = learn_ricci_val
         fsmodel.learn_volk = tf.cast(False, dtype=tf.bool)
-        
-        steps_per_epoch = (len(data['X_train']) // batch_size) + 1
-        batched_dataset = dataset1.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+        steps_per_epoch = max(1, len(data['X_train']) // batch_size)
+        batched_dataset = dataset1.batch(batch_size).prefetch(tf.data.AUTOTUNE).repeat()
         
         history = fsmodel.fit(
-            batched_dataset.repeat(),
+            batched_dataset,
             epochs=1, 
             verbose=verbose,
             callbacks=None, 
             sample_weight=sample_weights,
             steps_per_epoch=steps_per_epoch
         )
-        
         # Update history
         for k in history.history.keys():
             if k not in hist1:
