@@ -586,6 +586,71 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     pullbacks=tf.concat((train_pullbacks,val_pullbacks),axis=0)
 
     # points = pwo['point'][mask]
+    # Verify pullbacks calculation for a subset of points
+    # Take first 100 elements of train_pullbacks for verification
+    verify = True
+    if verify:
+        sample_size = min(100, len(train_pullbacks))
+        sample_points = points[:sample_size]
+        sample_pullbacks = train_pullbacks[:sample_size]
+    
+        # Calculate pullbacks directly using point_gen
+        verification_pullbacks = point_gen.pullbacks(sample_points)
+        jax_pullbacks = point_gen.pullbacks(np.array(sample_points))
+    
+        # Convert to same dtype for comparison
+        verification_pullbacks = tf.cast(verification_pullbacks, complex_dtype)
+        sample_pullbacks = tf.cast(sample_pullbacks, complex_dtype)
+        jax_pullbacks = tf.cast(jax_pullbacks, complex_dtype)
+    
+        # Check if pullbacks match
+        is_close = tf.reduce_all(tf.abs(verification_pullbacks - sample_pullbacks) < 1e-5)
+        print(f"Pullbacks verification passed: {is_close}")
+        is_close_jax = tf.reduce_all(tf.abs(sample_pullbacks - jax_pullbacks) < 1e-5)
+        print(f"Are the dataset ones the same as the jax pullbacks? they should be: {is_close_jax}")
+    
+        # Print more detailed information if verification fails
+        if not is_close:
+            max_diff = tf.reduce_max(tf.abs(verification_pullbacks - sample_pullbacks))
+            print(f"Maximum difference in pullbacks: {max_diff}")
+
+            # Check percentage of elements that are close
+            element_close = tf.abs(verification_pullbacks - sample_pullbacks) < 1e-5
+            percent_close = tf.reduce_mean(tf.cast(element_close, tf.float32)) * 100
+            print(f"Percentage of pullback elements that match: {percent_close}%")
+            print("Example:")
+            print(f"  verification_pullbacks: {verification_pullbacks[0]}")
+            print(f"  sample_pullbacks: {sample_pullbacks[0]}")
+        print("Verifying omega^2 calculation...")
+        verify_omega = True
+        # Get the first few points for verification
+        sample_size = min(100, len(points))
+        sample_points = points[:sample_size]
+    
+        # Get omega from point generator and calculate omega^2
+        omega_from_pg = tf.cast(point_gen.holomorphic_volume_form(sample_points), complex_dtype)
+        omega_conj = tf.math.conj(omega_from_pg)
+    
+        # Get omega^2 from training data
+        omega_squared_from_data = ys[:sample_size, 1]
+    
+        # Print comparison
+        print("First 2 examples comparison:")
+        for i in range(1):
+            print(f"Example {i+1}:")
+            print(f"  omega from point_gen (conjugated): {omega_from_pg[i]*omega_conj[i]}")
+            print(f"  omega^2 from training data: {omega_squared_from_data[i]}")
+
+        # Calculate difference to verify
+        omega_diff = tf.abs(tf.math.real(omega_conj*omega_from_pg) - omega_squared_from_data)
+        is_close_omega = tf.reduce_all(omega_diff < 1e-5)
+        print(f"Omega verification passed: {is_close_omega}")
+    
+        if not is_close_omega:
+            max_diff_omega = tf.reduce_max(omega_diff)
+            print(f"Maximum difference in omega values: {max_diff_omega}")
+
+
 
     #batch to make more neat
     mets = batch_process_helper_func(metricModel, (realpoints,), batch_indices=(0,), batch_size=10000, compile_func=True)

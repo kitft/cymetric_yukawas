@@ -1327,13 +1327,12 @@ class PointGenerator:
             print("using legacy pullbacks, input type:", type(points), "use_jax = ", use_jax)
             return self._pullbacks_legacy(points, j_elim)
     
-    # cann
     @staticmethod
     def _pullbacks_jax(points, j_elim, DQDZB0, DQDZF0, nfold, nhyper, ncoords):
         """JAX version of pullbacks computation.
         
         Args:
-            points (jnp.ndarray): Array of points.
+            points (jnp.ndarray, (batch,complex64): Array of points.
             j_elim (jnp.ndarray): Indices to eliminate.
             DQDZB0, DQDZF0: Sequences of basis arrays.
             nfold (int): Number of folds.
@@ -1379,7 +1378,7 @@ class PointGenerator:
             pif = jnp.sum(pif_factors * pif, axis=-1)
             pif = jnp.reshape(pif, (-1, nhyper))
             B_matrix = B_matrix.at[:, i, :].add(pif)
-        all_dzdz = jnp.einsum('xij,xjk->xki', jnp.linalg.inv(B_matrix), -1j * dz_hyper)
+        all_dzdz = jnp.einsum('xij,xjk->xki', jnp.linalg.inv(B_matrix), complex(-1., 0.) * dz_hyper)
         for i in range(nhyper):
             pullbacks = pullbacks.at[jnp.arange(points.shape[0]), :, j_elim[:, i]].add(all_dzdz[:, :, i])
         return pullbacks
