@@ -904,7 +904,7 @@ def train_modelHF(HFmodel, data_train, optimizer=None, epochs=50, batch_sizes=[6
     history = HFmodel.fit(
         data_train,
         epochs=epochs, 
-        batch_size=batch_sizes[0], 
+        batch_size=min(batch_sizes[0], len(data_train['X_train'])), 
         verbose=verbose,
         callbacks=callbacks, 
         sample_weight=sample_weights
