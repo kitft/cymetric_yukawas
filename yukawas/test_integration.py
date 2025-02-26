@@ -58,7 +58,7 @@ from NewCustomMetrics import *
 from HarmonicFormModel import *
 from BetaModel import *
 from laplacian_funcs import *
-name_of_run = "model13"
+name_of_run = "testintegration_model13"
 from OneAndTwoFormsForLineBundlesModel13 import *
 #from generate_and_train_all_nns import *
 from generate_and_train_all_nnsHOLOModel13 import *
