@@ -118,6 +118,7 @@ def generate_points_and_save_using_defaults_for_eval(free_coefficient,number_poi
       print("Generating: forced? " + str(force_generate))
       kappa = pg.prepare_dataset(number_points, dirname)
       pg.prepare_basis(dirname, kappa=kappa)
+      print(f"Generated dataset: kappa: {kappa}")
    elif os.path.exists(dirname):
       try:
          data = np.load(os.path.join(dirname, 'dataset.npz'))

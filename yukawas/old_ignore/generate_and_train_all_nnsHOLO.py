@@ -5,7 +5,7 @@ import tensorflow.keras as tfk
 from laplacian_funcs import *
 from BetaModel import *
 from HarmonicFormModel import *
-from OneAndTwoFormsForLineBundles import *
+#from OneAndTwoFormsForLineBundlesModel13 import *
 from cymetric.pointgen.pointgen import PointGenerator
 from cymetric.pointgen.nphelper import prepare_dataset, prepare_basis_pickle
 
@@ -21,9 +21,10 @@ from NewCustomMetrics import *
 from HarmonicFormModel import *
 from BetaModel import *
 from laplacian_funcs import *
+#from OneAndTwoFormsForLineBundlesModel13 import *
 from OneAndTwoFormsForLineBundles import *
 from custom_networks import *
-from auxiliary_funcs import *
+from custom_networks import batch_process_helper_func
 
 from pympler import tracker
 seed_set=0
@@ -94,12 +95,21 @@ def create_adam_optimizer_with_decay(initial_learning_rate, nEpochs, final_lr_fa
     return tf.keras.optimizers.Adam(learning_rate=initial_learning_rate)#lr_schedule)
 
 def get_coefficients(free_coefficient):
-   x = free_coefficient
-   coefficients=np.array([1, 0, 2, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, \
+    x = free_coefficient
+
+    coefficients=np.array([1, 0, 2, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, \
      0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, x, 0, 0, 0, 0, 0, \
      0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, \
      0, 0, 0, 1, 0, 2, 0, 0, 0, 2, 0, 1])
-   return coefficients
+    #   coefficients=np.array([1, 0, 2, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, \
+    #0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, \
+    #0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, \
+    #0, 0, 0, 1, 0, 2, 0, 0, 0, 2, 0, 1]) +\
+    #    np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+    #  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, x, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    #  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    #  x, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    return coefficients
 
 def generate_points_and_save_using_defaults_for_eval(free_coefficient,number_points,force_generate=False,seed_set=0):
    coefficients=get_coefficients(free_coefficient)
@@ -114,19 +124,11 @@ def generate_points_and_save_using_defaults_for_eval(free_coefficient,number_poi
       print("Generating: forced? " + str(force_generate))
       kappa = pg.prepare_dataset(number_points, dirname)
       pg.prepare_basis(dirname, kappa=kappa)
-      print(f"Generated dataset: kappa: {kappa}")
    elif os.path.exists(dirname):
       try:
          data = np.load(os.path.join(dirname, 'dataset.npz'))
-         # Check if X_train dtype matches real_dtype or if length doesn't match
-         if data['X_train'].dtype != 'float64':#real_dtype: if it's a bare cymetric file, it should always be float64
-            print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
-            print("Regenerating dataset with correct dtype")
-            kappa = pg.prepare_dataset(number_points, dirname)
-            pg.prepare_basis(dirname, kappa=kappa)
-         elif len(data['X_train'])+len(data['X_val']) != number_points:
-            length_total = len(data['X_train'])+len(data['X_val'])
-            print(f"wrong length {length_total}, want {number_points} - generating anyway")
+         if (len(data['X_train'])+len(data['X_val']))!=number_points:
+            print("wrong length - generating anyway")
             kappa = pg.prepare_dataset(number_points, dirname)
             pg.prepare_basis(dirname, kappa=kappa)
       except:
@@ -149,24 +151,16 @@ def generate_points_and_save_using_defaults(free_coefficient,number_points,force
       print("Generating: forced? " + str(force_generate))
       kappa = pg.prepare_dataset(number_points, dirname)
       pg.prepare_basis(dirname, kappa=kappa)
-      print(f"Generated dataset: kappa: {kappa}")
    elif os.path.exists(dirname):
       try:
          print("loading prexisting dataset")
          data = np.load(os.path.join(dirname, 'dataset.npz'))
-         # Check if X_train dtype matches real_dtype or if length doesn't match
-         if data['X_train'].dtype != 'float64':#real_dtype: if it's a bare cymetric file, it should always be float64
-            print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
-            print("Regenerating dataset with correct dtype")
+         if (len(data['X_train'])+len(data['X_val']))!=number_points:
+            print("wrong length - generating anyway")
             kappa = pg.prepare_dataset(number_points, dirname)
             pg.prepare_basis(dirname, kappa=kappa)
-         elif len(data['X_train'])+len(data['X_val']) != number_points:
-            length_total = len(data['X_train'])+len(data['X_val'])
-            print(f"wrong length {length_total}, want {number_points} - generating anyway")
-            kappa = pg.prepare_dataset(number_points, dirname)
-            pg.prepare_basis(dirname, kappa=kappa)
-      except Exception as e:
-         print(f"error loading - generating anyway  {e}")
+      except:
+         print("error loading - generating anyway")
          kappa = pg.prepare_dataset(number_points, dirname)
          pg.prepare_basis(dirname, kappa=kappa)
    
@@ -191,7 +185,6 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,stddev=0.
    print('name: ' + name)
    
    data = np.load(os.path.join(dirname, 'dataset.npz'))
-   data = convert_to_tensor_dict(data)
    BASIS = prepare_tf_basis(np.load(os.path.join(dirname, 'basis.pickle'), allow_pickle=True))
 
    cb_list, cmetrics = getcallbacksandmetrics(data)
@@ -227,7 +220,7 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,stddev=0.
    #opt = tfk.optimizers.legacy.Adam(learning_rate=lRate)
    opt = create_adam_optimizer_with_decay(
     initial_learning_rate=lRate,
-    nEpochs=nEpochs*((len(data['X_train'])//bSizes[0])+1),
+    nEpochs=nEpochs*(len(data['X_train'])//bSizes[0]),
     final_lr_factor=2  # This will decay to lRate/10
 )
    # compile so we can test on validation set before training
@@ -235,7 +228,7 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,stddev=0.
    phimodelzero.compile(custom_metrics=cmetrics)
 
    ## compare validation loss before training for zero network and nonzero network
-   datacasted=[data['X_val'],data['y_val']]
+   datacasted=[tf.cast(data['X_val'],real_dtype),tf.cast(data['y_val'],real_dtype)]
    #need to re-enable learning, in case there's been a problem:
    phimodel.learn_transition = False
    phimodelzero.learn_transition = False
@@ -249,8 +242,8 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,stddev=0.
    print('tested')
    # phimodel.learn_ricci_val=False 
    # phimodelzero.learn_ricci_val=False 
-   valzero = {key: float(value.numpy()) for key, value in valzero.items()}
-   valraw = {key: float(value.numpy()) for key, value in valraw.items()}
+   valzero = {key: value.numpy() for key, value in valzero.items()}
+   valraw = {key: value.numpy() for key, value in valraw.items()}
 
    #print("CHECKING MODEL:")
    #print(data['X_train'][0:1])
@@ -285,21 +278,20 @@ def train_and_save_nn(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,stddev=0.
    print("ratio of final to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valfinal.items()}))
    print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,data["X_val"])
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,tf.cast(data["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
    #IMPLEMENT THE FOLLOWING
    #meanfailuretosolveequation,_,_=measure_laplacian_failure(phimodel,data)
    print("\n\n")
-   return phimodel,training_history, None
+   return phimodel,training_history
 
-def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[192,50000],stddev=0.1,lRate=0.001,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
+def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[192,50000],stddev=0.1,lRate=0.001,set_weights_to_zero=False,skip_measures=False):
    dirname = folder_name+ '/tetraquadric_pg_with_'+str(free_coefficient)
    name = 'phimodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(bSizes[1]) + 's' + str(nlayer) + 'x' +str(nHidden)
    print(dirname)
    print(name)
    
    data = np.load(os.path.join(dirname, 'dataset.npz'))
-   data = convert_to_tensor_dict(data)
    BASIS = prepare_tf_basis(np.load(os.path.join(dirname, 'basis.pickle'), allow_pickle=True))
 
    cb_list, cmetrics = getcallbacksandmetrics(data)
@@ -328,7 +320,7 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    #nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
    print("nns made")
 
-   datacasted=[data['X_val'],data['y_val']]
+   datacasted=[tf.cast(data['X_val'],real_dtype),tf.cast(data['y_val'],real_dtype)]
 
    #    nn_phi = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
    #    nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
@@ -363,11 +355,7 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    if set_weights_to_zero:
       print("SETTING WEIGHTS TO ZERO")
       training_history=0
-      if skip_measures:
-         return phimodelzero, training_history, None
-   elif set_weights_to_random:
-      print("SETTING WEIGHTS TO RANDOM")
-      training_history=0
+      return phimodelzero, training_history
    else:
       #phimodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirname,name),call_endpoint="serving_default")
       #phimodel.model=tf.keras.models.load_model(os.path.join(dirname, name) + ".keras")
@@ -377,7 +365,7 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
       training_history=np.load(os.path.join(dirname, 'trainingHistory-' + name +'.npz'),allow_pickle=True)['arr_0'].item()
 
    if skip_measures:
-      return phimodel, training_history, None
+       return phimodel, training_history
 
    print("compiling")
    phimodel.compile(custom_metrics=cmetrics)
@@ -420,7 +408,7 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    print("validation loss for final network: ")
    print(valtrained)
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,data["X_val"])
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,tf.cast(data["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
    print("\n\n")
    #IMPLEMENT THE FOLLOWING
@@ -428,10 +416,9 @@ def load_nn_phimodel(free_coefficient,nlayer=3,nHidden=128,nEpochs=50,bSizes=[19
    #print("\n\n")
    #print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    tf.keras.backend.clear_session()
-   return phimodel,training_history, None
+   return phimodel,training_history
 
 def generate_points_and_save_using_defaultsHYM(free_coefficient,linebundleforHYM,number_pointsHYM,phimodel,force_generate=False,seed_set=0):
-   print("\n\n")
 
    lbstring = ''.join(str(e) for e in linebundleforHYM)
    dirnameHYM = folder_name+'/tetraquadricHYM_pg_with_'+str(free_coefficient)+'forLB_'+lbstring
@@ -455,15 +442,9 @@ def generate_points_and_save_using_defaultsHYM(free_coefficient,linebundleforHYM
       try:
          print("loading prexisting dataset")
          data = np.load(os.path.join(dirnameHYM, 'dataset.npz'))
-         # Check if X_train dtype matches real_dtype or if length doesn't match
-         if False:#f data['X_train'].dtype != real_dtype:
-            print(f"Warning: X_train dtype is not 64-bit, it should b: {data['X_train'].dtype} ")
-            print("Regenerating dataset with correct dtype")
-            kappaHYM = prepare_dataset_HYM(pg,data,number_pointsHYM, dirnameHYM,phimodel,linebundleforHYM,BASIS,normalize_to_vol_j=True)
-         elif len(data['X_train'])+len(data['X_val']) != number_pointsHYM:
-            length_total = len(data['X_train'])+len(data['X_val'])
-            print(f"wrong length {length_total}, want {number_pointsHYM} - generating anyway")
-            kappaHYM = prepare_dataset_HYM(pg,data,number_pointsHYM, dirnameHYM,phimodel,linebundleforHYM,BASIS,normalize_to_vol_j=True)
+         if (len(data['X_train'])+len(data['X_val']))!=number_pointsHYM:
+            print("wrong length - generating anyway")
+            kappaHYM = prepare_dataset_HYM(pg,data,number_pointsHYM, dirnameHYM,phimodel,linebundleforHYM,BASIS,normalize_to_vol_j=True);
       except:
          print("problem loading data - generating anyway")
          kappaHYM = prepare_dataset_HYM(pg,data,number_pointsHYM, dirnameHYM,phimodel,linebundleforHYM,BASIS,normalize_to_vol_j=True);
@@ -479,14 +460,6 @@ def getcallbacksandmetricsHYM(databeta):
    cmetrics = [TotalLoss(), LaplacianLoss(), TransitionLoss()]
    return cb_list, cmetrics
 
-def convert_to_tensor_dict(data):
-   return {
-    key: tf.convert_to_tensor(value, dtype=complex_dtype) if value.dtype in [np.complex64, np.complex128] 
-         else tf.convert_to_tensor(value, dtype=real_dtype) if value.dtype in [np.float32, np.float64]
-         else tf.convert_to_tensor(value, dtype=value.dtype) if value.dtype == np.int32
-         else value
-    for key, value in data.items()
-   }
    
 def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],stddev=0.1,lRate=0.001,use_zero_network=False,alpha=[1,1],load_network=False):
    
@@ -499,17 +472,15 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
 
 
    databeta = np.load(os.path.join(dirnameHYM, 'dataset.npz'))
-   databeta = convert_to_tensor_dict(databeta)
-   databeta_train = dict(list(dict(databeta).items())[:len(dict(databeta))//2])
+   databeta_train=tf.data.Dataset.from_tensor_slices(dict(list(dict(databeta).items())[:len(dict(databeta))//2]))
    databeta_val_dict=dict(list(dict(databeta).items())[len(dict(databeta))//2:])
+   databeta_val=tf.data.Dataset.from_tensor_slices(databeta_val_dict)
    # batch_sizes=[64,10000]
-  
-   datacasted=[databeta['X_val'],databeta['y_val']]
+   databeta_train=databeta_train.shuffle(buffer_size=1024).batch(bSizes[0],drop_remainder=True)
+   datacasted=[tf.cast(databeta['X_val'],real_dtype),tf.cast(databeta['y_val'],real_dtype)]
 
-
-
-   weights = databeta['y_train'][:,0]
-   sources = databeta['sources_train']
+   weights = tf.cast(databeta['y_train'][:,0],complex_dtype)
+   sources  = tf.cast(databeta['sources_train'],complex_dtype)
    integrated_source = tf.reduce_mean(weights*sources)
    integrated_abs_source = tf.reduce_mean(tf.math.abs(weights*sources))
    print("sources integrated ",integrated_source)
@@ -542,16 +513,16 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    #nn_beta_zero = BiholoModelFuncGENERAL(shapeofnetwork,BASIS,use_zero_network=True)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #activ=tf.square
    activ=tfk.activations.gelu
-   activ = tf.square
-   if nHidden in [64,128,256] or nHidden<20 or nHidden==100:
+   if nHidden in [64,128,256]:
        residual_Q = True
-       load_func_HYM = BiholoModelFuncGENERALforHYMinv3
+       load_func_HYM = BiholoModelFuncGENERALforHYMinv4
    elif nHidden in [65,129, 257]:
        residual_Q = False
        load_func_HYM = BiholoModelFuncGENERALforHYMinv4
    elif nHidden in [66, 130, 258, 513]:
        load_func_HYM = BiholoModelFuncGENERALforHYMinv3
-      
+       active = tf.square
+
 
    nn_beta = load_func_HYM(shapeofnetwork,BASIS,activation=activ,stddev=stddev,use_zero_network=use_zero_network,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    nn_beta_zero = load_func_HYM(shapeofnetwork,BASIS,activation=activ,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
@@ -582,7 +553,7 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    #opt = tfk.optimizers.legacy.Adam(learning_rate=lRate)
    opt = create_adam_optimizer_with_decay(
     initial_learning_rate=lRate,
-    nEpochs=nEpochs*((len(databeta['X_train'])//bSizes[0])+1),
+    nEpochs=nEpochs*(len(databeta['X_train'])//bSizes[0]),
     final_lr_factor=2  # This will decay to lRate/10
     )
    # compile so we can test on validation set before training
@@ -591,9 +562,6 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    
    #datacasted=[tf.cast(data['X_val'],real_dtype),tf.cast(data['y_val'],real_dtype)]
    print("testing zero and raw")
-   # print("Printing validation dictionary keys and dtypes:")
-   # for key, value in databeta_val_dict.items():
-   #     print(f"{key}: {value.dtype}")
    valzero=betamodelzero.test_step(databeta_val_dict)
    valraw=betamodel.test_step(databeta_val_dict)
    valzero = {key: value.numpy() for key, value in valzero.items()}
@@ -609,7 +577,7 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    # continue looping if >10 or is nan
    #while (training_historyBeta['laplacian_loss'][-1]>1.9) or (np.isnan( training_historyBeta['laplacian_loss'][-1])):
    while i==0 or (i<=1 and (np.isnan( training_historyBeta['laplacian_loss'][-1]))):
-      print("trying iteration "+str(i))
+      print("trying i "+str(i))
       if i >0:
 
          print('trying again laplacian_loss too big')
@@ -629,7 +597,7 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
                  initial_learning_rate=newLR,
                  #nEpochs=nEpochs,
                  #nEpochs=nEpochs*(len(data['X_train'])//bSizes[0]),
-                 nEpochs=nEpochs*((len(databeta['X_train'])//bSizes[0])+1),
+                 nEpochs=nEpochs*(len(databeta['X_train'])//bSizes[0]),
                  final_lr_factor=2  # This will decay to lRate/10
                  )
          #betamodel= BetaModel(nn_beta,BASIS, linebundleforHYM,alpha=alpha,norm = [1. for _ in range(2)])
@@ -668,7 +636,7 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,databeta["X_val"])
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,tf.cast(databeta["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
 
 
@@ -684,11 +652,12 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
    meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation).numpy()
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("time to do that: ",time.time()-start)
+   print("\n\n")
 
    tf.keras.backend.clear_session()
    return betamodel,training_historyBeta, meanfailuretosolveequation
 
-def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],stddev=0.1,lRate=0.001,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
+def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],stddev=0.1,lRate=0.001,set_weights_to_zero=False,skip_measures=False):
    
    lbstring = ''.join(str(e) for e in linebundleforHYM)
    dirnameHYM = folder_name+'/tetraquadricHYM_pg_with_'+str(free_coefficient)+'forLB_'+lbstring
@@ -701,10 +670,12 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
 
 
    databeta = np.load(os.path.join(dirnameHYM, 'dataset.npz'))
-   databeta = convert_to_tensor_dict(databeta)
-   #databeta_train = dict(list(dict(databeta).items())[:len(dict(databeta))//2])
+   databeta_train=tf.data.Dataset.from_tensor_slices(dict(list(dict(databeta).items())[:len(dict(databeta))//2]))
    databeta_val_dict=dict(list(dict(databeta).items())[len(dict(databeta))//2:])
-   datacasted=[databeta['X_val'],databeta['y_val']]
+   databeta_val=tf.data.Dataset.from_tensor_slices(databeta_val_dict)
+   # batch_sizes=[64,10000]
+   databeta_train=databeta_train.shuffle(buffer_size=1024).batch(bSizes[0],drop_remainder=True)
+   datacasted=[tf.cast(databeta['X_val'],real_dtype),tf.cast(databeta['y_val'],real_dtype)]
 
    cb_list, cmetrics = getcallbacksandmetricsHYM(databeta)
 
@@ -730,18 +701,6 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
    #nn_beta_zero = BiholoModelFuncGENERAL(shapeofnetwork,BASIS,use_zero_network=True)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    activ=tf.square
    load_func_HYM = BiholoModelFuncGENERALforHYMinv3
-
-
-   activ=tfk.activations.gelu
-   activ = tf.square
-   if nHidden in [64,128,256] or nHidden<20 or nHidden==100:
-       residual_Q = True
-       load_func_HYM = BiholoModelFuncGENERALforHYMinv3
-   elif nHidden in [65,129, 257]:
-       residual_Q = False
-       load_func_HYM = BiholoModelFuncGENERALforHYMinv4
-   elif nHidden in [66, 130, 258, 513]:
-       load_func_HYM = BiholoModelFuncGENERALforHYMinv3
    nn_beta = load_func_HYM(shapeofnetwork,BASIS,activation=activ,stddev=stddev,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    nn_beta_zero = load_func_HYM(shapeofnetwork,BASIS,activation=activ,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #copie from phi above
@@ -752,19 +711,14 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
    
    betamodel= BetaModel(nn_beta,BASIS, linebundleforHYM,alpha=alpha,norm = [1. for _ in range(2)])
    betamodelzero= BetaModel(nn_beta_zero,BASIS, linebundleforHYM,alpha=alpha,norm = [1. for _ in range(2)])
-   print("example data:")
-   print("betamodel: " + str(betamodel(datacasted[0][0:1])))
-   print("betamodelzero: " + str(betamodelzero(datacasted[0][0:1])))
+   betamodel(datacasted[0][0:1])
+   betamodelzero(datacasted[0][0:1])
 
 
    if set_weights_to_zero:
       print("RETURNING ZERO NETWORK")
       training_historyBeta=0
-      if skip_measures:
-         return betamodelzero, training_historyBeta, None
-   elif set_weights_to_random:
-      print("RETURNING RANDOM NETWORK")
-      training_historyBeta=0
+      return betamodelzero, training_historyBeta
    else:
       #betamodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirnameHYM,name),call_endpoint="serving_default")
       #betamodel.model=tf.keras.models.load_model(os.path.join(dirnameHYM, name) + ".keras")
@@ -776,7 +730,7 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
       print("second print",betamodel(databeta_val_dict['X_val'][0:1]))
 
    if skip_measures:
-       return betamodel,training_historyBeta, None
+       return betamodel,training_historyBeta
 
    betamodel.compile(custom_metrics=cmetrics)
    betamodelzero.compile(custom_metrics=cmetrics)
@@ -788,8 +742,8 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
 
    valzero=betamodelzero.test_step(databeta_val_dict)
    valtrained=betamodel.test_step(databeta_val_dict)
-   valzero = {key: float(value.numpy()) for key, value in valzero.items()}
-   valtrained= {key: float(value.numpy()) for key, value in valtrained.items()}
+   valzero = {key: value.numpy() for key, value in valzero.items()}
+   valtrained= {key: value.numpy() for key, value in valtrained.items()}
 
    #metricsnames=betamodel.metrics_names
 
@@ -806,28 +760,33 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,databeta["X_val"])
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,tf.cast(databeta["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
    import time
    start=time.time()
    #meanfailuretosolveequation,_,_=HYM_measure_val(betamodel,databeta)
    meanfailuretosolveequation= batch_process_helper_func(
-        lambda x,y,z,w,a: tf.expand_dims(HYM_measure_val_for_batching(betamodel,x,y,z,w,a),axis=0),
+        tf.function(lambda x,y,z,w,a: tf.expand_dims(HYM_measure_val_for_batching(betamodel,x,y,z,w,a),axis=0)),
         (databeta['X_val'],databeta['y_val'],databeta['val_pullbacks'],databeta['inv_mets_val'],databeta['sources_val']),
         batch_indices=(0,1,2,3,4),
-        batch_size=1000,
-        compile_func=True
+        batch_size=50
     )
    meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation)
+
+   
+   
+   
+   
+   
    
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
-   print(f"time to do mean of difference: {time.time()-start:.2f} seconds")
+   print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
+   print("time to do that: ",time.time()-start)
    print("\n\n")
-   return betamodel,training_historyBeta, meanfailuretosolveequation
+   return betamodel,training_historyBeta
 
 
 def generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM,functionforbaseharmonicform_jbar,phimodel,betamodel,number_pointsHarmonic,force_generate=False,seed_set=0):
-   print("\n\n")
    # get names
    nameOfBaseHF=functionforbaseharmonicform_jbar.__name__
    lbstring = ''.join(str(e) for e in linebundleforHYM)
@@ -856,14 +815,15 @@ def generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM,
          data = np.load(os.path.join(dirnameHarmonic, 'dataset.npz'))
          print(phimodel.BASIS['KMODULI'])
 
-         # Check if X_train dtype matches real_dtype or if length doesn't match
-         if False:#data['X_train'].dtype != real_dtype:
-            print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
-            print("Regenerating dataset with correct dtype")
-            kappaHarmonic=prepare_dataset_HarmonicForm(pg,data,number_pointsHarmonic,dirnameHarmonic,phimodel,linebundleforHYM,BASIS,functionforbaseharmonicform_jbar,betamodel)
-         elif len(data['X_train'])+len(data['X_val']) != number_pointsHarmonic:
-            length_total = len(data['X_train'])+len(data['X_val'])
-            print(f"wrong length {length_total}, want {number_pointsHarmonic} - generating anyway")
+         #print("CHECKING PHIMODEL:")
+         #print(data['X_train'][0:1])
+         #print(phimodel(data['X_train'][0:1]))
+         #print(phimodel.fubini_study_pb(data['X_train'][0:1]))
+         #print(tf.linalg.inv(data['inv_mets_train'][0]))
+         #print("DONE")
+
+         if (len(data['X_train'])+len(data['X_val']))!=number_pointsHarmonic:
+            print("wrong length - generating anyway")
             kappaHarmonic=prepare_dataset_HarmonicForm(pg,data,number_pointsHarmonic,dirnameHarmonic,phimodel,linebundleforHYM,BASIS,functionforbaseharmonicform_jbar,betamodel)
       except:
          print("problem loading data - generating anyway")
@@ -882,7 +842,7 @@ def getcallbacksandmetricsHF(dataHF):
    return cb_listHF, cmetricsHF
 
    
-def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,functionforbaseharmonicform_jbar,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],lRate=0.001,alpha=[1,500],use_zero_network=False,load_network=False,stddev=0.05,final_layer_scale=1.0,norm_momentum=0.999):
+def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmonicform_jbar,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],lRate=0.001,alpha=[1,500],use_zero_network=False,load_network=False,stddev=0.05,final_layer_scale=1.0,norm_momentum=0.999):
    
    perm= tracker.SummaryTracker()
    #print("perm1")
@@ -903,11 +863,13 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    #print("perm2")
    #print(perm.print_diff())
    dataHF = np.load(os.path.join(dirnameHarmonic, 'dataset.npz'))
-   dataHF = convert_to_tensor_dict(dataHF)
-   dataHF_train=dict(list(dict(dataHF).items())[:len(dict(dataHF))//2])
+   dataHF_train=tf.data.Dataset.from_tensor_slices(dict(list(dict(dataHF).items())[:len(dict(dataHF))//2]))
    dataHF_val_dict=dict(list(dict(dataHF).items())[len(dict(dataHF))//2:])
+   dataHF_val_dict = {key: tf.convert_to_tensor(value) for key, value in dataHF_val_dict.items()}
+   dataHF_val=tf.data.Dataset.from_tensor_slices(dataHF_val_dict)
    # batch_sizes=[64,10000]
-   datacasted=[dataHF['X_val'],dataHF['y_val']]
+   dataHF_train=dataHF_train.shuffle(buffer_size=1024).batch(bSizes[0],drop_remainder=True)
+   datacasted=[tf.cast(dataHF['X_val'],real_dtype),tf.cast(dataHF['y_val'],real_dtype)]
 
 
 
@@ -955,18 +917,15 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    #else:
    #activ=tf.square
    activ = tf.keras.activations.gelu
-   activ = tf.square
    #load_func = BiholoModelFuncGENERALforSigma2_m13
    #load_func = BiholoModelFuncGENERALforSigmaWNorm
-   if (nHidden ==64) or (nHidden ==128) or nHidden<20 or nHidden==100:
-       #load_func = BiholoBadSectionModel
-       load_func =BiholoModelFuncGENERALforSigma2_m13
-       #load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log
-   elif (nHidden ==65) or (nHidden ==129):
+   if (nHidden ==64) or (nHidden ==128):
+       load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log
+   if (nHidden ==65) or (nHidden ==129):
        #load_func = BiholoModelFuncGENERALforSigmaWNorm
        load_func = BiholoModelFuncGENERALforSigma2_m13
    #if (nHidden ==66) or (nHidden ==130) or :
-   if nHidden in [66,130,250,430,200]:
+   if nHidden in [66,130,250,430,200] :
         load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log_residual 
    if (nHidden==67) or (nHidden==131):
         load_func = BiholoModelFuncGENERALforSigmaWNorm
@@ -998,7 +957,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    #opt = tfk.optimizers.legacy.Adam(learning_rate=lRate)
    opt = create_adam_optimizer_with_decay(
            initial_learning_rate=lRate,
-           nEpochs=nEpochs*((len(dataHF['X_train'])//bSizes[0])+1),
+           nEpochs=nEpochs*(len(dataHF['X_train'])//bSizes[0]),
            final_lr_factor=2#2  # This will decay to lRate/10
            )
    # compile so we can test on validation set before training
@@ -1024,8 +983,8 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    print("testing zero and raw")
    valzero=HFmodelzero.test_step(dataHF_val_dict)
    valraw=HFmodel.test_step(dataHF_val_dict)
-   valzero = {key: float(value.numpy()) for key, value in valzero.items()}
-   valraw = {key: float(value.numpy()) for key, value in valraw.items()}
+   valzero = {key: value.numpy() for key, value in valzero.items()}
+   valraw = {key: value.numpy() for key, value in valraw.items()}
    print("tested zero and raw")
    print("zero network validation loss: ")
    print(valzero)
@@ -1066,7 +1025,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
              print("new LR " + str(newLR))
          opt = create_adam_optimizer_with_decay(
                  initial_learning_rate=newLR,
-                 nEpochs=nEpochs*((len(dataHF['X_train'])//bSizes[0])+1),
+                 nEpochs=nEpochs*(len(dataHF['X_train'])//bSizes[0]),
                  final_lr_factor=2  # This will decay to lRate/10
                  )
          #cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF)
@@ -1077,7 +1036,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
                  #verbose=1, custom_metrics=cmetricsHF, callbacks=cb_listHF)
          HFmodel.model = nn_HF
          valraw=HFmodel.test_step(dataHF_val_dict)
-         valraw = {key: float(value.numpy()) for key, value in valraw.items()}
+         valraw = {key: value.numpy() for key, value in valraw.items()}
       HFmodel, training_historyHF= train_modelHF(HFmodel, dataHF_train, optimizer=opt, epochs=nEpochs, batch_sizes=bSizes, 
                                        verbose=1, custom_metrics=cmetricsHF, callbacks=cb_listHF)
       i+=1 
@@ -1113,7 +1072,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    tf.keras.backend.clear_session()
 
    valfinal =HFmodel.test_step(dataHF_val_dict)
-   valfinal = {key: float(value.numpy()) for key, value in valfinal.items()}
+   valfinal = {key: value.numpy() for key, value in valfinal.items()}
 
    #print("perm9")
    #print(perm.print_diff())
@@ -1135,62 +1094,54 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    print(valfinal)
    print("ratio of final to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valfinal.items()}))
    print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
-   import time
-   start = time.time()
-   print("start time:", time.strftime("%H:%M:%S", time.localtime()))
+
    check_vals_again = closure_check(pts_check,HFmodel.functionforbaseharmonicform_jbar, HFmodel, pullbacks_check)
-   print(time.time()-start)
-   print("check1 again:",tf.reduce_mean(tf.math.abs(check_vals_again)))
+   print("check1  that the form is still closed again:",tf.reduce_mean(tf.math.abs(check_vals_again)))
+   check_vals_again = closure_check(pts_check,HFmodelzero.functionforbaseharmonicform_jbar, HFmodelzero, pullbacks_check)
+   print("check1  that the HFzero model is closed again:",tf.reduce_mean(tf.math.abs(check_vals_again)))
 
 
    #print("perm10")
    #print(perm.print_diff())
-   print("-----CHECKS------")
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("average transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs.numpy()))
-   transition_loss = compute_transition_loss_for_corrected_HF_model(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("transition loss: " + str(tf.reduce_mean(transition_loss).numpy()))
-   transition_loss_zero = compute_transition_loss_for_corrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2] )
-   print("transition loss for zero network: " + str(tf.reduce_mean(transition_loss_zero).numpy()))
+
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,tf.cast(dataHF["X_val"],real_dtype))
+   print("average transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs))
+   transition_loss = compute_transition_loss_for_corrected_HF_model(HFmodel,tf.cast(dataHF["X_val"],real_dtype))
+   print("transition loss: " + str(tf.reduce_mean(transition_loss)))
+   transition_loss_zero = compute_transition_loss_for_corrected_HF_model(HFmodelzero,tf.cast(dataHF["X_val"],real_dtype))
+   print("transition loss for zero network: " + str(tf.reduce_mean(transition_loss_zero)))
    
-   transition_loss_for_uncorrected_HF = compute_transition_loss_for_uncorrected_HF_model(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("transition loss for uncorrected HF: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF).numpy()))
-   transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()))
+   transition_loss_for_uncorrected_HF = compute_transition_loss_for_uncorrected_HF_model(HFmodel,tf.cast(dataHF["X_val"],real_dtype))
+   print("transition loss for uncorrected HF: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF)))
+   transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero,tf.cast(dataHF["X_val"],real_dtype))
+   print("transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero)))
+
 
 
    import time
    start=time.time()
-   meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
-   # meanfailuretosolveequation= batch_process_helper_func(
-   #      tf.function(lambda x,y,z,w: tf.expand_dims(HYM_measure_val_with_H_for_batching(HFmodel,x,y,z,w),axis=0)),
-   #      (dataHF['X_val'],dataHF['y_val'],dataHF['val_pullbacks'],dataHF['inv_mets_val']),
-   #      batch_indices=(0,1,2,3),
-   #      batch_size=50
-   #  )
-   meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation).numpy().item()
-
+   #meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
+   meanfailuretosolveequation= batch_process_helper_func(
+        tf.function(lambda x,y,z,w: tf.expand_dims(HYM_measure_val_with_H_for_batching(HFmodel,x,y,z,w),axis=0)),
+        (dataHF['X_val'],dataHF['y_val'],dataHF['val_pullbacks'],dataHF['inv_mets_val']),
+        batch_indices=(0,1,2,3),
+        batch_size=50
+    )
+   meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation).numpy()
 
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("time to do that: ",time.time()-start)
-   TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model)
-   print("trained coclosure divided by norm of v: " + str(TrainedDivTrained))
-   print("avg/avg trained coclosure divided by norm of trained v: " + str(avgavagTrainedDivTrained))
-   print("trained coclosure divided by norm of v_FS: " + str(TrainedDivFS))
-   print("avg/avg trained coclosure divided by norm of v_FS: " + str(avgavagTrainedDivFS))
-   print("FS coclosure divided by norm of v_FS: " + str(FS_DivFS))
-   print("avg/avg FS coclosure divided by norm of v_FS: " + str(avgavagFS_DivFS))
+   print("\n\n")
 
    tf.keras.backend.clear_session()
-   del dataHF, dataHF_train, dataHF_val_dict, valfinal,valraw,valzero
+   del dataHF, dataHF_train, dataHF_val_dict,  dataHF_val,valfinal,valraw,valzero
    #print("perm11")
    #print(perm.print_diff())
-   print("\n\n")
    return HFmodel,training_historyHF,meanfailuretosolveequation
 
 
 
-def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,functionforbaseharmonicform_jbar,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],lRate=0.001,alpha=[1,1],set_weights_to_zero=False,set_weights_to_random=False,final_layer_scale=1.0,skip_measures=False,norm_momentum=0.999):
+def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,functionforbaseharmonicform_jbar,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],lRate=0.001,alpha=[1,1],set_weights_to_zero=False,final_layer_scale=1.0,skip_measures=False,norm_momentum=0.999):
    
    nameOfBaseHF=functionforbaseharmonicform_jbar.__name__
    lbstring = ''.join(str(e) for e in linebundleforHYM)
@@ -1205,11 +1156,13 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,function
    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameForMetric, 'basis.pickle'), allow_pickle=True))
 
    dataHF = np.load(os.path.join(dirnameHarmonic, 'dataset.npz'))
-   dataHF = convert_to_tensor_dict(dataHF)
-   dataHF_train=dict(list(dict(dataHF).items())[:len(dict(dataHF))//2])
+   dataHF_train=tf.data.Dataset.from_tensor_slices(dict(list(dict(dataHF).items())[:len(dict(dataHF))//2]))
    dataHF_val_dict=dict(list(dict(dataHF).items())[len(dict(dataHF))//2:])
+   dataHF_val_dict = {key: tf.convert_to_tensor(value) for key, value in dataHF_val_dict.items()}
+   dataHF_val=tf.data.Dataset.from_tensor_slices(dataHF_val_dict)
    # batch_sizes=[64,10000]
-   datacasted=[dataHF['X_val'],dataHF['y_val']]
+   dataHF_train=dataHF_train.shuffle(buffer_size=1024).batch(bSizes[0],drop_remainder=True)
+
 
 
 
@@ -1247,6 +1200,7 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,function
    activ=tf.keras.activations.gelu
    #else:
    #    activ=tf.square
+   print("activation: ",activ)
 
 
    #nn_HF = BiholoModelFuncGENERALforSigma2(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activ,stddev=stddev,final_layer_scale=final_layer_scale,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
@@ -1264,37 +1218,21 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,function
    #else:
    #activ=tf.square
    activ = tf.keras.activations.gelu
-   activ = tf.square
    #load_func = BiholoModelFuncGENERALforSigma2_m13
-   #load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log
+   load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log
 
-   load_func = BiholoModelFuncGENERALforSigma2_m13
 
-   print("network arch:",load_func)
-   print("activation: ",activ)
-   nn_HF = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activ,stddev=stddev,use_zero_network=False,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+   nn_HF = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activ,stddev=stddev,use_zero_network=True,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    nn_HF_zero  = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activ,stddev=stddev,use_zero_network=True,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    
    HFmodel = HarmonicFormModel(nn_HF,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)])
    HFmodelzero = HarmonicFormModel(nn_HF_zero,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)])
-   print("example data:")
-   print("HFmodel: " + str(HFmodel(dataHF_val_dict['X_val'][0:1])))
-   print("HFmodelzero: " + str(HFmodelzero(dataHF_val_dict['X_val'][0:1])))
 
    if set_weights_to_zero:
+      print("RETURNING ZERO NETWORK")
       training_historyHF=0
-      if skip_measures:
-         print("RETURNING ZERO NETWORK")
-         return HFmodelzero, training_historyHF, None
-      else:
-         print("USING ZERO NETWORK")
-   elif set_weights_to_random:
-      training_historyHF=0
-      if skip_measures:
-         print("RETURNING RANDOM NETWORK")
-         return HFmodel, training_historyHF, None
-      else:
-         print("USING RANDOM NETWORK")
+      HFmodelzero(dataHF_val_dict['X_val'][0:1])
+      return HFmodelzero, training_historyHF
    else:
       #print(HFmodel.model.weights[0])
       #HFmodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirnameHarmonic,name),call_endpoint="serving_default")
@@ -1307,7 +1245,7 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,function
 
    
    if skip_measures:
-       return HFmodel, training_historyHF, None
+       return HFmodel, training_historyHF
 
    HFmodel.compile(custom_metrics=cmetricsHF)
    HFmodelzero.compile(custom_metrics=cmetricsHF)
@@ -1317,8 +1255,8 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,function
 
    valzero=HFmodelzero.test_step(dataHF_val_dict)
    valtrained=HFmodel.test_step(dataHF_val_dict)
-   valzero = {key: float(value.numpy()) for key, value in valzero.items()}
-   valtrained = {key: float(value.numpy()) for key, value in valtrained.items()}
+   valzero = {key: value.numpy() for key, value in valzero.items()}
+   valtrained = {key: value.numpy() for key, value in valtrained.items()}
 
    #valzero=HFmodelzero.evaluate(dataHF_val_dict,return_dict=True)
    #valtrained=HFmodel.evaluate(dataHF_val_dict,return_dict=True)
@@ -1336,35 +1274,20 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,function
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"],dataHF["y_val"][:, -2])
+   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,tf.cast(dataHF["X_val"],real_dtype))
    print("average transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs))
    #meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
 
-   #meanfailuretosolveequation= batch_process_helper_func(
-   #     tf.function(lambda x,y,z,w: tf.expand_dims(HYM_measure_val_with_H_for_batching(HFmodel,x,y,z,w),axis=0)),
-   #     (dataHF['X_val'],dataHF['y_val'],dataHF['val_pullbacks'],dataHF['inv_mets_val']),
-   #     batch_indices=(0,1,2,3),
-   #     batch_size=50
-   # )
-   import time
-   start = time.time()
-   print("computing mean failure to solve equation", time.strftime("%H:%M:%S", time.localtime()))
-   meanfailuretosolveequation,_,_ = HYM_measure_val_with_H(HFmodel,dataHF)
-   meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation).numpy().item()
+   meanfailuretosolveequation= batch_process_helper_func(
+        tf.function(lambda x,y,z,w: tf.expand_dims(HYM_measure_val_with_H_for_batching(HFmodel,x,y,z,w),axis=0)),
+        (dataHF['X_val'],dataHF['y_val'],dataHF['val_pullbacks'],dataHF['inv_mets_val']),
+        batch_indices=(0,1,2,3),
+        batch_size=50
+    )
+   meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation)
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
-   print("TIME to compute mean failure to solve equation: ", time.time()-start)
-   start = time.time()
-   print("computing trained coclosure divided by norm of v", time.strftime("%H:%M:%S", time.localtime()))
-   TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model)
-   print("trained coclosure divided by norm of v: " + str(TrainedDivTrained))
-   print("avg/avg trained coclosure divided by norm of trained v: " + str(avgavagTrainedDivTrained))
-   print("trained coclosure divided by norm of v_FS: " + str(TrainedDivFS))
-   print("avg/avg trained coclosure divided by norm of v_FS: " + str(avgavagTrainedDivFS))
-   print("FS coclosure divided by norm of v_FS: " + str(FS_DivFS))
-   print("avg/avg FS coclosure divided by norm of v_FS: " + str(avgavagFS_DivFS))
-   print("TIME to compute trained coclosure divided by norm of v: ", time.time()-start)
    print("\n\n")
-   return HFmodel,training_historyHF, meanfailuretosolveequation
+   return HFmodel,training_historyHF
 
 
 

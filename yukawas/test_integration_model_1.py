@@ -61,10 +61,10 @@ from NewCustomMetrics import *
 from HarmonicFormModel import *
 from BetaModel import *
 from laplacian_funcs import *
-name_of_run = "testintegration_model13"
-from OneAndTwoFormsForLineBundlesModel13 import *
+name_of_run = "testintegration_model1"
+from OneAndTwoFormsForLineBundles import *
 #from generate_and_train_all_nns import *
-from generate_and_train_all_nnsHOLOModel13 import *
+from generate_and_train_all_nnsHOLO import *
 from auxiliary_funcs import *
 
 print_memory_usage(start_time_of_process=start_time_of_process, name = __name__)
