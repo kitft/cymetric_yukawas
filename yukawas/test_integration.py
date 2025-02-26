@@ -151,6 +151,10 @@ if __name__ == '__main__':
         nPoints = 100
         nPointsHF = 100
         n_to_integrate = 100
+    elif 'regulardata' in sys.argv[1:]:
+        nPoints = 100
+        nPointsHF = 100
+        n_to_integrate = 1000000
     elif 'small' in sys.argv[1:]:
         n_to_integrate = 1000
     elif 'allbig' in sys.argv[1:]:
