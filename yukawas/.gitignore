@@ -12,3 +12,4 @@ __pycache__/
 *.ipynb
 model13_results/*
 model*results/*
+*results/*
