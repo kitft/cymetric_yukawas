@@ -34,7 +34,7 @@ import tensorflow.keras as tfk
 if __name__ == '__main__':
     # Default to not eager unless explicitly requested
     run_eagerly = False
-    if len(sys.argv) > 5 and 'eager' in str(sys.argv[5]):
+    if len(sys.argv) > 5 and 'eager' in sys.argv:
         run_eagerly = True
 
     tf.config.run_functions_eagerly(run_eagerly)

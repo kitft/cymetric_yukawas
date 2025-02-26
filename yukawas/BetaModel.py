@@ -588,7 +588,7 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     # points = pwo['point'][mask]
     # Verify pullbacks calculation for a subset of points
     # Take first 100 elements of train_pullbacks for verification
-    verify = True
+    verify = True if len(train_pullbacks)<1001 else False
     if verify:
         sample_size = min(100, len(train_pullbacks))
         sample_points = points[:sample_size]
@@ -621,8 +621,8 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
             print("Example:")
             print(f"  verification_pullbacks: {verification_pullbacks[0]}")
             print(f"  sample_pullbacks: {sample_pullbacks[0]}")
+            raise Exception("Pullbacks verification failed")
         print("Verifying omega^2 calculation...")
-        verify_omega = True
         # Get the first few points for verification
         sample_size = min(100, len(points))
         sample_points = points[:sample_size]
@@ -649,6 +649,7 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
         if not is_close_omega:
             max_diff_omega = tf.reduce_max(omega_diff)
             print(f"Maximum difference in omega values: {max_diff_omega}")
+            raise Exception("Omega verification failed")
 
 
 
