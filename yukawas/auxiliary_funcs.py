@@ -330,6 +330,7 @@ def propagate_errors_through_normalization(matrix, matrix_errors):
     Propagate errors through matrix square root and inversion operations.
     Uses analytical error propagation formulas.
     """
+    import scipy
     # For a 1x1 matrix, the error propagation is straightforward
     if matrix.shape == (1, 1):
         # For sqrt(x)^-1, the derivative is -0.5 * x^(-3/2)
@@ -795,7 +796,7 @@ def run_realistic_test():
     m_errors = 0.1 * np.abs(m)  # 10% error
     
     # Import scipy for sqrtm function
-    import scipy.linalg
+    import scipy
     
     # Calculate normalization matrices
     NormH = np.linalg.inv(scipy.linalg.sqrtm(Hmat).astype(complex))
