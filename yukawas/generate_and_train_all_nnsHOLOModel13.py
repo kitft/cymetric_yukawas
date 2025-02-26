@@ -501,11 +501,10 @@ def train_and_save_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128
 
    databeta = np.load(os.path.join(dirnameHYM, 'dataset.npz'))
    databeta = convert_to_tensor_dict(databeta)
-   databeta_train=tf.data.Dataset.from_tensor_slices(dict(list(dict(databeta).items())[:len(dict(databeta))//2]))
+   databeta_train = dict(list(dict(databeta).items())[:len(dict(databeta))//2])
    databeta_val_dict=dict(list(dict(databeta).items())[len(dict(databeta))//2:])
-   databeta_val=tf.data.Dataset.from_tensor_slices(databeta_val_dict)
    # batch_sizes=[64,10000]
-   databeta_train=databeta_train.shuffle(buffer_size=1024).batch(bSizes[0],drop_remainder=True)
+  
    datacasted=[databeta['X_val'],databeta['y_val']]
 
 
@@ -704,11 +703,8 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
 
    databeta = np.load(os.path.join(dirnameHYM, 'dataset.npz'))
    databeta = convert_to_tensor_dict(databeta)
-   databeta_train=tf.data.Dataset.from_tensor_slices(dict(list(dict(databeta).items())[:len(dict(databeta))//2]))
+   #databeta_train = dict(list(dict(databeta).items())[:len(dict(databeta))//2])
    databeta_val_dict=dict(list(dict(databeta).items())[len(dict(databeta))//2:])
-   databeta_val=tf.data.Dataset.from_tensor_slices(databeta_val_dict)
-   # batch_sizes=[64,10000]
-   databeta_train=databeta_train.shuffle(buffer_size=1024).batch(bSizes[0],drop_remainder=True)
    datacasted=[databeta['X_val'],databeta['y_val']]
 
    cb_list, cmetrics = getcallbacksandmetricsHYM(databeta)
@@ -915,12 +911,9 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    #print(perm.print_diff())
    dataHF = np.load(os.path.join(dirnameHarmonic, 'dataset.npz'))
    dataHF = convert_to_tensor_dict(dataHF)
-   dataHF_train=tf.data.Dataset.from_tensor_slices(dict(list(dict(dataHF).items())[:len(dict(dataHF))//2]))
+   dataHF_train=dict(list(dict(dataHF).items())[:len(dict(dataHF))//2])
    dataHF_val_dict=dict(list(dict(dataHF).items())[len(dict(dataHF))//2:])
-   dataHF_val_dict = {key: tf.convert_to_tensor(value) for key, value in dataHF_val_dict.items()}
-   dataHF_val=tf.data.Dataset.from_tensor_slices(dataHF_val_dict)
    # batch_sizes=[64,10000]
-   dataHF_train=dataHF_train.shuffle(buffer_size=1024).batch(bSizes[0],drop_remainder=True)
    datacasted=[dataHF['X_val'],dataHF['y_val']]
 
 
@@ -1196,7 +1189,7 @@ def train_and_save_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_mode
    print("avg/avg FS coclosure divided by norm of v_FS: " + str(avgavagFS_DivFS))
 
    tf.keras.backend.clear_session()
-   del dataHF, dataHF_train, dataHF_val_dict,  dataHF_val,valfinal,valraw,valzero
+   del dataHF, dataHF_train, dataHF_val_dict, valfinal,valraw,valzero
    #print("perm11")
    #print(perm.print_diff())
    print("\n\n")
@@ -1220,13 +1213,10 @@ def load_nn_HF(free_coefficient,linebundleforHYM,betamodel,metric_model,function
 
    dataHF = np.load(os.path.join(dirnameHarmonic, 'dataset.npz'))
    dataHF = convert_to_tensor_dict(dataHF)
-   dataHF_train=tf.data.Dataset.from_tensor_slices(dict(list(dict(dataHF).items())[:len(dict(dataHF))//2]))
+   dataHF_train=dict(list(dict(dataHF).items())[:len(dict(dataHF))//2])
    dataHF_val_dict=dict(list(dict(dataHF).items())[len(dict(dataHF))//2:])
-   dataHF_val_dict = {key: tf.convert_to_tensor(value) for key, value in dataHF_val_dict.items()}
-   dataHF_val=tf.data.Dataset.from_tensor_slices(dataHF_val_dict)
    # batch_sizes=[64,10000]
-   dataHF_train=dataHF_train.shuffle(buffer_size=1024).batch(bSizes[0],drop_remainder=True)
-
+   datacasted=[dataHF['X_val'],dataHF['y_val']]
 
 
 
