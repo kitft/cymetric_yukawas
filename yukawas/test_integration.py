@@ -15,6 +15,8 @@ if __name__ == '__main__':
     from tensorflow.python.client import device_lib
     print(device_lib.list_local_devices())
 
+
+
 import csv
 import numpy as np
 import gc
@@ -32,6 +34,28 @@ from cymetric.pointgen.nphelper import prepare_dataset, prepare_basis_pickle
 
 import tensorflow as tf
 import tensorflow.keras as tfk
+
+if __name__ == '__main__':
+    # Default to not eager unless explicitly requested
+    run_eagerly = False
+    if 'eager' in sys.argv[1:]:
+        run_eagerly = True
+
+    tf.config.run_functions_eagerly(run_eagerly)
+
+    print("Running with eager execution:",run_eagerly)
+
+    from cymetric.config import real_dtype, complex_dtype, set_double_precision
+
+    if 'doubleprecision' in sys.argv[1:]:
+        double_precision = True
+    else:
+        double_precision = False
+    print("Running with double precision?:", double_precision)
+    set_double_precision(double_precision)
+
+
+    tf.get_logger().setLevel('ERROR')
 
 # Import the error calculation functions from auxiliary_funcs
 from auxiliary_funcs import (

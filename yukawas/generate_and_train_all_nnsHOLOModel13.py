@@ -316,8 +316,6 @@ def load_nn_phimodel(manifold_name_and_data,nlayer=3,nHidden=128,nEpochs=50,bSiz
    nn_phi = load_func(shapeofnetwork,BASIS,stddev=stddev,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    nn_phi_zero =load_func(shapeofnetwork,BASIS,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
-   print(nn_phi(data['X_train'][0:1]))
-   print(nn_phi_zero(data['X_train'][0:1]))
    print("nns made")
 
    datacasted=[data['X_val'],data['y_val']]
