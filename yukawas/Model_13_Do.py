@@ -260,7 +260,7 @@ if __name__ == '__main__':
             nPoints = 100
             nPointsHF = 100
             n_to_integrate = 100
-        if str(sys.argv[3]) == 'testsmall':
+        elif str(sys.argv[3]) == 'testsmall':
             nPoints = 100
             nPointsHF = 100
             n_to_integrate = 100
