@@ -263,6 +263,9 @@ if __name__ == '__main__':
             nPoints = 30
             nPointsHF = 30
             n_to_integrate = 30
+            skip_measuresPhi=True
+            skip_measuresBeta=True
+            skip_measuresHF=True
         elif str(sys.argv[3]) == 'testsmall':
             nPoints = 100
             nPointsHF = 100

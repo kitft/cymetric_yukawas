@@ -819,7 +819,7 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
         lambda x,y,z,w,a: tf.expand_dims(HYM_measure_val_for_batching(betamodel,x,y,z,w,a),axis=0),
         (databeta['X_val'],databeta['y_val'],databeta['val_pullbacks'],databeta['inv_mets_val'],databeta['sources_val']),
         batch_indices=(0,1,2,3,4),
-        batch_size=1000,
+        batch_size=10000,
         compile_func=True
     )
    meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation)
