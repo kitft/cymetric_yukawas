@@ -104,6 +104,7 @@ def get_coefficients(free_coefficient):
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
       x, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
    return coefficients
+
 def generate_points_and_save_using_defaults_for_eval(free_coefficient,number_points,force_generate=False,seed_set=0):
    coefficients=get_coefficients(free_coefficient)
    kmoduli = kmoduliTQ 
@@ -813,22 +814,16 @@ def load_nn_HYM(free_coefficient,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=3
    start=time.time()
    #meanfailuretosolveequation,_,_=HYM_measure_val(betamodel,databeta)
    meanfailuretosolveequation= batch_process_helper_func(
-        tf.function(lambda x,y,z,w,a: tf.expand_dims(HYM_measure_val_for_batching(betamodel,x,y,z,w,a),axis=0)),
+        lambda x,y,z,w,a: tf.expand_dims(HYM_measure_val_for_batching(betamodel,x,y,z,w,a),axis=0),
         (databeta['X_val'],databeta['y_val'],databeta['val_pullbacks'],databeta['inv_mets_val'],databeta['sources_val']),
         batch_indices=(0,1,2,3,4),
-        batch_size=50
+        batch_size=1000,
+        compile_func=True
     )
    meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation)
-
-   
-   
-   
-   
-   
    
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
-   print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
-   print("time to do that: ",time.time()-start)
+   print(f"time to do mean of difference: {time.time()-start:.2f} seconds")
    print("\n\n")
    return betamodel,training_historyBeta, meanfailuretosolveequation
 

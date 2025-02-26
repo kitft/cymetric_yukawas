@@ -717,11 +717,7 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
     # FS_metric_pb = tf.einsum('xai,xij,xbj->xab', pullbacks, point_gen.fubini_study_metrics(points, vol_js=point_gen.kmoduli), np.conj(pullbacks))
     # FSmetricdets=tf.abs(tf.linalg.det(FS_metric_pb))
     # FSmetricinv = tf.linalg.inv(FS_metric_pb)
-    # #print(tf.shape(fs_ref))
-    
-    
      
-    print("gets this far, then4")
     print("check slope: isec, FSmetric, CYomega,CYdirect")
     print(tf.einsum('abc,a,b,c',BASIS["INTNUMS"],point_gen.kmoduli,point_gen.kmoduli,linebundleforHYM))
     #print(weights[:,0])

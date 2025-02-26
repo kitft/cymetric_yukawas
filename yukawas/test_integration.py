@@ -6,7 +6,10 @@ import time
 import os
 start_time_of_process = time.time()
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-os.environ["USE_PROFILER"] = "1"
+if 'profile' in sys.argv[1:]:
+    os.environ["USE_PROFILER"] = "1"
+else:
+    os.environ["USE_PROFILER"] = "0"
 from tensorflow.python.client import device_lib
 if __name__ == '__main__':
     print(device_lib.list_local_devices())
@@ -182,6 +185,15 @@ if __name__ == '__main__':
     widthSigma = 3
     depthSigma2 = 2
     widthSigma2 = 3
+    if 'largenetwork' in sys.argv[1:]:
+        depthPhi = 4
+        widthPhi = 100
+        depthBeta = 4
+        widthBeta = 100
+        depthSigma = 4
+        widthSigma = 100
+        depthSigma2 = 4
+        widthSigma2 = 100
     
     return_random_phi = False
     return_random_HYM = False
@@ -189,6 +201,7 @@ if __name__ == '__main__':
     return_random_HF_2 = True
     
     print("Number of points: " + str(nPoints), "Number of points HF: " + str(nPointsHF), "Number of points to integrate: " + str(n_to_integrate))
+    print("Network sizes: phi: " + str(depthPhi) + "x" + str(widthPhi), "beta: " + str(depthBeta) + "x" + str(widthBeta), "sigma: " + str(depthSigma) + "x" + str(widthSigma), "sigma2: " + str(depthSigma2) + "x" + str(widthSigma2))
     
     
 
