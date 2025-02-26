@@ -531,7 +531,6 @@ def test_yukawa_error_propagation_monte_carlo(NormH, NormH_errors, NormQ, NormQ_
             - monte_carlo_result: (physical_yukawas_mean, physical_yukawas_std) from Monte Carlo
             - ratio: ratio of analytical errors to Monte Carlo errors
     """
-    import matplotlib.pyplot as plt
     
     # Convert all inputs to numpy arrays
     if hasattr(NormH, 'numpy'):
@@ -620,9 +619,9 @@ def test_yukawa_error_propagation_monte_carlo(NormH, NormH_errors, NormQ, NormQ_
     # Calculate ratio between analytical and Monte Carlo errors
     ratio = physical_yukawas_errors / physical_yukawas_std
     
-    # Optionally visualize results
-    plt.figure(figsize=(10, 8))
-    plt.suptitle('Yukawa Error Propagation: Analytical vs Monte Carlo')
+    # # Optionally visualize results
+    # plt.figure(figsize=(10, 8))
+    # plt.suptitle('Yukawa Error Propagation: Analytical vs Monte Carlo')
     
     rows, cols = physical_yukawas.shape
     for i in range(rows):
@@ -654,10 +653,10 @@ def test_yukawa_error_propagation_monte_carlo(NormH, NormH_errors, NormQ, NormQ_
     
     plt.tight_layout()
     # Ensure data directory exists before saving
-    import os
-    os.makedirs('data', exist_ok=True)
-    plt.savefig('data/yukawa_error_propagation_test.png')
-    plt.close()
+    # import os
+    # os.makedirs('data', exist_ok=True)
+    # plt.savefig('data/yukawa_error_propagation_test.png')
+    # plt.close()
     
     # Print comparison 
     print("===== Yukawa Error Propagation Comparison =====")
@@ -693,7 +692,6 @@ This file provides a simple test case to validate the error propagation approach
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 from auxiliary_funcs import propagate_errors_to_physical_yukawas, test_yukawa_error_propagation_monte_carlo
 
 def run_simple_test():
