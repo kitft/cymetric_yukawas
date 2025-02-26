@@ -6,12 +6,13 @@ import time
 import os
 start_time_of_process = time.time()
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+import sys
 if 'profile' in sys.argv[1:]:
     os.environ["USE_PROFILER"] = "1"
 else:
     os.environ["USE_PROFILER"] = "0"
-from tensorflow.python.client import device_lib
 if __name__ == '__main__':
+    from tensorflow.python.client import device_lib
     print(device_lib.list_local_devices())
 
 import csv
