@@ -394,7 +394,7 @@ if __name__ ==  '__main__':
 
 
     pg,kmoduli=generate_points_and_save_using_defaults_for_eval(free_coefficient,n_to_integrate,seed_set=seed_for_gen,force_generate=force_generate_eval)
-    dataEval=np.load(os.path.join('dataM13/tetraquadric_pg_for_eval_with_'+str(free_coefficient), 'dataset.npz'))
+    dataEval=np.load(os.path.join('data/tetraquadric_pg_for_eval_with_'+str(free_coefficient), 'dataset.npz'))
     n_p = n_to_integrate 
     phi = phimodel1
     points64=dataEval['X_train'][0:n_p]
