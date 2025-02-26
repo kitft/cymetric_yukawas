@@ -241,7 +241,7 @@ def coclosure_check(points,HYMmetric,harmonicform_jbar,sigma,invmetric,pullbacks
 
         # Stack them along a new dimension
         Hnustack = tf.stack([real_part, imag_part], axis=1)# put at the 0 position
-        dHnu = tape1.batch_jacobian(Hnustack, pointstensor)
+    dHnu = tape1.batch_jacobian(Hnustack, pointstensor)
     dx_Hnu, dy_Hnu = \
         0.5*dHnu[:,:,:, :ncoords], \
         0.5*dHnu[:,:,:, ncoords:]
@@ -275,7 +275,7 @@ def closure_check(points,harmonicform_jbar,sigma,pullbacks):
 
         # Stack them along a new dimension
         Hnustack = tf.stack([real_part, imag_part], axis=1)# put at the 0 position
-        dHnu = tape1.batch_jacobian(Hnustack, pointstensor)
+    dHnu = tape1.batch_jacobian(Hnustack, pointstensor)
     dx_Hnu, dy_Hnu = \
         0.5*dHnu[:,:,:, :ncoords], \
         0.5*dHnu[:,:,:, ncoords:]
