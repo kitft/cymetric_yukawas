@@ -584,11 +584,15 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False):
     
    
     # Check if values are complex
-    if hasattr(values, 'dtype') and 'complex' in str(values.dtype) and np.any(np.imag(np.array(values)) != 0):
+    if hasattr(values, 'dtype') and 'complex' in str(values.dtype):
          # Calculate the effective sample size
 
         n_eff_r = effective_sample_size(weights*tf.cast(tf.math.real(values), real_dtype))
-        n_eff_c = effective_sample_size(weights*tf.cast(tf.math.imag(values), real_dtype))
+        if not np.any(np.imag(np.array(values)) != 0):
+            n_eff_c = 1.0
+        else:
+            n_eff_c = effective_sample_size(weights*tf.cast(tf.math.imag(values), real_dtype))
+
 
         # Calculate variance for real part
         real_values = tf.math.real(values)
