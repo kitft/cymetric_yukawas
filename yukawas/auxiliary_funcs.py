@@ -599,7 +599,7 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False):
         real_mean = tf.math.real(weighted_mean)
         #real_squared_deviation = tf.square(real_values - real_mean)
         #real_weighted_variance = tf.reduce_sum(weights * real_squared_deviation) / tf.reduce_sum(weights)
-        real_variance = tf.reduce_std(weights*real_values)
+        real_variance = tf.math.reduce_std(weights*real_values)
     
         # Standard error for real part
         real_se = real_variance / np.sqrt(n_eff_r)
@@ -609,7 +609,7 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False):
         imag_mean = tf.math.imag(weighted_mean)
         #imag_squared_deviation = tf.square(imag_values - imag_mean)
         #imag_weighted_variance = tf.reduce_sum(weights * imag_squared_deviation) / tf.reduce_sum(weights)
-        imag_variance = tf.reduce_std(weights*imag_values)
+        imag_variance = tf.math.reduce_std(weights*imag_values)
         
         # Standard error for imaginary part
         imag_se = imag_variance / np.sqrt(n_eff_c)
@@ -624,7 +624,7 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False):
         else:
             n_eff = effective_sample_size(weights)
 
-        real_se = tf.reduce_std(weights*values) / np.sqrt(n_eff)
+        real_se = tf.math.reduce_std(weights*values) / np.sqrt(n_eff)
             # Return real standard error
         return np.array(weighted_mean), np.array(real_se), n_eff, {'value': np.array(weighted_mean), 'std_error': np.array(real_se), 'eff_n': n_eff}
 
