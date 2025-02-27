@@ -14,3 +14,10 @@ model13_results/*
 model*results/*
 *results/*
 testintegration_model13_results/*
+testintegration_model13/*
+testintegration_model1_results/*
+testintegration_model1/*
+test*results/*
+model13/*
+datamodel13/*
+datamodel1/*
