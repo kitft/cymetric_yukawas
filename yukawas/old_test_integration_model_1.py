@@ -15,10 +15,10 @@ if __name__ == '__main__':
     from tensorflow.python.client import device_lib
     print(device_lib.list_local_devices())
 
-
 import csv
 import numpy as np
 import gc
+import sys
 import os
 import re
 import logging
@@ -34,10 +34,7 @@ import tensorflow as tf
 import tensorflow.keras as tfk
 
 if __name__ == '__main__':
-    # Default to not eager unless explicitly requested
     run_eagerly = False
-    if len(sys.argv) > 5 and 'eager' in sys.argv:
-        run_eagerly = True
 
     tf.config.run_functions_eagerly(run_eagerly)
 
@@ -52,7 +49,6 @@ if __name__ == '__main__':
     print("Running with double precision?:", double_precision)
     set_double_precision(double_precision)
 
-
     tf.get_logger().setLevel('ERROR')
 
 
@@ -65,117 +61,32 @@ from NewCustomMetrics import *
 from HarmonicFormModel import *
 from BetaModel import *
 from laplacian_funcs import *
-
-name_of_run = "model13"
-from OneAndTwoFormsForLineBundlesModel13 import *
+name_of_run = "testintegration_model1"
+from OneAndTwoFormsForLineBundles import *
 #from generate_and_train_all_nns import *
-from generate_and_train_all_nnsHOLOModel13 import *
-from custom_networks import *
+from generate_and_train_all_nnsHOLO import *
 from auxiliary_funcs import *
 
-
-print_memory_usage(start_time_of_process=start_time_of_process)
+print_memory_usage(start_time_of_process=start_time_of_process, name = __name__)
 
 if __name__ == '__main__':
-    #print('fixed directory')
-
-    # nPoints=300000
-    # free_coefficient=1.# when the coefficient is 1, ensure that it's 1., not 1 for the sake of the filename
-    # nEpochsPhi=100
-    # nEpochsBeta=60
-    # nEpochsSigma=50
-
-
-    nPoints=300000
-    nPointsHF=300000
-    #nPoints=10000
-    #nPointsHF=10000
-    #nPoints=1000
-    #nPointsHF=1000
-    #nPoints=10000
-    #nPointsHF=10000
-
     tr_batchsize=64
     #free_coefficient=1.000000004# when the coefficient is 1, ensure that it's 1., not 1 for the sake of the filename
     import sys
     free_coefficient = float(sys.argv[1])
     seed_for_gen=int((int(free_coefficient*100000000000)+free_coefficient*1000000))%4294967294 # modulo largest seed
     print("seed for gen", seed_for_gen)
-    #free_coefficient=1.# when the coefficient is 1, ensure that it's 1., not 1 for the sake of the filename
-    #nEpochsPhi=100
-    #nEpochsPhi=10
-    #nEpochsBeta=10
-    #nEpochsSigma=40#changed below vH
-
-
-    nEpochsPhi=30
-    nEpochsBeta=50
-    nEpochsSigma=60#changed below vH
-    nEpochsSigma2=80#changed below vH
-
-
-    depthPhi=4
-    widthPhi=196#128 4 in the 1.0s
-    depthBeta=4
-    widthBeta=196
-    depthSigma=4
-    widthSigma=130 # up from 256
-    depthSigma2=4
-    widthSigma2=130 # up from 256
-
-
-    #depthPhi=4
-    #widthPhi=128#128 4 in the 1.0s
-    #depthBeta=3
-    #widthBeta=128
-    #depthSigma=3+2
-    #widthSigma=128//2 # up from 256
-    #depthSigma2=3+2
-    #widthSigma2=196//2 # up from 256
-
-    #nEpochsPhi=1
-    #nEpochsBeta=1
-    #nEpochsSigma=1#changed below vH
-    #nEpochsSigma2=1#changed below vH
-    #
-    #
-    #depthPhi=4
-    #widthPhi=128#128 4 in the 1.0s
-    #depthBeta=4
-    #widthBeta=128
-    #depthSigma=4
-    #widthSigma=128 # up from 256
-    #depthSigma2=4
-    #widthSigma2=128 # up from 256
-
 
 
     alphabeta=[1,10]
     alphasigma1=[1,10] # down form 50
     alphasigma2=[1,80] # down from 200
 
-
-    #lRatePhi= 0.0000005
-    #lRateBeta=0.0000005
-    #lRateSigma=0.0000005# perhaps best as 0.03
-
     lRatePhi= 0.005
     lRateBeta=0.005
-    lRateSigma=0.005# perhaps best as 0.03
-    lRateSigma=0.005//10# perhaps best as 0.03
-    lRateSigma2=0.003//10# perhaps best as 0.03
-
     lRateSigma=0.001# perhaps best as 0.03
     lRateSigma=0.001#//10# perhaps best as 0.03
     lRateSigma2=0.001#//10# perhaps best as 0.03
-
-    #lRatePhi= 0.00
-    #lRateBeta=0.00
-    #lRateSigma=0.0
-    #lRateSigma2=0.0
-
-
-
 
     print("Learning rate: phi:",lRatePhi)
     print("Learning rate: beta:",lRateBeta)
@@ -183,13 +94,13 @@ if __name__ == '__main__':
     print("Learning rate decays by a factor, typically 10, over the course of learning")
 
 
-
     # Use command-line arguments if provided, starting from the second argument
     start_from = sys.argv[2] if len(sys.argv) > 2 else 'phi'
-    training_flags = determine_training_flags(start_from)
 
+    training_flags = determine_training_flags(start_from)
+    
     # Unpack training flags
-    train_phi, train_02m20, train_001m3, train_0m213, train_vH, train_vQ3, train_vU3, train_vQ1, train_vQ2, train_vU1, train_vU2 = (
+    train_phi, train_02m20, train_110m2, train_m1m322, train_vH, train_vQ3, train_vU3, train_vQ1, train_vQ2, train_vU1, train_vU2 = (
         training_flags['phi'],
         training_flags['LB1'],
         training_flags['LB2'],
@@ -202,138 +113,98 @@ if __name__ == '__main__':
         training_flags['vU1'],
         training_flags['vU2']
     )
-
-
+    
+    
     stddev_Q12U12=1.0#0.5
     final_layer_scale_Q12U12=1.0#0.3#0.000001#0.01
     stddev_Q12U12=0.5#0.5
     final_layer_scale_Q12U12=0.01#0.3#0.000001#0.01
     #lRateSigma=0.0
-
-
+    
+    
     stddev_H33=0.5
     stddev_H33=1
     #stddev_H33=1
     #final_layer_scale_H33=0.1
     final_layer_scale_H33=0.01#0.01
-
-
-    if len(sys.argv) > 4 and str(sys.argv[4]) == 'skipall':
-        print("Requested to skip all measures")
-        skip_measuresPhi=True
-        skip_measuresBeta=True
-        skip_measuresHF=True
-    elif len(sys.argv) > 4 and str(sys.argv[4]) == 'skipnone':
-        skip_measuresPhi=False
-        skip_measuresBeta=False
-        skip_measuresHF=False
-        print("Requested to skip none of the measures")
-    else:
-        print("Requested to skip some of the measures")
-        skip_measuresPhi=True
-        skip_measuresBeta=True
-        skip_measuresHF=False
-
-    print(f"Skipping measures? phi? {skip_measuresPhi}, beta? {skip_measuresBeta}, HF? {skip_measuresHF}")
-
-        #skip_measuresHF
-
-    force_generate_phi=False
-    force_generate_HYM=False
-    force_generate_HF=False
-    force_generate_HF_2=False
-    force_generate_eval=False
-
+    
+    skip_measuresPhi=True
+    skip_measuresBeta=True
+    skip_measuresHF=True
+    
+    force_generate_phi=True
+    force_generate_HYM=True
+    force_generate_HF=True
+    force_generate_HF_2=True
+    force_generate_eval=True
+    
     return_zero_phi= True
     return_zero_HYM = True
     return_zero_HF = False
     return_zero_HF_2 = False
-
-    SecondBSize=50000
+    
+    SecondBSize=1000
     n_to_integrate=1000000
     #n_to_integrate=100000
-
+    
     use_zero_network_phi = True
-
-
-    print("sys.argv: ", sys.argv)
-    if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall', 'alltiny']:
-        # Override with small test values
-        if str(sys.argv[3]) == 'alltiny':
-            nPoints = 30
-            nPointsHF = 30
-            n_to_integrate = 30
-            skip_measuresPhi=True
-            skip_measuresBeta=True
-            skip_measuresHF=True
-        elif str(sys.argv[3]) == 'testsmall':
-            nPoints = 100
-            nPointsHF = 100
-            n_to_integrate = 100
-        elif sys.argv[3] == 'testmid':
-            nPoints = 100000
-            nPointsHF = 100000
-            n_to_integrate = 1000000
-        else:
-            nPoints = 300000
-            nPointsHF = 300000
-            n_to_integrate = 1000000
-        #tr_batchsize = 10
-        #SecondBSize = 10
-        nEpochsPhi = 1
-        nEpochsBeta = 1
-        nEpochsSigma = 1
-        nEpochsSigma2 = 1
-
-        depthPhi = 2
-        widthPhi = 10
-        depthBeta = 2
-        widthBeta = 10
-        depthSigma = 2
-        widthSigma = 10
-        depthSigma2 = 2
-        widthSigma2 = 10
-
-        return_random_phi = False
-        return_random_HYM = False
-        return_random_HF = True
-        return_random_HF_2 = True
-
-        if len(sys.argv) > 4 and str(sys.argv[4]) == 'actual':
-            nEpochsPhi = 1
-            nEpochsBeta = 1
-            if sys.argv[3] == 'testmid':
-                nEpochsSigma = 2
-                nEpochsSigma2 = 2
-            else:
-                nEpochsSigma = 5
-                nEpochsSigma2 = 5
-            depthPhi = 2
-            depthBeta = 2
-            depthSigma = 3
-            depthSigma2 = 3
-            widthPhi = 10
-            widthBeta = 10
-            widthSigma = 100
-            widthSigma2 = 100
-            return_random_phi = False
-            return_random_HYM = False
-            return_random_HF = False
-            return_random_HF_2 = False   
-
-        if 'largenetworks' in sys.argv[1:]:
-            depthPhi = 4
-            widthPhi = 100
-            depthBeta = 4
-            widthBeta = 100
-            depthSigma = 4
-            widthSigma = 100
-
+    
+    nPoints = 1000
+    nPointsHF = 1000
+    if 'alltiny' in sys.argv[1:]:
+        nPoints = 100
+        nPointsHF = 100
+        n_to_integrate = 100
+    elif 'regulardata' in sys.argv[1:]:
+        nPoints = 100
+        nPointsHF = 100
+        n_to_integrate = 1000000
+    elif 'small' in sys.argv[1:]:
+        n_to_integrate = 1000
+    elif 'allbig' in sys.argv[1:]:
+        nPoints = 100000
+        nPointsHF = 100000
+        n_to_integrate = 100000
+    elif 'allhuge' in sys.argv[1:]:
+        nPoints = 1000000
+        nPointsHF = 1000000
+        n_to_integrate = 1000000
+    else:
+        n_to_integrate = 1000000
+    #tr_batchsize = 10
+    #SecondBSize = 10
+    nEpochsPhi = 1
+    nEpochsBeta = 1
+    nEpochsSigma = 1
+    nEpochsSigma2 = 1
+    
+    depthPhi = 2
+    widthPhi = 3
+    depthBeta = 2
+    widthBeta = 3
+    depthSigma = 2
+    widthSigma = 3
+    depthSigma2 = 2
+    widthSigma2 = 3
+    if 'largenetworks' in sys.argv[1:]:
+        depthPhi = 4
+        widthPhi = 100
+        depthBeta = 4
+        widthBeta = 100
+        depthSigma = 4
+        widthSigma = 100
+        depthSigma2 = 4
+        widthSigma2 = 100
+    
+    return_random_phi = False
+    return_random_HYM = False
+    return_random_HF = True
+    return_random_HF_2 = True
+    
     print("Number of points: " + str(nPoints), "Number of points HF: " + str(nPointsHF), "Number of points to integrate: " + str(n_to_integrate))
     print(f"shapes, phi: {depthPhi}x{widthPhi}, beta: {depthBeta}x{widthBeta}, HF: {depthSigma}x{widthSigma}, HF2: {depthSigma2}x{widthSigma2}")
-
-
-
+    
+    
 
 if __name__ ==  '__main__':
 
@@ -347,8 +218,8 @@ if __name__ ==  '__main__':
         phimodel1,training_history, measure_phi=load_nn_phimodel(free_coefficient,depthPhi,widthPhi,nEpochsPhi,[64,SecondBSize],set_weights_to_zero=return_zero_phi,skip_measures=skip_measuresPhi,set_weights_to_random=return_random_phi)
 
     linebundleforHYM_02m20=np.array([0,2,-2,0]) 
-    linebundleforHYM_001m3=np.array([0,0,1,-3]) 
-    linebundleforHYM_0m213=np.array([0,-2,1,3]) 
+    linebundleforHYM_110m2=np.array([1,1,0,-2]) 
+    linebundleforHYM_m1m322=np.array([-1,-3,2,2]) 
 
     delete_all_dicts_except('dataEval')
     gc.collect()
@@ -374,11 +245,11 @@ if __name__ ==  '__main__':
     
     
     
-    generate_points_and_save_using_defaultsHYM(free_coefficient,linebundleforHYM_001m3,nPoints,phimodel1,force_generate=force_generate_HYM,seed_set=seed_for_gen)
-    if train_001m3:
-        betamodel_001m3,training_historyBeta_001m3, measure_LB2 = train_and_save_nn_HYM(free_coefficient,linebundleforHYM_001m3,depthBeta,widthBeta,nEpochsBeta,stddev=0.05,bSizes=[64],lRate=lRateBeta,alpha=alphabeta,load_network=False)
+    generate_points_and_save_using_defaultsHYM(free_coefficient,linebundleforHYM_110m2,nPoints,phimodel1,force_generate=force_generate_HYM,seed_set=seed_for_gen)
+    if train_110m2:
+        betamodel_110m2,training_historyBeta_110m2, measure_LB2 = train_and_save_nn_HYM(free_coefficient,linebundleforHYM_110m2,depthBeta,widthBeta,nEpochsBeta,stddev=0.05,bSizes=[64],lRate=lRateBeta,alpha=alphabeta,load_network=False)
     else:
-        betamodel_001m3,training_historyBeta_001m3, measure_LB2=load_nn_HYM(free_coefficient,linebundleforHYM_001m3,depthBeta,widthBeta,nEpochsBeta,[64],set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM)
+        betamodel_110m2,training_historyBeta_110m2, measure_LB2=load_nn_HYM(free_coefficient,linebundleforHYM_110m2,depthBeta,widthBeta,nEpochsBeta,[64],set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM)
     #mem= = tracker.SummaryTracker()
     #print(sorted(mem(.create_summary(), reverse=True, key=itemgetter(2))[:10])
     delete_all_dicts_except('dataEval')
@@ -387,11 +258,11 @@ if __name__ ==  '__main__':
     #mem= = tracker.SummaryTracker()
     #print(sorted(mem(.create_summary(), reverse=True, key=itemgetter(2))[:10])
 
-    generate_points_and_save_using_defaultsHYM(free_coefficient,linebundleforHYM_0m213,nPoints,phimodel1,force_generate=force_generate_HYM,seed_set=seed_for_gen)
-    if train_0m213:
-        betamodel_0m213,training_historyBeta_0m213, measure_LB3 = train_and_save_nn_HYM(free_coefficient,linebundleforHYM_0m213,depthBeta,widthBeta,nEpochsBeta,stddev=0.05,bSizes=[64],lRate=lRateBeta,alpha=alphabeta,load_network=False)
+    generate_points_and_save_using_defaultsHYM(free_coefficient,linebundleforHYM_m1m322,nPoints,phimodel1,force_generate=force_generate_HYM,seed_set=seed_for_gen)
+    if train_m1m322:
+        betamodel_m1m322,training_historyBeta_m1m322, measure_LB3 = train_and_save_nn_HYM(free_coefficient,linebundleforHYM_m1m322,depthBeta,widthBeta,nEpochsBeta,stddev=0.05,bSizes=[64],lRate=lRateBeta,alpha=alphabeta,load_network=False)
     else:
-        betamodel_0m213,training_historyBeta_0m213, measure_LB3=load_nn_HYM(free_coefficient,linebundleforHYM_0m213,depthBeta,widthBeta,nEpochsBeta,[64],set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM)
+        betamodel_m1m322,training_historyBeta_m1m322, measure_LB3=load_nn_HYM(free_coefficient,linebundleforHYM_m1m322,depthBeta,widthBeta,nEpochsBeta,[64],set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM)
 
     delete_all_dicts_except('dataEval')
     gc.collect()
@@ -429,24 +300,24 @@ if __name__ ==  '__main__':
 
 
 
-    generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM_001m3,functionforbaseharmonicform_jbar_for_vQ3,phi,betamodel_001m3,nPointsHF,force_generate=force_generate_HF,seed_set=seed_for_gen)
+    generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM_110m2,functionforbaseharmonicform_jbar_for_vQ3,phi,betamodel_110m2,nPointsHF,force_generate=force_generate_HF,seed_set=seed_for_gen)
     if train_vQ3:
-        HFmodel_vQ3,trainingHistoryHF_vQ3, measure_HF2 = train_and_save_nn_HF(free_coefficient,linebundleforHYM_001m3,betamodel_001m3,phimodel1,functionforbaseharmonicform_jbar_for_vQ3,depthSigma,widthSigma,nEpochsSigma,[64],lRate=lRateSigma,alpha=alphasigma1,stddev=stddev_H33,final_layer_scale=final_layer_scale_H33)
+        HFmodel_vQ3,trainingHistoryHF_vQ3, measure_HF2 = train_and_save_nn_HF(free_coefficient,linebundleforHYM_110m2,betamodel_110m2,phimodel1,functionforbaseharmonicform_jbar_for_vQ3,depthSigma,widthSigma,nEpochsSigma,[64],lRate=lRateSigma,alpha=alphasigma1,stddev=stddev_H33,final_layer_scale=final_layer_scale_H33)
     else:
-        HFmodel_vQ3,trainingHistoryHF_vQ3, measure_HF2=load_nn_HF(free_coefficient,linebundleforHYM_001m3,betamodel_001m3,phimodel1,functionforbaseharmonicform_jbar_for_vQ3,depthSigma,widthSigma,nEpochsSigma,[64],alpha=alphasigma1,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF)
+        HFmodel_vQ3,trainingHistoryHF_vQ3, measure_HF2=load_nn_HF(free_coefficient,linebundleforHYM_110m2,betamodel_110m2,phimodel1,functionforbaseharmonicform_jbar_for_vQ3,depthSigma,widthSigma,nEpochsSigma,[64],alpha=alphasigma1,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF)
     delete_all_dicts_except('dataEval')
     gc.collect()
     tf.keras.backend.clear_session()
 
     #nEpochsSigma=10
-    generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM_001m3,functionforbaseharmonicform_jbar_for_vU3,phi,betamodel_001m3,nPointsHF,force_generate=force_generate_HF,seed_set=seed_for_gen)
+    generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM_110m2,functionforbaseharmonicform_jbar_for_vU3,phi,betamodel_110m2,nPointsHF,force_generate=force_generate_HF,seed_set=seed_for_gen)
 
     #mem= = tracker.SummaryTracker()
     #print(sorted(mem(.create_summary(), reverse=True, key=itemgetter(2))[:10])
     if train_vU3:
-        HFmodel_vU3,trainingHistoryHF_vU3, measure_HF3 = train_and_save_nn_HF(free_coefficient,linebundleforHYM_001m3,betamodel_001m3,phimodel1,functionforbaseharmonicform_jbar_for_vU3,depthSigma,widthSigma,nEpochsSigma,[64],lRate=lRateSigma,alpha=alphasigma1,stddev=stddev_H33,final_layer_scale=final_layer_scale_H33)
+        HFmodel_vU3,trainingHistoryHF_vU3, measure_HF3 = train_and_save_nn_HF(free_coefficient,linebundleforHYM_110m2,betamodel_110m2,phimodel1,functionforbaseharmonicform_jbar_for_vU3,depthSigma,widthSigma,nEpochsSigma,[64],lRate=lRateSigma,alpha=alphasigma1,stddev=stddev_H33,final_layer_scale=final_layer_scale_H33)
     else:
-        HFmodel_vU3,trainingHistoryHF_vU3, measure_HF3=load_nn_HF(free_coefficient,linebundleforHYM_001m3,betamodel_001m3,phimodel1,functionforbaseharmonicform_jbar_for_vU3,depthSigma,widthSigma,nEpochsSigma,[64],alpha=alphasigma1,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF)
+        HFmodel_vU3,trainingHistoryHF_vU3, measure_HF3=load_nn_HF(free_coefficient,linebundleforHYM_110m2,betamodel_110m2,phimodel1,functionforbaseharmonicform_jbar_for_vU3,depthSigma,widthSigma,nEpochsSigma,[64],alpha=alphasigma1,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF)
 
     #mem= = tracker.SummaryTracker()
     #print(sorted(mem(.create_summary(), reverse=True, key=itemgetter(2))[:10])
@@ -456,14 +327,21 @@ if __name__ ==  '__main__':
 
 
 
+    def functionforbaseharmonicform_jbar_for_vQ1(x):
+        return getTypeIIs(x,phi,'vQ1')
+    def functionforbaseharmonicform_jbar_for_vQ2(x):
+        return getTypeIIs(x,phi,'vQ2')
+    def functionforbaseharmonicform_jbar_for_vU1(x):
+        return getTypeIIs(x,phi,'vU1')
+    def functionforbaseharmonicform_jbar_for_vU2(x):
+        return getTypeIIs(x,phi,'vU2')
 
 
-
-    generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM_0m213,functionforbaseharmonicform_jbar_for_vQ1,phi,betamodel_0m213,nPointsHF,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
+    generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM_m1m322,functionforbaseharmonicform_jbar_for_vQ1,phi,betamodel_m1m322,nPointsHF,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
     if train_vQ1:
-        HFmodel_vQ1,trainingHistoryHF_vQ1, measure_HF4 = train_and_save_nn_HF(free_coefficient,linebundleforHYM_0m213,betamodel_0m213,phimodel1,functionforbaseharmonicform_jbar_for_vQ1,depthSigma2,widthSigma2,nEpochsSigma2,[64],lRate=lRateSigma2,alpha=alphasigma2,stddev=stddev_Q12U12,final_layer_scale=final_layer_scale_Q12U12)
+        HFmodel_vQ1,trainingHistoryHF_vQ1, measure_HF4 = train_and_save_nn_HF(free_coefficient,linebundleforHYM_m1m322,betamodel_m1m322,phimodel1,functionforbaseharmonicform_jbar_for_vQ1,depthSigma2,widthSigma2,nEpochsSigma2,[64],lRate=lRateSigma2,alpha=alphasigma2,stddev=stddev_Q12U12,final_layer_scale=final_layer_scale_Q12U12)
     else:
-        HFmodel_vQ1,trainingHistoryHF_vQ1, measure_HF4=load_nn_HF(free_coefficient,linebundleforHYM_0m213,betamodel_0m213,phimodel1,functionforbaseharmonicform_jbar_for_vQ1,depthSigma2,widthSigma2,nEpochsSigma2,[64],alpha=alphasigma2,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF)
+        HFmodel_vQ1,trainingHistoryHF_vQ1, measure_HF4=load_nn_HF(free_coefficient,linebundleforHYM_m1m322,betamodel_m1m322,phimodel1,functionforbaseharmonicform_jbar_for_vQ1,depthSigma2,widthSigma2,nEpochsSigma2,[64],alpha=alphasigma2,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF)
 
     #mem= = tracker.SummaryTracker()
     #print(sorted(mem(.create_summary(), reverse=True, key=itemgetter(2))[:10])
@@ -476,11 +354,11 @@ if __name__ ==  '__main__':
     #mem= = tracker.SummaryTracker()
     #print(sorted(mem(.create_summary(), reverse=True, key=itemgetter(2))[:10])
 
-    generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM_0m213,functionforbaseharmonicform_jbar_for_vQ2,phi,betamodel_0m213,nPointsHF,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
+    generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM_m1m322,functionforbaseharmonicform_jbar_for_vQ2,phi,betamodel_m1m322,nPointsHF,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
     if train_vQ2:   
-        HFmodel_vQ2,trainingHistoryHF_vQ2, measure_HF5 = train_and_save_nn_HF(free_coefficient,linebundleforHYM_0m213,betamodel_0m213,phimodel1,functionforbaseharmonicform_jbar_for_vQ2,depthSigma2,widthSigma2,nEpochsSigma2,[64],lRate=lRateSigma2,alpha=alphasigma2,stddev=stddev_Q12U12,final_layer_scale=final_layer_scale_Q12U12)
+        HFmodel_vQ2,trainingHistoryHF_vQ2, measure_HF5 = train_and_save_nn_HF(free_coefficient,linebundleforHYM_m1m322,betamodel_m1m322,phimodel1,functionforbaseharmonicform_jbar_for_vQ2,depthSigma2,widthSigma2,nEpochsSigma2,[64],lRate=lRateSigma2,alpha=alphasigma2,stddev=stddev_Q12U12,final_layer_scale=final_layer_scale_Q12U12)
     else:
-        HFmodel_vQ2,trainingHistoryHF_vQ2, measure_HF5=load_nn_HF(free_coefficient,linebundleforHYM_0m213,betamodel_0m213,phimodel1,functionforbaseharmonicform_jbar_for_vQ2,depthSigma2,widthSigma2,nEpochsSigma2,[64],alpha=alphasigma2,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF)
+        HFmodel_vQ2,trainingHistoryHF_vQ2, measure_HF5=load_nn_HF(free_coefficient,linebundleforHYM_m1m322,betamodel_m1m322,phimodel1,functionforbaseharmonicform_jbar_for_vQ2,depthSigma2,widthSigma2,nEpochsSigma2,[64],alpha=alphasigma2,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF)
     delete_all_dicts_except('dataEval')
     gc.collect()
     tf.keras.backend.clear_session()
@@ -488,11 +366,11 @@ if __name__ ==  '__main__':
     #mem= = tracker.SummaryTracker()
     #print(sorted(mem(.create_summary(), reverse=True, key=itemgetter(2))[:10])
 
-    generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM_0m213,functionforbaseharmonicform_jbar_for_vU1,phi,betamodel_0m213,nPointsHF,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
+    generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM_m1m322,functionforbaseharmonicform_jbar_for_vU1,phi,betamodel_m1m322,nPointsHF,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
     if train_vU1:
-        HFmodel_vU1,trainingHistoryHF_vU1, measure_HF6 = train_and_save_nn_HF(free_coefficient,linebundleforHYM_0m213,betamodel_0m213,phimodel1,functionforbaseharmonicform_jbar_for_vU1,depthSigma2,widthSigma2,nEpochsSigma2,[64],lRate=lRateSigma2,alpha=alphasigma2,stddev=stddev_Q12U12,final_layer_scale=final_layer_scale_Q12U12)
+        HFmodel_vU1,trainingHistoryHF_vU1, measure_HF6 = train_and_save_nn_HF(free_coefficient,linebundleforHYM_m1m322,betamodel_m1m322,phimodel1,functionforbaseharmonicform_jbar_for_vU1,depthSigma2,widthSigma2,nEpochsSigma2,[64],lRate=lRateSigma2,alpha=alphasigma2,stddev=stddev_Q12U12,final_layer_scale=final_layer_scale_Q12U12)
     else:
-        HFmodel_vU1,trainingHistoryHF_vU1, measure_HF6=load_nn_HF(free_coefficient,linebundleforHYM_0m213,betamodel_0m213,phimodel1,functionforbaseharmonicform_jbar_for_vU1,depthSigma2,widthSigma2,nEpochsSigma2,[64],alpha=alphasigma2,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF)
+        HFmodel_vU1,trainingHistoryHF_vU1, measure_HF6=load_nn_HF(free_coefficient,linebundleforHYM_m1m322,betamodel_m1m322,phimodel1,functionforbaseharmonicform_jbar_for_vU1,depthSigma2,widthSigma2,nEpochsSigma2,[64],alpha=alphasigma2,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF)
     delete_all_dicts_except('dataEval')
     gc.collect()
     tf.keras.backend.clear_session()
@@ -500,11 +378,11 @@ if __name__ ==  '__main__':
     #mem= = tracker.SummaryTracker()
     #print(sorted(mem(.create_summary(), reverse=True, key=itemgetter(2))[:10])
 
-    generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM_0m213,functionforbaseharmonicform_jbar_for_vU2,phi,betamodel_0m213,nPointsHF,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
+    generate_points_and_save_using_defaultsHF(free_coefficient,linebundleforHYM_m1m322,functionforbaseharmonicform_jbar_for_vU2,phi,betamodel_m1m322,nPointsHF,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
     if train_vU2:
-        HFmodel_vU2,trainingHistoryHF_vU2, measure_HF7 = train_and_save_nn_HF(free_coefficient,linebundleforHYM_0m213,betamodel_0m213,phimodel1,functionforbaseharmonicform_jbar_for_vU2,depthSigma2,widthSigma2,nEpochsSigma2,[64],lRate=lRateSigma2,alpha=alphasigma2,stddev=stddev_Q12U12,final_layer_scale=final_layer_scale_Q12U12)
+        HFmodel_vU2,trainingHistoryHF_vU2, measure_HF7 = train_and_save_nn_HF(free_coefficient,linebundleforHYM_m1m322,betamodel_m1m322,phimodel1,functionforbaseharmonicform_jbar_for_vU2,depthSigma2,widthSigma2,nEpochsSigma2,[64],lRate=lRateSigma2,alpha=alphasigma2,stddev=stddev_Q12U12,final_layer_scale=final_layer_scale_Q12U12)
     else:
-        HFmodel_vU2,trainingHistoryHF_vU2, measure_HF7=load_nn_HF(free_coefficient,linebundleforHYM_0m213,betamodel_0m213,phimodel1,functionforbaseharmonicform_jbar_for_vU2,depthSigma2,widthSigma2,nEpochsSigma2,[64],alpha=alphasigma2,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF)
+        HFmodel_vU2,trainingHistoryHF_vU2, measure_HF7=load_nn_HF(free_coefficient,linebundleforHYM_m1m322,betamodel_m1m322,phimodel1,functionforbaseharmonicform_jbar_for_vU2,depthSigma2,widthSigma2,nEpochsSigma2,[64],alpha=alphasigma2,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF)
     delete_all_dicts_except('dataEval')
     gc.collect()
     tf.keras.backend.clear_session()
@@ -516,7 +394,7 @@ if __name__ ==  '__main__':
 
 
     pg,kmoduli=generate_points_and_save_using_defaults_for_eval(free_coefficient,n_to_integrate,seed_set=seed_for_gen,force_generate=force_generate_eval)
-    dataEval=np.load(os.path.join('dataM13/tetraquadric_pg_for_eval_with_'+str(free_coefficient), 'dataset.npz'))
+    dataEval=np.load(os.path.join('data/tetraquadric_pg_for_eval_with_'+str(free_coefficient), 'dataset.npz'))
     n_p = n_to_integrate 
     phi = phimodel1
     points64=dataEval['X_train'][0:n_p]
@@ -526,8 +404,8 @@ if __name__ ==  '__main__':
 
 
     # H1=betamodel_02m20(real_pts)
-    # H2=betamodel_001m3(real_pts)
-    # H3=betamodel_0m213(real_pts)
+    # H2=betamodel_110m2(real_pts)
+    # H3=betamodel_m1m322(real_pts)
 
 
     # prodbundles=tf.reduce_mean(H1*H2*H3)
@@ -550,7 +428,7 @@ if __name__ ==  '__main__':
 
     # this is integral omega wedge omegabar? yeah.
 
-    =(dataEval['y_train'][:n_p,0]/(dataEval['y_train'][:n_p,1]))*(1/(6))### these are the appropriate 'flat measure' so sum_i aux_weights f is int_X f(x)
+    aux_weights=(dataEval['y_train'][:n_p,0]/(dataEval['y_train'][:n_p,1]))*(1/(6))### these are the appropriate 'flat measure' so sum_i aux_weights f is int_X f(x)
     #convertcomptoreal=lambda complexvec: tf.concat([tf.math.real(complexvec),tf.math.imag(complexvec)],-1) # this converts from complex to real
 
     #mem= = tracker.SummaryTracker()
@@ -573,55 +451,54 @@ if __name__ ==  '__main__':
             print('got vH', flush=True)
             
             vQ3 = batch_process_helper_func(HFmodel_vQ3.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvQ3b = tf.einsum('x,xb->xb', tf.cast(betamodel_001m3(real_pts), complex_dtype), tf.math.conj(vQ3))
+            hvQ3b = tf.einsum('x,xb->xb', tf.cast(betamodel_110m2(real_pts), complex_dtype), tf.math.conj(vQ3))
             print('got vQ3', flush=True)
             
             vU3 = batch_process_helper_func(HFmodel_vU3.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvU3b = tf.einsum('x,xb->xb', tf.cast(betamodel_001m3(real_pts), complex_dtype), tf.math.conj(vU3))
+            hvU3b = tf.einsum('x,xb->xb', tf.cast(betamodel_110m2(real_pts), complex_dtype), tf.math.conj(vU3))
             print('got vU3', flush=True)
             
             vQ1 = batch_process_helper_func(HFmodel_vQ1.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvQ1b = tf.einsum('x,xb->xb', tf.cast(betamodel_0m213(real_pts), complex_dtype), tf.math.conj(vQ1))
+            hvQ1b = tf.einsum('x,xb->xb', tf.cast(betamodel_m1m322(real_pts), complex_dtype), tf.math.conj(vQ1))
             print('got vQ1', flush=True)
             
             vQ2 = batch_process_helper_func(HFmodel_vQ2.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvQ2b = tf.einsum('x,xb->xb', tf.cast(betamodel_0m213(real_pts), complex_dtype), tf.math.conj(vQ2))
+            hvQ2b = tf.einsum('x,xb->xb', tf.cast(betamodel_m1m322(real_pts), complex_dtype), tf.math.conj(vQ2))
             print('got vQ2', flush=True)
             
             vU1 = batch_process_helper_func(HFmodel_vU1.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvU1b = tf.einsum('x,xb->xb', tf.cast(betamodel_0m213(real_pts), complex_dtype), tf.math.conj(vU1))
+            hvU1b = tf.einsum('x,xb->xb', tf.cast(betamodel_m1m322(real_pts), complex_dtype), tf.math.conj(vU1))
             print('got vU1', flush=True)
             
             vU2 = batch_process_helper_func(HFmodel_vU2.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvU2b = tf.einsum('x,xb->xb', tf.cast(betamodel_0m213(real_pts), complex_dtype), tf.math.conj(vU2))
+            hvU2b = tf.einsum('x,xb->xb', tf.cast(betamodel_m1m322(real_pts), complex_dtype), tf.math.conj(vU2))
             print('got vU2', flush=True)
             H1=betamodel_02m20(real_pts) 
-            H2=betamodel_001m3(real_pts) 
-            H3=betamodel_0m213(real_pts) 
+            H2=betamodel_110m2(real_pts) 
+            H3=betamodel_m1m322(real_pts) 
         elif not use_trained:
             mets = phi.fubini_study_pb(real_pts,ts=tf.cast(kmoduli,complex_dtype))
             dets = tf.linalg.det(mets)
             vH =  HFmodel_vH.uncorrected_FS_harmonicform(real_pts)
             hvHb =  tf.einsum('x,xb->xb',tf.cast(betamodel_02m20.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vH))
             vQ3 = HFmodel_vQ3.uncorrected_FS_harmonicform(real_pts)
-            hvQ3b = tf.einsum('x,xb->xb',tf.cast(betamodel_001m3.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vQ3))
+            hvQ3b = tf.einsum('x,xb->xb',tf.cast(betamodel_110m2.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vQ3))
             vU3 = HFmodel_vU3.uncorrected_FS_harmonicform(real_pts)
-            hvU3b = tf.einsum('x,xb->xb',tf.cast(betamodel_001m3.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vU3))
+            hvU3b = tf.einsum('x,xb->xb',tf.cast(betamodel_110m2.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vU3))
 
             vQ1 = HFmodel_vQ1.uncorrected_FS_harmonicform(real_pts)
-            hvQ1b = tf.einsum('x,xb->xb',tf.cast(betamodel_0m213.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vQ1))
+            hvQ1b = tf.einsum('x,xb->xb',tf.cast(betamodel_m1m322.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vQ1))
             vQ2 = HFmodel_vQ2.uncorrected_FS_harmonicform(real_pts)
-            hvQ2b = tf.einsum('x,xb->xb',tf.cast(betamodel_0m213.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vQ2))
+            hvQ2b = tf.einsum('x,xb->xb',tf.cast(betamodel_m1m322.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vQ2))
 
             vU1 = HFmodel_vU1.uncorrected_FS_harmonicform(real_pts)
-            hvU1b = tf.einsum('x,xb->xb',tf.cast(betamodel_0m213.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vU1))
+            hvU1b = tf.einsum('x,xb->xb',tf.cast(betamodel_m1m322.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vU1))
             vU2 = HFmodel_vU2.uncorrected_FS_harmonicform(real_pts)
-            hvU2b = tf.einsum('x,xb->xb',tf.cast(betamodel_0m213.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vU2))
+            hvU2b = tf.einsum('x,xb->xb',tf.cast(betamodel_m1m322.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vU2))
 
             H1=betamodel_02m20.raw_FS_HYM_r(real_pts) 
-            H2=betamodel_001m3.raw_FS_HYM_r(real_pts) 
-            H3=betamodel_0m213.raw_FS_HYM_r(real_pts) 
-
+            H2=betamodel_110m2.raw_FS_HYM_r(real_pts) 
+            H3=betamodel_m1m322.raw_FS_HYM_r(real_pts) 
 
         print("Now compute the integrals")
         #(1j) for each FS form #maybe should be (1j/2)??
@@ -657,19 +534,38 @@ if __name__ ==  '__main__':
         U2U1=(-1j/2)*(-1j/2)**2*(-2j)**3*(-1)*tf.reduce_mean(aux_weights[0:n_p]*tf.einsum('xab,xcd,xe,xf,acf,bde->x',mets[:n_p],mets[:n_p],vU2[:n_p],hvU1b[:n_p],lc_c,lc_c))
         print("(U2,U1) = " + str(U2U1))
 
-        print("Compute holomorphic Yukawas")
-        #consider omega normalisation
-        omega = tf.cast(batch_process_helper_func(pg.holomorphic_volume_form, [pointsComplex], batch_indices=[0], batch_size=100000),complex_dtype)
-        #put the omega here, not the omegabar
-        omega_normalised_to_one=omega/tf.cast(np.sqrt(volCY_from_Om),complex_dtype) # this is the omega that's normalised to 1. VERIFIED yes.
+        tfsqrtandcast=lambda x: tf.cast(tf.math.sqrt(x),complex_dtype)
+        print("CONSIDERING A PARTICULAR ELEMENT:")
+        factor =(1/(8*np.sqrt(30))) *   2*np.sqrt(2)/4
+        elements_21= factor * aux_weights * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vU2)*omega_normalised_to_one
+        elements_12 =factor * aux_weights * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH,vQ2,vU3)*omega_normalised_to_one 
+        print("Max absolute value of elements_21:", tf.reduce_max(tf.abs(elements_21)))
+        print("Mean of elements_21:", tf.reduce_mean(elements_21))
+        print("Mean of abs(elements_21):", tf.reduce_mean(tf.abs(elements_21)))
+        print("Max absolute value of elements_12:", tf.reduce_max(tf.abs(elements_12)))
+        print("Mean of elements_12:", tf.reduce_mean(elements_12))
+        print("Mean of abs(elements_12):", tf.reduce_mean(tf.abs(elements_12)))
 
+        print("--------CONSIDERING THE INVERSION PARTICULAR ELEMENT:")
+        factor =(1/(8*np.sqrt(30))) *   2*np.sqrt(2)/4
+        elements_Q3U2= factor * aux_weights * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vQ2)*omega_normalised_to_one
+        elements_U2U3 =factor * aux_weights * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH,vU2,vU3)*omega_normalised_to_one 
+        print("Max absolute value of elements_Q3U2:", tf.reduce_max(tf.abs(elements_21)))
+        print("Mean of elements_Q3U2:", tf.reduce_mean(elements_Q3U2))
+        print("Mean of abs(elements_Q3U2):", tf.reduce_mean(tf.abs(elements_Q3U2)))
+        print("Max absolute value of elements_U2U3:", tf.reduce_max(tf.abs(elements_U2U3)))
+        print("Mean of elements_U2U3:", tf.reduce_mean(elements_U2U3))
+        print("Mean of abs(elements_U2U3):", tf.reduce_mean(tf.abs(elements_U2U3)))
+        print("--------------------------------")
+        
+
+        
         #print("Integral of omega_normalised_to_one = ", tf.reduce_mean(aux_weights * omega_normalised_to_one* tf.math.conj(omega_normalised_to_one))) # verified that this is correct!!!yes
         #this is the holomorphic Yukawa
         print('doing einsums')
         m = [[0,0,0],[0,0,0],[0,0,0]]
         mwoH = [[0,0,0],[0,0,0],[0,0,0]]
 
-        tfsqrtandcast=lambda x: tf.cast(tf.math.sqrt(x),complex_dtype)
 
         mwoH[0][0] = tf.reduce_mean(aux_weights * tf.einsum("abc,xa,xb,xc->x",lc_c,vH,vQ1,vU1)*omega_normalised_to_one)
         mwoH[0][1] = tf.reduce_mean(aux_weights * tf.einsum("abc,xa,xb,xc->x",lc_c,vH,vQ1,vU2)*omega_normalised_to_one)
@@ -781,7 +677,6 @@ if __name__ ==  '__main__':
     # Save masses to CSV
     import csv
     csv_file = f'{name_of_run}_results/masses.csv'
-    
     
     # Create header if file doesn't exist
     if not os.path.exists(csv_file):

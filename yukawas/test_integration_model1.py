@@ -74,11 +74,13 @@ from NewCustomMetrics import *
 from HarmonicFormModel import *
 from BetaModel import *
 from laplacian_funcs import *
+from generate_and_train_all_nnsHOLOModel13 import *# model13 fine
 
-foldername = "testintegration_model13"
+foldername = "testintegration_model1"
 linebundleforHYM_LB1=np.array([0,2,-2,0]) 
-linebundleforHYM_LB2=np.array([0,0,1,-3]) 
-linebundleforHYM_LB3=np.array([0,-2,1,3]) 
+linebundleforHYM_LB2=np.array([1,1,0,-2]) 
+linebundleforHYM_LB3=np.array([-1,-3,2,2]) 
+
 ambientTQ = np.array([1,1,1,1])
 monomialsTQ = np.array([[2, 0, 2, 0, 2, 0, 2, 0], [2, 0, 2, 0, 2, 0, 1, 1], [2, 0, 2, 0, 2, 
   0, 0, 2], [2, 0, 2, 0, 1, 1, 2, 0], [2, 0, 2, 0, 1, 1, 1, 1], [2, 0,
@@ -114,12 +116,26 @@ monomialsTQ = np.array([[2, 0, 2, 0, 2, 0, 2, 0], [2, 0, 2, 0, 2, 0, 1, 1], [2, 
   2], [0, 2, 0, 2, 0, 2, 2, 0], [0, 2, 0, 2, 0, 2, 1, 1], [0, 2, 0, 2,
    0, 2, 0, 2]])
 
-kmoduliTQ = np.array([1,(np.sqrt(7)-2)/3,(np.sqrt(7)-2)/3,1])
-# kmoduliTQ = np.array([1,1,1,1])
+kmoduliTQ = np.array([1,1,1,1])
 
-from OneAndTwoFormsForLineBundlesModel13 import *
+def functionforbaseharmonicform_jbar_for_vQ1(x):
+    return getTypeIIs(x,monomialsTQ,coefficients,'vQ1')
+def functionforbaseharmonicform_jbar_for_vQ2(x):
+    return getTypeIIs(x,monomialsTQ,coefficients,'vQ2')
+def functionforbaseharmonicform_jbar_for_vU1(x):
+    return getTypeIIs(x,monomialsTQ,coefficients,'vU1')
+def functionforbaseharmonicform_jbar_for_vU2(x):
+    return getTypeIIs(x,monomialsTQ,coefficients,'vU2')
+
+functionforbaseharmonicform_jbar_for_vQ1.line_bundle = np.array([-1,-3,2,2]) 
+functionforbaseharmonicform_jbar_for_vQ2.line_bundle = np.array([-1,-3,2,2]) 
+functionforbaseharmonicform_jbar_for_vU1.line_bundle = np.array([-1,-3,2,2]) 
+functionforbaseharmonicform_jbar_for_vU2.line_bundle = np.array([-1,-3,2,2]) 
+
+
+from OneAndTwoFormsForLineBundles import *
+
 #from generate_and_train_all_nns import *
-from generate_and_train_all_nnsHOLOModel13 import *
 from auxiliary_funcs import *
 
 print_memory_usage(start_time_of_process=start_time_of_process, name = __name__)
@@ -131,6 +147,8 @@ if __name__ == '__main__':
     free_coefficient = float(sys.argv[1])
     seed_for_gen=int((int(free_coefficient*100000000000)+free_coefficient*1000000))%4294967294 # modulo largest seed
     print("seed for gen", seed_for_gen)
+    coefficients=get_coefficients_m1(free_coefficient)
+
 
 
     alphabeta=[1,10]
@@ -263,7 +281,7 @@ if __name__ == '__main__':
 
 if __name__ ==  '__main__':
     unique_id_or_coeff = free_coefficient
-    manifold_name_and_data = (get_coefficients_m13(free_coefficient), kmoduliTQ, ambientTQ, monomialsTQ, foldername, unique_id_or_coeff)
+    manifold_name_and_data = (coefficients, kmoduliTQ, ambientTQ, monomialsTQ, foldername, unique_id_or_coeff)
     
     generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,seed_set=seed_for_gen)
     if train_phi:
@@ -271,6 +289,8 @@ if __name__ ==  '__main__':
         phimodel,training_history, measure_phi=train_and_save_nn(manifold_name_and_data,depthPhi,widthPhi,nEpochsPhi,stddev=0.05,bSizes=[64,SecondBSize],lRate=lRatePhi,use_zero_network=use_zero_network_phi)
     else:
         phimodel,training_history, measure_phi=load_nn_phimodel(manifold_name_and_data,depthPhi,widthPhi,nEpochsPhi,[64,SecondBSize],set_weights_to_zero=return_zero_phi,skip_measures=skip_measuresPhi,set_weights_to_random=return_random_phi)
+
+        
 
 
     delete_all_dicts_except('dataEval')
@@ -783,8 +803,6 @@ if __name__ ==  '__main__':
                 mwoH[i, j] = m_valueewoH
                 m_neffs[i, j] = m_eff_n
                 mwoH_neffs[i, j] = m_eff_nwoH
-                print("Effective sample size for this element {i}{j}: " + str(m_eff_n))
-                print("Effective sample size for this element {i}{j} without H: " + str(m_eff_nwoH))
                 # Store statistics for this matrix element
                 if 'm_stats' not in integral_stats:
                     integral_stats['m_stats'] = {}

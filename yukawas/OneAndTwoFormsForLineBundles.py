@@ -27,9 +27,11 @@ def functionforbaseharmonicform_jbar_for_vU3(cpoints):
     dz4b=tf.math.conj(compute_dzi(cpoints,4))
     return tf.einsum('x,xj->xj',K4**(-2)*polynomial,dz4b)
 
-def getTypeIIs(cpoints,phimodel,formtype): 
-    monomials=phimodel.BASIS['QB0']
-    coefficients=phimodel.BASIS['QF0']
+functionforbaseharmonicform_jbar_for_vH.line_bundle = np.array([0,2,-2,0])
+functionforbaseharmonicform_jbar_for_vQ3.line_bundle = np.array([1,1,0,-2])
+functionforbaseharmonicform_jbar_for_vU3.line_bundle = np.array([1,1,0,-2])       
+
+def getTypeIIs(cpoints,monomials,coefficients,formtype): 
     #Define the coordinates in a convenient way - already have the kappas
     x0, x1 = cpoints[:,0], cpoints[:,1]
     y0, y1 = cpoints[:,2], cpoints[:,3]

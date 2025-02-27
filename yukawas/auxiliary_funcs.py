@@ -3,6 +3,7 @@ import tensorflow as tf
 import time
 from datetime import datetime
 import numpy as np
+from cymetric.config import real_dtype, complex_dtype
 
 def delete_all_dicts_except(except_dict_name):
     """
@@ -38,6 +39,14 @@ def get_coefficients_m13(free_coefficient):
       x, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
    return coefficients
 
+
+def get_coefficients_m1(free_coefficient):
+   x = free_coefficient
+   coefficients=np.array([1, 0, 2, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, \
+     0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, x, 0, 0, 0, 0, 0, \
+     0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, \
+     0, 0, 0, 1, 0, 2, 0, 0, 0, 2, 0, 1])
+   return coefficients
 
 
 
@@ -191,7 +200,7 @@ def propagate_errors_to_matrix(matrix, matrix_errors):
     return matrix_errors  # For complex matrices, we already have separate real and imag errors
 
 # Function to propagate errors to SVD (singular values) for complex matrices
-def propagate_errors_to_singular_values(matrix, matrix_errors):
+def propagate_errors_to_singular_values_legacy(matrix, matrix_errors):
     """
     Accurately propagate errors from matrix elements to singular values using perturbation theory.
     Works for both real and complex matrices.
@@ -232,6 +241,53 @@ def propagate_errors_to_singular_values(matrix, matrix_errors):
         s_errors[i] = np.sqrt(variance)
 
     return s_errors
+def propagate_errors_to_singular_values(matrix, matrix_errors):
+    """
+    Propagate errors from matrix elements to singular values using Monte Carlo simulation.
+    Works for both real and complex matrices.
+    
+    Parameters:
+    matrix (np.ndarray): Input matrix (real or complex)
+    matrix_errors (np.ndarray): Matrix of standard errors for each element
+    
+    Returns:
+    np.ndarray: Standard errors for each singular value
+    """
+    # Perform SVD on the original matrix to get number of singular values
+    _, s_orig, _ = np.linalg.svd(matrix, full_matrices=False)
+    
+    # Use Monte Carlo to estimate errors in singular values
+    n_samples = 10000
+    all_singular_values = []
+    
+    # Generate perturbed matrices and compute their SVDs
+    for _ in range(n_samples):
+        # Create random perturbation according to error distribution
+        if np.iscomplexobj(matrix):
+            real_perturbations = np.random.normal(0, np.real(matrix_errors))
+            imag_perturbations = np.random.normal(0, np.imag(matrix_errors))
+            perturbations = real_perturbations + 1j * imag_perturbations
+        else:
+            perturbations = np.random.normal(0, matrix_errors)
+        
+        # Perturb the matrix
+        perturbed_matrix = matrix + perturbations
+        
+        # Calculate SVD for perturbed matrix
+        try:
+            _, s_perturbed, _ = np.linalg.svd(perturbed_matrix, full_matrices=False)
+            all_singular_values.append(s_perturbed)
+        except np.linalg.LinAlgError:
+            # Skip invalid matrices (e.g., non-positive definite)
+            continue
+    
+    # Convert samples to array
+    all_singular_values = np.array(all_singular_values)
+    
+    # Calculate standard deviation for each singular value
+    s_errors = np.std(all_singular_values, axis=0)
+    return s_errors
+
 
 def verify_by_monte_carlo(matrix, matrix_errors, n_samples=10000):
     """
@@ -332,6 +388,37 @@ def test_error_propagation():
         print(f"Warning: Complex matrix error propagation ratios outside tolerance: {ratios_complex}")
     else:
         print("Complex matrix error propagation validation passed!")
+    
+    # Test with many random complex 3x3 matrices
+    tolerance = 0.2  # 20% tolerance
+    n_test_matrices = 10
+    failures = 0
+    print("Testing with many random complex 3x3 matrices")
+    for i in range(n_test_matrices):
+        # Generate random complex matrix
+        real_part = np.random.normal(0, 1, (3, 3))
+        imag_part = np.random.normal(0, 1, (3, 3))
+        test_matrix = real_part + 1j * imag_part
+        
+        # Generate error matrix (5% of matrix values)
+        error_matrix = 0.05 *(np.abs(np.random.normal(0, 1, (3, 3))) + 1j*np.abs(np.random.normal(0, 1, (3, 3))))
+        
+        # Calculate errors using both methods
+        analytical_errors = propagate_errors_to_singular_values(test_matrix, error_matrix)
+        mc_errors = verify_by_monte_carlo(test_matrix, error_matrix, n_samples=5000)
+        
+        # Check if ratios are within tolerance
+        ratios = analytical_errors / mc_errors
+        if not np.all(np.abs(ratios - 1) < tolerance):
+            failures += 1
+            print(f"Failure on matrix {i+1}: Ratios outside tolerance: {ratios}")
+            print(f"Analytical errors: {analytical_errors}")
+            print(f"Monte Carlo errors: {mc_errors}")
+    
+    if failures == 0:
+        print(f"All {n_test_matrices} random complex matrix tests passed!")
+    else:
+        print(f"{failures} out of {n_test_matrices} random complex matrix tests failed.")
 
     
 
@@ -475,7 +562,7 @@ if __name__ == "__main__":
     test_error_propagation()
 
 # Function to calculate both weighted mean and standard error in a single call
-def weighted_mean_and_standard_error(values, weights):
+def weighted_mean_and_standard_error(values, weights, is_top_form=False):
     """
     Calculate weighted mean and standard error for a set of values with weights.
     Handles complex values by treating real and imaginary parts separately.
@@ -495,20 +582,23 @@ def weighted_mean_and_standard_error(values, weights):
     # Get the weighted mean
     weighted_mean = tf.reduce_mean(tf.cast(weights, values.dtype) * values)
     
-    # Calculate the effective sample size
-    n_eff = effective_sample_size(weights)
-    
-    # Calculate variance for real part
-    real_values = tf.math.real(values)
-    real_mean = tf.math.real(weighted_mean)
-    real_squared_deviation = tf.square(real_values - real_mean)
-    real_weighted_variance = tf.reduce_sum(weights * real_squared_deviation) / tf.reduce_sum(weights)
-    
-    # Standard error for real part
-    real_se = tf.sqrt(real_weighted_variance / n_eff)
-    
+   
     # Check if values are complex
     if hasattr(values, 'dtype') and 'complex' in str(values.dtype) and np.any(np.imag(np.array(values)) != 0):
+         # Calculate the effective sample size
+
+        n_eff_r = effective_sample_size(weights*tf.cast(tf.math.real(values), real_dtype))
+        n_eff_c = effective_sample_size(weights*tf.cast(tf.math.imag(values), real_dtype))
+
+        # Calculate variance for real part
+        real_values = tf.math.real(values)
+        real_mean = tf.math.real(weighted_mean)
+        real_squared_deviation = tf.square(real_values - real_mean)
+        real_weighted_variance = tf.reduce_sum(weights * real_squared_deviation) / tf.reduce_sum(weights)
+    
+        # Standard error for real part
+        real_se = tf.sqrt(real_weighted_variance / n_eff_r)
+    
         # Calculate variance for imaginary part
         imag_values = tf.math.imag(values)
         imag_mean = tf.math.imag(weighted_mean)
@@ -516,14 +606,19 @@ def weighted_mean_and_standard_error(values, weights):
         imag_weighted_variance = tf.reduce_sum(weights * imag_squared_deviation) / tf.reduce_sum(weights)
         
         # Standard error for imaginary part
-        imag_se = tf.sqrt(imag_weighted_variance / n_eff)
+        imag_se = tf.sqrt(imag_weighted_variance / n_eff_c)
         
         # Return complex standard error
         complex_std_error = tf.complex(real_se, imag_se)
-        return weighted_mean, complex_std_error, n_eff, {'value': weighted_mean.numpy(), 'std_error': complex_std_error.numpy(), 'eff_n': n_eff.numpy()}
+        neff_complex = complex(n_eff_r, n_eff_c)
+        return np.array(weighted_mean), np.array(complex_std_error), neff_complex, {'value': np.array(weighted_mean), 'std_error': np.array(complex_std_error), 'eff_n': neff_complex}
     else:
-        # Return real standard error
-        return weighted_mean, real_se, n_eff, {'value': weighted_mean.numpy(), 'std_error': real_se.numpy(), 'eff_n': n_eff.numpy()} 
+        if is_top_form:
+            n_eff = effective_sample_size(weights*values)
+        else:
+            n_eff = effective_sample_size(weights)
+            # Return real standard error
+        return np.array(weighted_mean), np.array(real_se), n_eff, {'value': np.array(weighted_mean), 'std_error': np.array(real_se), 'eff_n': n_eff}
 
 def propagate_errors_to_physical_yukawas(NormH, NormH_errors, NormQ, NormQ_errors, NormU, NormU_errors, m, m_errors):
     """
@@ -821,14 +916,14 @@ def run_simple_test():
         [0.1 + 0.03j, 1.3 + 0.2j, 0.02 + 0.01j],
         [0.01 + 0.01j, 0.02 + 0.02j, 1.4 + 0.15j]
     ])
-    NormQ_errors = 0.05 * np.abs(NormQ)
+    NormQ_errors = 0.05 * np.abs(NormQ) + 1j*0.05 * np.abs(NormQ)
     
     NormU = np.array([
         [1.1 + 0.2j, 0.15 + 0.03j, 0.02 + 0.01j],
         [0.15 + 0.05j, 1.2 + 0.1j, 0.03 + 0.02j],
         [0.02 + 0.01j, 0.03 + 0.01j, 1.3 + 0.1j]
     ])
-    NormU_errors = 0.05 * np.abs(NormU)
+    NormU_errors = 0.05 * np.abs(NormU) + 1j*0.05 * np.abs(NormU)
     
     # Holomorphic Yukawa matrix
     m = np.array([
@@ -836,7 +931,7 @@ def run_simple_test():
         [0.02 + 0.01j, 0.4 + 0.15j, 0.03 + 0.01j],
         [0.001 + 0.0005j, 0.03 + 0.01j, 0.3 + 0.05j]
     ])
-    m_errors = 0.03 * np.abs(m)
+    m_errors = 0.03 * np.abs(m) + 1j*0.03 * np.abs(m)
     
     # Run the Monte Carlo test
     results = test_yukawa_error_propagation_monte_carlo(
@@ -902,7 +997,7 @@ def run_realistic_test():
         [0.2 + 0.1j, 4.0 + 1.5j, 0.3 + 0.1j],
         [0.01 + 0.005j, 0.3 + 0.1j, 3.0 + 0.5j]
     ])
-    m_errors = 0.1 * np.abs(m)  # 10% error
+    m_errors = 0.1 * np.abs(m) + 1j*0.1 * np.abs(m)  # 10% error
     
     # Import scipy for sqrtm function
     import scipy
