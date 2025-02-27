@@ -197,11 +197,11 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         print("Mean of abs(elements_12):", tf.reduce_mean(tf.abs(elements_12)).numpy())
 
         print("--------CONSIDERING THE INVERSION (not mixing  Qs and Us) PARTICULAR ELEMENT:")
-        elements_Q3U2= factor * aux_weights_c * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vQ2)*omega_normalised_to_one
+        elements_Q3Q2= factor * aux_weights_c * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vQ2)*omega_normalised_to_one
         elements_U2U3 =factor * aux_weights_c * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH,vU2,vU3)*omega_normalised_to_one 
-        print("Max absolute value of elements_Q3U2:", tf.reduce_max(tf.abs(elements_Q3U2)).numpy())
-        print("Mean of elements_Q3U2:", tf.reduce_mean(elements_Q3U2).numpy())
-        print("Mean of abs(elements_Q3U2):", tf.reduce_mean(tf.abs(elements_Q3U2)).numpy())
+        print("Max absolute value of elements_Q3Q2:", tf.reduce_max(tf.abs(elements_Q3Q2)).numpy())
+        print("Mean of elements_Q3Q2:", tf.reduce_mean(elements_Q3Q2).numpy())
+        print("Mean of abs(elements_Q3Q2):", tf.reduce_mean(tf.abs(elements_Q3Q2)).numpy())
         print("Max absolute value of elements_U2U3:", tf.reduce_max(tf.abs(elements_U2U3)).numpy())
         print("Mean of elements_U2U3:", tf.reduce_mean(elements_U2U3).numpy())
         print("Mean of abs(elements_U2U3):", tf.reduce_mean(tf.abs(elements_U2U3)).numpy())
@@ -239,18 +239,78 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             vH_bare = HFmodel_vH.uncorrected_FS_harmonicform(real_pts)
             vQ3_bare = HFmodel_vQ3.uncorrected_FS_harmonicform(real_pts)
             vU2_bare = HFmodel_vU2.uncorrected_FS_harmonicform(real_pts)
-            integrand_main = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vU2)*omega_normalised_to_one
-            integrand_bare_21_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH-vH_bare,vQ3,vU2)*omega_normalised_to_one
-            integrand_bare_21_vQ3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3-vQ3_bare,vU2)*omega_normalised_to_one
-            integrand_bare_21_vU2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3,vU2-vU2_bare)*omega_normalised_to_one
-            int_main, int_main_se, int_main_eff_n, int_main_stats = weighted_mean_and_standard_error(integrand_main, aux_weights)
-            int_bare_21_vH, int_bare_21_vH_se, int_bare_21_vH_eff_n, int_bare_21_vH_stats = weighted_mean_and_standard_error(integrand_bare_21_vH, aux_weights)
-            int_bare_21_vQ3, int_bare_21_vQ3_se, int_bare_21_vQ3_eff_n, int_bare_21_vQ3_stats = weighted_mean_and_standard_error(integrand_bare_21_vQ3, aux_weights)
-            int_bare_21_vU2, int_bare_21_vU2_se, int_bare_21_vU2_eff_n, int_bare_21_vU2_stats = weighted_mean_and_standard_error(integrand_bare_21_vU2, aux_weights)
-            print(f"int_main = {int_main:.6e} ± {int_main_se:.6e} (eff. n = {int_main_eff_n})")
-            print(f"int_bare_21_vH = {int_bare_21_vH:.6e} ± {int_bare_21_vH_se:.6e} (eff. n = {int_bare_21_vH_eff_n})")
-            print(f"int_bare_21_vQ3 = {int_bare_21_vQ3:.6e} ± {int_bare_21_vQ3_se:.6e} (eff. n = {int_bare_21_vQ3_eff_n})")
-            print(f"int_bare_21_vU2 = {int_bare_21_vU2:.6e} ± {int_bare_21_vU2_se:.6e} (eff. n = {int_bare_21_vU2_eff_n})")
+            vU1_bare = HFmodel_vU1.uncorrected_FS_harmonicform(real_pts)
+            vQ1_bare = HFmodel_vQ1.uncorrected_FS_harmonicform(real_pts)
+            vQ2_bare = HFmodel_vQ2.uncorrected_FS_harmonicform(real_pts)
+            vU3_bare = HFmodel_vU3.uncorrected_FS_harmonicform(real_pts)
+            
+            # Check topological invariance with pure derivatives
+            integrand_Q3U2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vU2)*omega_normalised_to_one
+            integrand_bare_Q3U2_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH-vH_bare,vQ3,vU2)*omega_normalised_to_one
+            integrand_bare_Q3U2_vQ3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3-vQ3_bare,vU2)*omega_normalised_to_one
+            integrand_bare_Q3U2_vU2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3,vU2-vU2_bare)*omega_normalised_to_one
+            
+            # Q1U3 combination
+            integrand_Q1U3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH,vQ1,vU3)*omega_normalised_to_one
+            integrand_bare_Q1U3_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH-vH_bare,vQ1,vU3)*omega_normalised_to_one
+            integrand_bare_Q1U3_vQ1 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ1-vQ1_bare,vU3)*omega_normalised_to_one
+            integrand_bare_Q1U3_vU3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ1,vU3-vU3_bare)*omega_normalised_to_one
+            
+            # Q2U3 combination
+            integrand_Q2U3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH,vQ2,vU3)*omega_normalised_to_one
+            integrand_bare_Q2U3_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH-vH_bare,vQ2,vU3)*omega_normalised_to_one
+            integrand_bare_Q2U3_vQ2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ2-vQ2_bare,vU3)*omega_normalised_to_one
+            integrand_bare_Q2U3_vU3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ2,vU3-vU3_bare)*omega_normalised_to_one
+            
+            # Q3U1 combination
+            integrand_Q3U1 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vU1)*omega_normalised_to_one
+            integrand_bare_Q3U1_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH-vH_bare,vQ3,vU1)*omega_normalised_to_one
+            integrand_bare_Q3U1_vQ3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3-vQ3_bare,vU1)*omega_normalised_to_one
+            integrand_bare_Q3U1_vU1 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3,vU1-vU1_bare)*omega_normalised_to_one
+            
+            # Calculate statistics for all integrands
+            int_Q3U2, int_Q3U2_se, int_Q3U2_eff_n, int_Q3U2_stats = weighted_mean_and_standard_error(integrand_Q3U2, aux_weights)
+            int_bare_Q3U2_vH, int_bare_Q3U2_vH_se, int_bare_Q3U2_vH_eff_n, int_bare_Q3U2_vH_stats = weighted_mean_and_standard_error(integrand_bare_Q3U2_vH, aux_weights)
+            int_bare_Q3U2_vQ3, int_bare_Q3U2_vQ3_se, int_bare_Q3U2_vQ3_eff_n, int_bare_Q3U2_vQ3_stats = weighted_mean_and_standard_error(integrand_bare_Q3U2_vQ3, aux_weights)
+            int_bare_Q3U2_vU2, int_bare_Q3U2_vU2_se, int_bare_Q3U2_vU2_eff_n, int_bare_Q3U2_vU2_stats = weighted_mean_and_standard_error(integrand_bare_Q3U2_vU2, aux_weights)
+
+            int_Q1U3, int_Q1U3_se, int_Q1U3_eff_n, int_Q1U3_stats = weighted_mean_and_standard_error(integrand_Q1U3, aux_weights)
+            int_bare_Q1U3_vH, int_bare_Q1U3_vH_se, int_bare_Q1U3_vH_eff_n, int_bare_Q1U3_vH_stats = weighted_mean_and_standard_error(integrand_bare_Q1U3_vH, aux_weights)
+            int_bare_Q1U3_vQ1, int_bare_Q1U3_vQ1_se, int_bare_Q1U3_vQ1_eff_n, int_bare_Q1U3_vQ1_stats = weighted_mean_and_standard_error(integrand_bare_Q1U3_vQ1, aux_weights)
+            int_bare_Q1U3_vU3, int_bare_Q1U3_vU3_se, int_bare_Q1U3_vU3_eff_n, int_bare_Q1U3_vU3_stats = weighted_mean_and_standard_error(integrand_bare_Q1U3_vU3, aux_weights)
+
+            int_Q2U3, int_Q2U3_se, int_Q2U3_eff_n, int_Q2U3_stats = weighted_mean_and_standard_error(integrand_Q2U3, aux_weights)
+            int_bare_Q2U3_vH, int_bare_Q2U3_vH_se, int_bare_Q2U3_vH_eff_n, int_bare_Q2U3_vH_stats = weighted_mean_and_standard_error(integrand_bare_Q2U3_vH, aux_weights)
+            int_bare_Q2U3_vQ2, int_bare_Q2U3_vQ2_se, int_bare_Q2U3_vQ2_eff_n, int_bare_Q2U3_vQ2_stats = weighted_mean_and_standard_error(integrand_bare_Q2U3_vQ2, aux_weights)
+            int_bare_Q2U3_vU3, int_bare_Q2U3_vU3_se, int_bare_Q2U3_vU3_eff_n, int_bare_Q2U3_vU3_stats = weighted_mean_and_standard_error(integrand_bare_Q2U3_vU3, aux_weights)
+
+            int_Q3U1, int_Q3U1_se, int_Q3U1_eff_n, int_Q3U1_stats = weighted_mean_and_standard_error(integrand_Q3U1, aux_weights)
+            int_bare_Q3U1_vH, int_bare_Q3U1_vH_se, int_bare_Q3U1_vH_eff_n, int_bare_Q3U1_vH_stats = weighted_mean_and_standard_error(integrand_bare_Q3U1_vH, aux_weights)
+            int_bare_Q3U1_vQ3, int_bare_Q3U1_vQ3_se, int_bare_Q3U1_vQ3_eff_n, int_bare_Q3U1_vQ3_stats = weighted_mean_and_standard_error(integrand_bare_Q3U1_vQ3, aux_weights)
+            int_bare_Q3U1_vU1, int_bare_Q3U1_vU1_se, int_bare_Q3U1_vU1_eff_n, int_bare_Q3U1_vU1_stats = weighted_mean_and_standard_error(integrand_bare_Q3U1_vU1, aux_weights)
+            
+            print("\n Q3U2:")
+            print(f"int_Q3U2 = {int_Q3U2:.6e} ± {int_Q3U2_se:.6e} (eff. n = {int_Q3U2_eff_n})")
+            print(f"int_bare_Q3U2_vH = {int_bare_Q3U2_vH:.6e} ± {int_bare_Q3U2_vH_se:.6e} (eff. n = {int_bare_Q3U2_vH_eff_n})")
+            print(f"int_bare_Q3U2_vQ3 = {int_bare_Q3U2_vQ3:.6e} ± {int_bare_Q3U2_vQ3_se:.6e} (eff. n = {int_bare_Q3U2_vQ3_eff_n})")
+            print(f"int_bare_Q3U2_vU2 = {int_bare_Q3U2_vU2:.6e} ± {int_bare_Q3U2_vU2_se:.6e} (eff. n = {int_bare_Q3U2_vU2_eff_n})")
+            print("\n Q1U3:")
+            print(f"int_Q1U3 = {int_Q1U3:.6e} ± {int_Q1U3_se:.6e} (eff. n = {int_Q1U3_eff_n})")
+            print(f"int_bare_Q1U3_vH = {int_bare_Q1U3_vH:.6e} ± {int_bare_Q1U3_vH_se:.6e} (eff. n = {int_bare_Q1U3_vH_eff_n})")
+            print(f"int_bare_Q1U3_vQ1 = {int_bare_Q1U3_vQ1:.6e} ± {int_bare_Q1U3_vQ1_se:.6e} (eff. n = {int_bare_Q1U3_vQ1_eff_n})")
+            print(f"int_bare_Q1U3_vU3 = {int_bare_Q1U3_vU3:.6e} ± {int_bare_Q1U3_vU3_se:.6e} (eff. n = {int_bare_Q1U3_vU3_eff_n})")
+            print("\n Q2U3:")
+            print(f"int_Q2U3 = {int_Q2U3:.6e} ± {int_Q2U3_se:.6e} (eff. n = {int_Q2U3_eff_n})")
+            print(f"int_bare_Q2U3_vH = {int_bare_Q2U3_vH:.6e} ± {int_bare_Q2U3_vH_se:.6e} (eff. n = {int_bare_Q2U3_vH_eff_n})")
+            print(f"int_bare_Q2U3_vQ2 = {int_bare_Q2U3_vQ2:.6e} ± {int_bare_Q2U3_vQ2_se:.6e} (eff. n = {int_bare_Q2U3_vQ2_eff_n})")
+            print(f"int_bare_Q2U3_vU3 = {int_bare_Q2U3_vU3:.6e} ± {int_bare_Q2U3_vU3_se:.6e} (eff. n = {int_bare_Q2U3_vU3_eff_n})")
+            print("\n Q3U1:")
+            print(f"int_Q3U1 = {int_Q3U1:.6e} ± {int_Q3U1_se:.6e} (eff. n = {int_Q3U1_eff_n})")
+            print(f"integrand_bare_Q3U1_vH = {int_bare_Q3U1_vH:.6e} ± {int_bare_Q3U1_vH_se:.6e} (eff. n = {int_bare_Q3U1_vH_eff_n})")
+            print(f"integrand_bare_Q3U1_vQ3 = {int_bare_Q3U1_vQ3:.6e} ± {int_bare_Q3U1_vQ3_se:.6e} (eff. n = {int_bare_Q3U1_vQ3_eff_n})")
+            print(f"integrand_bare_Q3U1_vU1 = {int_bare_Q3U1_vU1:.6e} ± {int_bare_Q3U1_vU1_se:.6e} (eff. n = {int_bare_Q3U1_vU1_eff_n})")
+            
+            
             print("--------------------------------\n\n\n\n\n\n\n\n")
            
         # vals = []
