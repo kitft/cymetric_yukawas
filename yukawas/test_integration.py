@@ -621,46 +621,46 @@ if __name__ ==  '__main__':
         elements_21= factor * aux_weights_c * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vU2)*omega_normalised_to_one
         elements_12 =factor * aux_weights_c * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH,vQ2,vU3)*omega_normalised_to_one 
         print("Max absolute value of elements_21:", tf.reduce_max(tf.abs(elements_21)))
-        print("Mean of elements_21:", tf.reduce_mean(elements_21))
-        print("Mean of abs(elements_21):", tf.reduce_mean(tf.abs(elements_21)))
-        print("Max absolute value of elements_12:", tf.reduce_max(tf.abs(elements_12)))
-        print("Mean of elements_12:", tf.reduce_mean(elements_12))
-        print("Mean of abs(elements_12):", tf.reduce_mean(tf.abs(elements_12)))
+        print("Mean of elements_21:", tf.reduce_mean(elements_21).numpy())
+        print("Mean of abs(elements_21):", tf.reduce_mean(tf.abs(elements_21)).numpy())
+        print("Max absolute value of elements_12:", tf.reduce_max(tf.abs(elements_12)).numpy())
+        print("Mean of elements_12:", tf.reduce_mean(elements_12).numpy())
+        print("Mean of abs(elements_12):", tf.reduce_mean(tf.abs(elements_12)).numpy())
 
         print("--------CONSIDERING THE INVERSION PARTICULAR ELEMENT:")
         elements_Q3U2= factor * aux_weights_c * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vQ2)*omega_normalised_to_one
         elements_U2U3 =factor * aux_weights_c * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH,vU2,vU3)*omega_normalised_to_one 
-        print("Max absolute value of elements_Q3U2:", tf.reduce_max(tf.abs(elements_21)))
-        print("Mean of elements_Q3U2:", tf.reduce_mean(elements_Q3U2))
-        print("Mean of abs(elements_Q3U2):", tf.reduce_mean(tf.abs(elements_Q3U2)))
-        print("Max absolute value of elements_U2U3:", tf.reduce_max(tf.abs(elements_U2U3)))
-        print("Mean of elements_U2U3:", tf.reduce_mean(elements_U2U3))
-        print("Mean of abs(elements_U2U3):", tf.reduce_mean(tf.abs(elements_U2U3)))
+        print("Max absolute value of elements_Q3U2:", tf.reduce_max(tf.abs(elements_21)).numpy())
+        print("Mean of elements_Q3U2:", tf.reduce_mean(elements_Q3U2).numpy())
+        print("Mean of abs(elements_Q3U2):", tf.reduce_mean(tf.abs(elements_Q3U2)).numpy())
+        print("Max absolute value of elements_U2U3:", tf.reduce_max(tf.abs(elements_U2U3)).numpy())
+        print("Mean of elements_U2U3:", tf.reduce_mean(elements_U2U3).numpy())
+        print("Mean of abs(elements_U2U3):", tf.reduce_mean(tf.abs(elements_U2U3)).numpy())
         print("--------------------------------")
         
         
         
         print("--------CONSIDERING THE (0,0) ELEMENT:")
         elements_00 = factor * aux_weights_c * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H3),vH,vQ1,vU1)*omega_normalised_to_one
-        print("Max absolute value of elements_00:", tf.reduce_max(tf.abs(elements_00)))
-        print("Mean of elements_00:", tf.reduce_mean(elements_00))
-        print("Mean of abs(elements_00):", tf.reduce_mean(tf.abs(elements_00)))
+        print("Max absolute value of elements_00:", tf.reduce_max(tf.abs(elements_00)).numpy())
+        print("Mean of elements_00:", tf.reduce_mean(elements_00).numpy())
+        print("Mean of abs(elements_00):", tf.reduce_mean(tf.abs(elements_00)).numpy())
         print("--------------------------------")
 
   
         print("--------CONSIDERING THE (1,1) ELEMENT:")
         elements_11 = factor * aux_weights_c * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H3),vH,vQ2,vU2)*omega_normalised_to_one
-        print("Max absolute value of elements_11:", tf.reduce_max(tf.abs(elements_11)))     
-        print("Mean of elements_11:", tf.reduce_mean(elements_11))
-        print("Mean of abs(elements_11):", tf.reduce_mean(tf.abs(elements_11)))
+        print("Max absolute value of elements_11:", tf.reduce_max(tf.abs(elements_11)).numpy())     
+        print("Mean of elements_11:", tf.reduce_mean(elements_11).numpy())
+        print("Mean of abs(elements_11):", tf.reduce_mean(tf.abs(elements_11)).numpy())
         print("--------------------------------")
 
 
         print("--------CONSIDERING THE (2,2) ELEMENT:")
         elements_22 = factor * aux_weights_c * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H3),vH,vQ3,vU3)*omega_normalised_to_one
-        print("Max absolute value of elements_22:", tf.reduce_max(tf.abs(elements_22)))     
-        print("Mean of elements_22:", tf.reduce_mean(elements_22))
-        print("Mean of abs(elements_22):", tf.reduce_mean(tf.abs(elements_22)))
+        print("Max absolute value of elements_22:", tf.reduce_max(tf.abs(elements_22)).numpy())     
+        print("Mean of elements_22:", tf.reduce_mean(elements_22).numpy())
+        print("Mean of abs(elements_22):", tf.reduce_mean(tf.abs(elements_22)).numpy())
         print("--------------------------------")
         #print("Integral of omega_normalised_to_one = ", tf.reduce_mean(aux_weights_c * omega_normalised_to_one* tf.math.conj(omega_normalised_to_one))) # verified that this is correct!!!yes
 

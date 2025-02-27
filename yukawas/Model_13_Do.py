@@ -228,7 +228,7 @@ if __name__ == '__main__':
     training_flags = determine_training_flags(start_from)
 
     # Unpack training flags
-    train_phi, train_02m20, train_001m3, train_0m213, train_vH, train_vQ3, train_vU3, train_vQ1, train_vQ2, train_vU1, train_vU2 = (
+    train_phi, train_LB1, train_LB2, train_LB3, train_vH, train_vQ3, train_vU3, train_vQ1, train_vQ2, train_vU1, train_vU2 = (
         training_flags['phi'],
         training_flags['LB1'],
         training_flags['LB2'],
