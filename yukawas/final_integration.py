@@ -196,10 +196,10 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         print("Mean of elements_12:", tf.reduce_mean(elements_12).numpy())
         print("Mean of abs(elements_12):", tf.reduce_mean(tf.abs(elements_12)).numpy())
 
-        print("--------CONSIDERING THE INVERSION PARTICULAR ELEMENT:")
+        print("--------CONSIDERING THE INVERSION (not mixing  Qs and Us) PARTICULAR ELEMENT:")
         elements_Q3U2= factor * aux_weights_c * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vQ2)*omega_normalised_to_one
         elements_U2U3 =factor * aux_weights_c * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH,vU2,vU3)*omega_normalised_to_one 
-        print("Max absolute value of elements_Q3U2:", tf.reduce_max(tf.abs(elements_21)).numpy())
+        print("Max absolute value of elements_Q3U2:", tf.reduce_max(tf.abs(elements_Q3U2)).numpy())
         print("Mean of elements_Q3U2:", tf.reduce_mean(elements_Q3U2).numpy())
         print("Mean of abs(elements_Q3U2):", tf.reduce_mean(tf.abs(elements_Q3U2)).numpy())
         print("Max absolute value of elements_U2U3:", tf.reduce_max(tf.abs(elements_U2U3)).numpy())
@@ -215,7 +215,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         print("Mean of elements_00:", tf.reduce_mean(elements_00).numpy())
         print("Mean of abs(elements_00):", tf.reduce_mean(tf.abs(elements_00)).numpy())
         print("--------------------------------")
-
+       
 
         print("--------CONSIDERING THE (1,1) ELEMENT:")
         elements_11 = factor * aux_weights_c * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H3),vH,vQ2,vU2)*omega_normalised_to_one
@@ -233,7 +233,28 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         print("--------------------------------")
         #print("Integral of omega_normalised_to_one = ", tf.reduce_mean(aux_weights_c * omega_normalised_to_one* tf.math.conj(omega_normalised_to_one))) # verified that this is correct!!!yes
 
-        # #volCY=tf.reduce_mean(omega)
+
+        if do_extra_stuff:
+            print("\n\n\n\n\n\n\n\n Checking topological invariance if one of the forms is pure derivatives!")
+            vH_bare = HFmodel_vH.uncorrected_FS_harmonicform(real_pts)
+            vQ3_bare = HFmodel_vQ3.uncorrected_FS_harmonicform(real_pts)
+            vU2_bare = HFmodel_vU2.uncorrected_FS_harmonicform(real_pts)
+            integrand_main = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vU2)*omega_normalised_to_one
+            integrand_bare_21_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH-vH_bare,vQ3,vU2)*omega_normalised_to_one
+            integrand_bare_21_vQ3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3-vQ3_bare,vU2)*omega_normalised_to_one
+            integrand_bare_21_vU2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3,vU2-vU2_bare)*omega_normalised_to_one
+            int_main, int_main_se, int_main_eff_n, int_main_stats = weighted_mean_and_standard_error(integrand_main, aux_weights)
+            int_bare_21_vH, int_bare_21_vH_se, int_bare_21_vH_eff_n, int_bare_21_vH_stats = weighted_mean_and_standard_error(integrand_bare_21_vH, aux_weights)
+            int_bare_21_vQ3, int_bare_21_vQ3_se, int_bare_21_vQ3_eff_n, int_bare_21_vQ3_stats = weighted_mean_and_standard_error(integrand_bare_21_vQ3, aux_weights)
+            int_bare_21_vU2, int_bare_21_vU2_se, int_bare_21_vU2_eff_n, int_bare_21_vU2_stats = weighted_mean_and_standard_error(integrand_bare_21_vU2, aux_weights)
+            print(f"int_main = {int_main:.6e} ± {int_main_se:.6e} (eff. n = {int_main_eff_n})")
+            print(f"int_bare_21_vH = {int_bare_21_vH:.6e} ± {int_bare_21_vH_se:.6e} (eff. n = {int_bare_21_vH_eff_n})")
+            print(f"int_bare_21_vQ3 = {int_bare_21_vQ3:.6e} ± {int_bare_21_vQ3_se:.6e} (eff. n = {int_bare_21_vQ3_eff_n})")
+            print(f"int_bare_21_vU2 = {int_bare_21_vU2:.6e} ± {int_bare_21_vU2_se:.6e} (eff. n = {int_bare_21_vU2_eff_n})")
+            print("--------------------------------\n\n\n\n\n\n\n\n")
+           
+        # vals = []
+       
         # vals = []
         # mAll = []
         # mAll.append(m)
@@ -352,8 +373,6 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                 mwoH[i, j] = m_valueewoH
                 m_neffs[i, j] = m_eff_n
                 mwoH_neffs[i, j] = m_eff_nwoH
-                print("Effective sample size for this element {i}{j}: " + str(m_eff_n))
-                print("Effective sample size for this element {i}{j} without H: " + str(m_eff_nwoH))
                 # Store statistics for this matrix element
                 if 'm_stats' not in integral_stats:
                     integral_stats['m_stats'] = {}
