@@ -59,7 +59,7 @@ jobs:
         # Print directory contents for debugging
         ls -la
         # Run with error output
-        python test_integration.py -1.00300101533232333 'end' 'alltiny' || { echo "Command failed with exit code $?"; exit 1; }
+        python test_integration_model13.py -1.00300101533232333 'end' 'alltiny' || { echo "Command failed with exit code $?"; exit 1; }
       timeout-minutes: 10  # Set a timeout to prevent long-running tests 
 
     - name: run Model_13_Do.py
