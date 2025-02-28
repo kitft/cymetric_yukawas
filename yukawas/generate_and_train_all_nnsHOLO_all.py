@@ -176,6 +176,7 @@ def train_and_save_nn(manifold_name_and_data, phimodel_config=None,use_zero_netw
    stddev = phimodel_config['stddev']
    bSizes = phimodel_config['bSizes']
    network_function = phimodel_config['network_function']
+   activation = phimodel_config['activation']
 
    coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    dirname = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff)
@@ -501,6 +502,7 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
    bSizes = betamodel_config['bSizes']
    alpha = betamodel_config['alpha']
    network_function = betamodel_config['network_function']
+   activation = betamodel_config['activation']
 
    coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    lbstring = ''.join(str(e) for e in linebundleforHYM)
@@ -554,8 +556,9 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
    #nn_beta = BiholoModelFuncGENERAL(shapeofnetwork,BASIS,stddev=stddev,use_zero_network=use_zero_network)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #nn_beta_zero = BiholoModelFuncGENERAL(shapeofnetwork,BASIS,use_zero_network=True)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #activ=tf.square
-   activ=tfk.activations.gelu
-   activ = tf.square
+   if activation is None:
+      #activation=tfk.activations.gelu
+      activation = tf.square 
    if network_function is None:
       if nHidden in [64,128,256] or nHidden<20 or nHidden==100:
          residual_Q = True
@@ -570,8 +573,8 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
       residual_Q = True
       load_func_HYM = network_function
 
-   nn_beta = load_func_HYM(shapeofnetwork,BASIS,activation=activ,stddev=stddev,use_zero_network=use_zero_network,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
-   nn_beta_zero = load_func_HYM(shapeofnetwork,BASIS,activation=activ,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+   nn_beta = load_func_HYM(shapeofnetwork,BASIS,activation=activation,stddev=stddev,use_zero_network=use_zero_network,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+   nn_beta_zero = load_func_HYM(shapeofnetwork,BASIS,activation=activation,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #copie from phi above
    #nn_beta = BiholoModelFuncGENERAL(shapeofnetwork,BASIS,stddev=stddev,use_zero_network=True)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #nn_beta_zero =BiholoModelFuncGENERAL(shapeofnetwork,BASIS,use_zero_network=True)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
@@ -636,7 +639,7 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
          #nn_beta = BiholoModelFuncGENERALforHYMinv2(shapeofnetwork,BASIS,activation=tfk.activations.gelu,stddev=stddev,use_zero_network=use_zero_network)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
          seed = 3 + i
          tf.random.set_seed(seed)
-         nn_beta = load_func_HYM(shapeofnetwork,BASIS,activation=activ,stddev=stddev,use_zero_network=use_zero_network,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+         nn_beta = load_func_HYM(shapeofnetwork,BASIS,activation=activation,stddev=stddev,use_zero_network=use_zero_network,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
          #nn_beta = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)#note we don't need a last bias (flat direction)
          if newLR>0.0002:
              newLR=newLR/2
@@ -714,6 +717,7 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,set_wei
    bSizes = betamodel_config['bSizes']
    alpha = betamodel_config['alpha']
    network_function = betamodel_config['network_function']
+   activation = betamodel_config['activation']
 
    coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    lbstring = ''.join(str(e) for e in linebundleforHYM)
@@ -754,12 +758,9 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,set_wei
    #initializer = tf.keras.initializers.RandomNormal(mean=0., stddev=stddev)
    #nn_beta = BiholoModelFuncGENERAL(shapeofnetwork,BASIS,stddev=stddev,use_zero_network=True)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #nn_beta_zero = BiholoModelFuncGENERAL(shapeofnetwork,BASIS,use_zero_network=True)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
-   activ=tf.square
-   load_func_HYM = BiholoModelFuncGENERALforHYMinv3
-
-
-   activ=tfk.activations.gelu
-   activ = tf.square
+   if activation is None:
+      #activation=tfk.activations.gelu
+      activation = tf.square
 
    if network_function is None:
       if nHidden in [64,128,256] or nHidden<20 or nHidden==100:
@@ -774,8 +775,8 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,set_wei
    else:
       residual_Q = True
       load_func_HYM = network_function
-   nn_beta = load_func_HYM(shapeofnetwork,BASIS,activation=activ,stddev=stddev,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
-   nn_beta_zero = load_func_HYM(shapeofnetwork,BASIS,activation=activ,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+   nn_beta = load_func_HYM(shapeofnetwork,BASIS,activation=activation,stddev=stddev,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+   nn_beta_zero = load_func_HYM(shapeofnetwork,BASIS,activation=activation,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #copie from phi above
    #nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
    
@@ -924,6 +925,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    final_layer_scale = sigmamodel_config['final_layer_scale']
    norm_momentum = sigmamodel_config['norm_momentum']
    network_function = sigmamodel_config['network_function']
+   activation = sigmamodel_config['activation']
 
    coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    #perm= tracker.SummaryTracker()
@@ -986,7 +988,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    #stddev=stddev
    #nn_HF = BiholoModelFuncGENERALforSigma(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activ,stddev=stddev,use_zero_network=use_zero_network,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #nn_HF_zero  = BiholoModelFuncGENERALforSigma(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activ,stddev=stddev,use_zero_network=True,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
-   activ=tf.keras.activations.gelu
+   #activ=tf.keras.activations.gelu
    #if True:# np.sum(np.abs(linebundleforHYM -np.array([0,-2,1,3])))<1e-8 or np.sum(np.abs(linebundleforHYM -np.array([0,0,1,-3])))<1e-8:
    #if np.sum(np.abs(linebundleforHYM -np.array([0,-2,1,3])))<1e-8: #or np.sum(np.abs(linebundleforHYM -np.array([0,0,1,-3])))<1e-8:
    #    load_func=BiholoModelFuncGENERALforSigma2_m13_SECOND
@@ -996,8 +998,10 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    #    activ = tf.keras.activations.gelu
    #else:
    #activ=tf.square
-   activ = tf.keras.activations.gelu
-   activ = tf.square
+   if activation is None:
+      activation = tf.keras.activations.gelu
+      activation = tf.square
+   
    #load_func = BiholoModelFuncGENERALforSigma2_m13
    #load_func = BiholoModelFuncGENERALforSigmaWNorm
    if network_function is None:
@@ -1018,11 +1022,11 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    #if np.sum(np.abs(linebundleforHYM -np.array([0,0,1,-3])))<1e-8:
    #    k_phi_here = np.array([0,0,0,1])
    k_phi_here = np.array([0,0,0,0])
-   nn_HF = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=k_phi_here,activation=activ,stddev=stddev,use_zero_network=use_zero_network,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
-   nn_HF_zero  = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=k_phi_here,activation=activ,stddev=stddev,use_zero_network=True,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+   nn_HF = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=k_phi_here,activation=activation,stddev=stddev,use_zero_network=use_zero_network,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+   nn_HF_zero  = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=k_phi_here,activation=activation,stddev=stddev,use_zero_network=True,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
   
    print('network arch:',load_func)
-   print("activation: ",activ)
+   print("activation: ",activation)
    HFmodel = HarmonicFormModel(nn_HF,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)])
    HFmodelzero = HarmonicFormModel(nn_HF_zero,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)])
    if load_network:
@@ -1104,7 +1108,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
 
          seed = 3 + i
          tf.random.set_seed(seed)
-         nn_HF = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=k_phi_here,activation=activ,stddev=stddev,use_zero_network=use_zero_network,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+         nn_HF = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=k_phi_here,activation=activation,stddev=stddev,use_zero_network=use_zero_network,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
          #HFmodel = HarmonicFormModel(nn_HF,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)])
          if newLR>0.0002:
              newLR=newLR/2
@@ -1247,6 +1251,7 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    final_layer_scale = sigmamodel_config['final_layer_scale']
    norm_momentum = sigmamodel_config['norm_momentum']
    network_function = sigmamodel_config['network_function']
+   activation = sigmamodel_config['activation']
 
    coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    nameOfBaseHF=functionforbaseharmonicform_jbar.__name__
@@ -1294,14 +1299,12 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    # need a last bias layer due to transition!
    #nn_HF = make_nn(n_in,n_outreal,nlayer,nHidden,act,lastbias=True,use_zero_network=True,kernel_initializer=initializer)
    #nn_HF_zero = make_nn(n_in,n_outreal,nlayer,nHidden,act,lastbias=True,use_zero_network=True)
-   activ=tf.square
    stddev=0.1 # THIS DOESN'T DO ANYTHING!!
    #nn_HF = BiholoModelFuncGENERALforSigma(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,k_phi=np.array([0,0,0,0]),nsections=nsections,activation=activ,stddev=stddev,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #nn_HF_zero  = BiholoModelFuncGENERALforSigma(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,k_phi=np.array([0,0,0,0]),nsections=nsections,activation=activ,stddev=stddev,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
-   activ=tf.square
    #activ=tfk.activations.gelu
    #if np.sum(np.abs(linebundleforHYM -np.array([0,-2,1,3])))<1e-8:
-   activ=tf.keras.activations.gelu
+   #activ=tf.keras.activations.gelu
    #else:
    #    activ=tf.square
 
@@ -1320,8 +1323,9 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    #    activ = tf.keras.activations.gelu
    #else:
    #activ=tf.square
-   activ = tf.keras.activations.gelu
-   activ = tf.square
+   if activation is None:
+      activation = tf.keras.activations.gelu
+      activation = tf.square
    #load_func = BiholoModelFuncGENERALforSigma2_m13
    #load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log
 
@@ -1343,9 +1347,9 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
       load_func = network_function
 
    print("network arch:",load_func)
-   print("activation: ",activ)
-   nn_HF = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activ,stddev=stddev,use_zero_network=False,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
-   nn_HF_zero  = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activ,stddev=stddev,use_zero_network=True,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+   print("activation: ",activation)
+   nn_HF = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activation,stddev=stddev,use_zero_network=False,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+   nn_HF_zero  = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activation,stddev=stddev,use_zero_network=True,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    
    HFmodel = HarmonicFormModel(nn_HF,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)])
    HFmodelzero = HarmonicFormModel(nn_HF_zero,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)])

@@ -208,11 +208,18 @@ if __name__ == '__main__':
     skip_measuresBeta=True
     skip_measuresHF=True
     
-    force_generate_phi=True
-    force_generate_HYM=True
-    force_generate_HF=True
-    force_generate_HF_2=True
-    force_generate_eval=True
+    if 'loadalldata' in sys.argv[1:]:
+        force_generate_phi=False
+        force_generate_HYM=False
+        force_generate_HF=False
+        force_generate_HF_2=False
+        force_generate_eval=False
+    else:
+        force_generate_phi=True
+        force_generate_HYM=True
+        force_generate_HF=True
+        force_generate_HF_2=True
+        force_generate_eval=True
     
     return_zero_phi= True
     return_zero_HYM = True
@@ -307,10 +314,15 @@ if __name__ == '__main__':
     norm_momentum_sigma = 0.999
     norm_momentum_sigma2 = 0.999
 
-    phimodel_config = {'depth': depthPhi, 'width': widthPhi, 'nEpochs': nEpochsPhi, 'lRate': lRatePhi, 'stddev': stddev_phi, 'bSizes': [tr_batchsize,SecondBSize], 'network_function': phi_model_load_function}
-    betamodel_config = {'depth': depthBeta, 'width': widthBeta, 'nEpochs': nEpochsBeta, 'lRate': lRateBeta, 'alpha': alphabeta, 'stddev': stddev_beta, 'bSizes': [tr_batchsize], 'network_function': beta_model_load_function}
-    sigmamodel_config = {'depth': depthSigma, 'width': widthSigma, 'nEpochs': nEpochsSigma, 'lRate': lRateSigma, 'alpha': alphasigma1, 'stddev': stddev_sigma, 'bSizes': [tr_batchsize], 'final_layer_scale': final_layer_scale_H33, 'norm_momentum': norm_momentum_sigma, 'network_function': sigma_model_load_function}
-    sigma2model_config = {'depth': depthSigma2, 'width': widthSigma2, 'nEpochs': nEpochsSigma2, 'lRate': lRateSigma2, 'alpha': alphasigma2, 'stddev': stddev_Q12U12, 'bSizes': [tr_batchsize], 'final_layer_scale': final_layer_scale_Q12U12, 'norm_momentum': norm_momentum_sigma2, 'network_function': sigma2_model_load_function}
+    activationphi = None
+    activationbeta = None
+    activationsigma = None
+    activationsigma2 = None
+
+    phimodel_config = {'depth': depthPhi, 'width': widthPhi, 'nEpochs': nEpochsPhi, 'lRate': lRatePhi, 'stddev': stddev_phi, 'bSizes': [tr_batchsize,SecondBSize], 'network_function': phi_model_load_function, 'activation': activationphi}
+    betamodel_config = {'depth': depthBeta, 'width': widthBeta, 'nEpochs': nEpochsBeta, 'lRate': lRateBeta, 'alpha': alphabeta, 'stddev': stddev_beta, 'bSizes': [tr_batchsize], 'network_function': beta_model_load_function, 'activation':activationbeta}
+    sigmamodel_config = {'depth': depthSigma, 'width': widthSigma, 'nEpochs': nEpochsSigma, 'lRate': lRateSigma, 'alpha': alphasigma1, 'stddev': stddev_sigma, 'bSizes': [tr_batchsize], 'final_layer_scale': final_layer_scale_H33, 'norm_momentum': norm_momentum_sigma, 'network_function': sigma_model_load_function,'activation':activationsigma}
+    sigma2model_config = {'depth': depthSigma2, 'width': widthSigma2, 'nEpochs': nEpochsSigma2, 'lRate': lRateSigma2, 'alpha': alphasigma2, 'stddev': stddev_Q12U12, 'bSizes': [tr_batchsize], 'final_layer_scale': final_layer_scale_Q12U12, 'norm_momentum': norm_momentum_sigma2, 'network_function': sigma2_model_load_function,'activation':activationsigma2}
     print("phimodel_config: ", phimodel_config)
     print("betamodel_config: ", betamodel_config)
     print("sigmamodel_config: ", sigmamodel_config)

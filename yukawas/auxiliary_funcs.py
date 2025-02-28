@@ -61,10 +61,17 @@ def batch_process_helper_func(func, args, batch_indices=(0,), batch_size=10000, 
         
     # Determine the number of batches based on the first batched argument
     num_batches = tf.math.ceil(tf.shape(args[batch_indices[0]])[0] / batch_size)
-    print(f"Batching function {func.__name__} with {num_batches} batches.")
+    # Get function name safely - handle both regular functions and tf.function objects
+    func_name = func.__name__ if hasattr(func, '__name__') else str(func)
+    print(f"Batching function {func_name} with {num_batches} batches.")
     results_list = []
+    import time
+    start_time = time.time()
+    first_iter_time = None
+    second_iter_time = None
 
     for i in range(tf.cast(num_batches, tf.int32)):
+        iter_start_time = time.time()
         start_idx = i * batch_size
         end_idx = tf.minimum((i + 1) * batch_size, tf.shape(args[batch_indices[0]])[0])
         
@@ -76,6 +83,17 @@ def batch_process_helper_func(func, args, batch_indices=(0,), batch_size=10000, 
         # Call the function with batched and static arguments
         batch_results = func(*batched_args, **kwargs)
         results_list.append(batch_results)
+        
+        # Time tracking and ETA calculation
+        if i == 0:
+            first_iter_time = time.time() - iter_start_time
+            if print_progress:
+                print(f"First batch took {first_iter_time:.2f}s")
+        elif i == 1:
+            second_iter_time = time.time() - iter_start_time
+            eta = second_iter_time * (tf.cast(num_batches, tf.float32) - 2)
+            if print_progress:
+                print(f"Second batch took {second_iter_time:.2f}s. ETA: {eta:.2f}s")
 
     return tf.concat(results_list, axis=0)
 
