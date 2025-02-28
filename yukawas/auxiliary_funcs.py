@@ -581,6 +581,8 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False):
     
     # Get the weighted mean
     weighted_mean = tf.reduce_mean(tf.cast(weights, values.dtype) * values)
+    weighted_stddev = tf.math.reduce_std(tf.cast(weights, values.dtype) * values)
+    stddev_estimator = weighted_stddev*1/np.sqrt(len(values))
     
    
     # Check if values are complex
@@ -602,7 +604,7 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False):
         real_variance = tf.math.reduce_std(weights*real_values)
     
         # Standard error for real part
-        real_se = real_variance / np.sqrt(n_eff_r)
+        #real_se = real_variance / np.sqrt(n_eff_r)
     
         # Calculate variance for imaginary part
         imag_values = tf.math.imag(values)
@@ -612,21 +614,21 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False):
         imag_variance = tf.math.reduce_std(weights*imag_values)
         
         # Standard error for imaginary part
-        imag_se = imag_variance / np.sqrt(n_eff_c)
+        #imag_se = imag_variance / np.sqrt(n_eff_c)
         
         # Return complex standard error
-        complex_std_error = tf.complex(real_se, imag_se)
+        #complex_std_error = tf.complex(real_se, imag_se)
         neff_complex = complex(n_eff_r, n_eff_c)
-        return np.array(weighted_mean), np.array(complex_std_error), neff_complex, {'value': np.array(weighted_mean), 'std_error': np.array(complex_std_error), 'eff_n': neff_complex}
+        return np.array(weighted_mean), np.array(stddev_estimator), neff_complex, {'value': np.array(weighted_mean), 'std_error': np.array(stddev_estimator), 'eff_n': neff_complex}
     else:
         if is_top_form:
             n_eff = effective_sample_size(weights*values)
         else:
             n_eff = effective_sample_size(weights)
 
-        real_se = tf.math.reduce_std(weights*values) / np.sqrt(n_eff)
+        #real_se = tf.math.reduce_std(weights*values) / np.sqrt(n_eff)
             # Return real standard error
-        return np.array(weighted_mean), np.array(real_se), n_eff, {'value': np.array(weighted_mean), 'std_error': np.array(real_se), 'eff_n': n_eff}
+        return np.array(weighted_mean), np.array(stddev_estimator), n_eff, {'value': np.array(weighted_mean), 'std_error': np.array(stddev_estimator), 'eff_n': n_eff}
 
 def propagate_errors_to_physical_yukawas(NormH, NormH_errors, NormQ, NormQ_errors, NormU, NormU_errors, m, m_errors):
     """
