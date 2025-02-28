@@ -5,7 +5,7 @@ import tensorflow.keras as tfk
 from laplacian_funcs import *
 from BetaModel import *
 from HarmonicFormModel import *
-from OneAndTwoFormsForLineBundles import *
+from yukawas.OneAndTwoFormsForLineBundlesModel1 import *
 from cymetric.pointgen.pointgen import PointGenerator
 from cymetric.pointgen.nphelper import prepare_dataset, prepare_basis_pickle
 

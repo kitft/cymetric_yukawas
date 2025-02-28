@@ -4,19 +4,18 @@ import time
 from datetime import datetime
 import numpy as np
 from cymetric.config import real_dtype, complex_dtype
-
-def delete_all_dicts_except(except_dict_name):
+def delete_all_dicts_except(*except_dict_names):
     """
-    Deletes all dictionary objects from the global namespace except the specified one.
+    Deletes all dictionary objects from the global namespace except the specified ones.
 
     Parameters:
-    except_dict_name (str): The name of the dictionary to exclude from deletion.
+    *except_dict_names (str): Names of dictionaries to exclude from deletion.
     """
 
-    # Identify all dictionary variables except the one specified
+    # Identify all dictionary variables except those specified
     dicts_to_delete = [
         var for var, obj in globals().items()
-        if isinstance(obj, dict) and var != except_dict_name
+        if isinstance(obj, dict) and var not in except_dict_names
     ]
 
     # Delete all identified dictionary variables

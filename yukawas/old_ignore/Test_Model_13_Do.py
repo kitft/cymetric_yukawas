@@ -40,7 +40,7 @@ from BetaModel import *
 from laplacian_funcs import *
 from OneAndTwoFormsForLineBundlesModel13 import *
 #from generate_and_train_all_nns import *
-from generate_and_train_all_nnsHOLOModel13 import *
+from yukawas.generate_and_train_all_nnsHOLO_all import *
 from custom_networks import batch_process_helper_func
 
 nPoints=10000

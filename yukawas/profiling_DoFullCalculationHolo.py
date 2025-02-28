@@ -38,7 +38,7 @@ from NewCustomMetrics import *
 from HarmonicFormModel import *
 from BetaModel import *
 from laplacian_funcs import *
-from OneAndTwoFormsForLineBundles import *
+from yukawas.OneAndTwoFormsForLineBundlesModel1 import *
 #from generate_and_train_all_nns import *
 from generate_and_train_all_nnsHOLO import *
 

@@ -168,8 +168,15 @@ def getcallbacksandmetrics(data):
    cb_list = [ scb ]
    cmetrics = [TotalLoss(), SigmaLoss()]#, RicciLoss()]
    return cb_list, cmetrics
+def train_and_save_nn(manifold_name_and_data, phimodel_config=None,use_zero_network=False):
+   nlayer = phimodel_config['depth']
+   nHidden = phimodel_config['width']
+   nEpochs = phimodel_config['nEpochs']
+   lRate = phimodel_config['lRate']
+   stddev = phimodel_config['stddev']
+   bSizes = phimodel_config['bSizes']
+   network_function = phimodel_config['network_function']
 
-def train_and_save_nn(manifold_name_and_data,nlayer=3,nHidden=128,nEpochs=50,stddev=0.1,bSizes=[192,50000],lRate=0.001,use_zero_network=False):
    coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    dirname = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff)
    name = 'phimodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(bSizes[1]) + 's' + str(nlayer) + 'x' +str(nHidden)
@@ -197,7 +204,10 @@ def train_and_save_nn(manifold_name_and_data,nlayer=3,nHidden=128,nEpochs=50,std
    nfirstlayer= tf.reduce_prod((np.array(ambient)+determine_n_funcs)).numpy().item() if use_symmetry_reduced_TQ else tf.reduce_prod((np.array(ambient)+1)**2).numpy().item() 
    shapeofinternalnetwork=[nHidden]*nlayer
    shapeofnetwork=[nfirstlayer]+shapeofinternalnetwork+[1]
-   load_func = BiholoModelFuncGENERAL  
+   if network_function is None:
+      load_func = BiholoModelFuncGENERAL  
+   else:
+      load_func = network_function
 
    print("network shape: " + str(shapeofnetwork), "load_func: " + str(load_func))
    nn_phi = load_func(shapeofnetwork,BASIS,stddev=stddev,use_zero_network=use_zero_network,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
@@ -279,7 +289,14 @@ def train_and_save_nn(manifold_name_and_data,nlayer=3,nHidden=128,nEpochs=50,std
    print("\n\n")
    return phimodel,training_history, None
 
-def load_nn_phimodel(manifold_name_and_data,nlayer=3,nHidden=128,nEpochs=50,bSizes=[192,50000],stddev=0.1,lRate=0.001,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
+def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
+   nlayer = phimodel_config['depth']
+   nHidden = phimodel_config['width']
+   nEpochs = phimodel_config['nEpochs']
+   lRate = phimodel_config['lRate']
+   stddev = phimodel_config['stddev']
+   bSizes = phimodel_config['bSizes']
+   network_function = phimodel_config['network_function']
    coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    dirname = foldername + '/tetraquadric_pg_with_'+str(unique_id_or_coeff)
    name = 'phimodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(bSizes[1]) + 's' + str(nlayer) + 'x' +str(nHidden)
@@ -309,7 +326,10 @@ def load_nn_phimodel(manifold_name_and_data,nlayer=3,nHidden=128,nEpochs=50,bSiz
    nfirstlayer= tf.reduce_prod((np.array(ambient)+determine_n_funcs)).numpy().item() if use_symmetry_reduced_TQ else tf.reduce_prod((np.array(ambient)+1)**2).numpy().item() 
    shapeofinternalnetwork=[nHidden]*nlayer
    shapeofnetwork=[nfirstlayer]+shapeofinternalnetwork+[1]
-   load_func = BiholoModelFuncGENERAL
+   if network_function is None:
+      load_func = BiholoModelFuncGENERAL
+   else:
+      load_func = network_function
 
    print("network shape: " + str(shapeofnetwork), "load_func: " + str(load_func))
    nn_phi = load_func(shapeofnetwork,BASIS,stddev=stddev,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
@@ -472,8 +492,16 @@ def convert_to_tensor_dict(data):
          else value
     for key, value in data.items()
    }
-   
-def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],stddev=0.1,lRate=0.001,use_zero_network=False,alpha=[1,1],load_network=False):
+def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,use_zero_network=False,load_network=False):
+   nlayer = betamodel_config['depth']
+   nHidden = betamodel_config['width']
+   nEpochs = betamodel_config['nEpochs']
+   lRate = betamodel_config['lRate']
+   stddev = betamodel_config['stddev']
+   bSizes = betamodel_config['bSizes']
+   alpha = betamodel_config['alpha']
+   network_function = betamodel_config['network_function']
+
    coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    lbstring = ''.join(str(e) for e in linebundleforHYM)
    dirnameHYM = foldername +'/tetraquadricHYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring
@@ -528,15 +556,19 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,nlayer=3,nHidd
    #activ=tf.square
    activ=tfk.activations.gelu
    activ = tf.square
-   if nHidden in [64,128,256] or nHidden<20 or nHidden==100:
-       residual_Q = True
-       load_func_HYM = BiholoModelFuncGENERALforHYMinv3
-   elif nHidden in [65,129, 257]:
-       residual_Q = False
-       load_func_HYM = BiholoModelFuncGENERALforHYMinv4
-   elif nHidden in [66, 130, 258, 513]:
-       load_func_HYM = BiholoModelFuncGENERALforHYMinv3
-      
+   if network_function is None:
+      if nHidden in [64,128,256] or nHidden<20 or nHidden==100:
+         residual_Q = True
+         load_func_HYM = BiholoModelFuncGENERALforHYMinv3
+      elif nHidden in [65,129, 257]:
+         residual_Q = False
+         load_func_HYM = BiholoModelFuncGENERALforHYMinv4
+      elif nHidden in [66, 130, 258, 513]:
+         residual_Q = False
+         load_func_HYM = BiholoModelFuncGENERALforHYMinv4
+   else:
+      residual_Q = True
+      load_func_HYM = network_function
 
    nn_beta = load_func_HYM(shapeofnetwork,BASIS,activation=activ,stddev=stddev,use_zero_network=use_zero_network,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    nn_beta_zero = load_func_HYM(shapeofnetwork,BASIS,activation=activ,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
@@ -673,7 +705,16 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,nlayer=3,nHidd
    tf.keras.backend.clear_session()
    return betamodel,training_historyBeta, meanfailuretosolveequation
 
-def load_nn_HYM(manifold_name_and_data,linebundleforHYM,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],stddev=0.1,lRate=0.001,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
+def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
+   nlayer = betamodel_config['depth']
+   nHidden = betamodel_config['width']
+   nEpochs = betamodel_config['nEpochs']
+   lRate = betamodel_config['lRate']
+   stddev = betamodel_config['stddev']
+   bSizes = betamodel_config['bSizes']
+   alpha = betamodel_config['alpha']
+   network_function = betamodel_config['network_function']
+
    coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    lbstring = ''.join(str(e) for e in linebundleforHYM)
    dirnameHYM = foldername +'/tetraquadricHYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring
@@ -719,14 +760,20 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,nlayer=3,nHidden=128,nEp
 
    activ=tfk.activations.gelu
    activ = tf.square
-   if nHidden in [64,128,256] or nHidden<20 or nHidden==100:
-       residual_Q = True
-       load_func_HYM = BiholoModelFuncGENERALforHYMinv3
-   elif nHidden in [65,129, 257]:
-       residual_Q = False
-       load_func_HYM = BiholoModelFuncGENERALforHYMinv4
-   elif nHidden in [66, 130, 258, 513]:
-       load_func_HYM = BiholoModelFuncGENERALforHYMinv3
+
+   if network_function is None:
+      if nHidden in [64,128,256] or nHidden<20 or nHidden==100:
+         residual_Q = True
+         load_func_HYM = BiholoModelFuncGENERALforHYMinv3
+      elif nHidden in [65,129, 257]:
+         residual_Q = False
+         load_func_HYM = BiholoModelFuncGENERALforHYMinv4
+      elif nHidden in [66, 130, 258, 513]:
+         residual_Q = False
+         load_func_HYM = BiholoModelFuncGENERALforHYMinv4
+   else:
+      residual_Q = True
+      load_func_HYM = network_function
    nn_beta = load_func_HYM(shapeofnetwork,BASIS,activation=activ,stddev=stddev,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    nn_beta_zero = load_func_HYM(shapeofnetwork,BASIS,activation=activ,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #copie from phi above
@@ -865,7 +912,19 @@ def getcallbacksandmetricsHF(dataHF):
    return cb_listHF, cmetricsHF
 
    
-def train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,functionforbaseharmonicform_jbar,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],lRate=0.001,alpha=[1,500],use_zero_network=False,load_network=False,stddev=0.05,final_layer_scale=1.0,norm_momentum=0.999):
+def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, metric_model, functionforbaseharmonicform_jbar, sigmamodel_config, use_zero_network=False, load_network=False):
+   # Extract configuration parameters
+   nlayer = sigmamodel_config['depth']
+   nHidden = sigmamodel_config['width']
+   nEpochs = sigmamodel_config['nEpochs']
+   bSizes = sigmamodel_config['bSizes']
+   lRate = sigmamodel_config['lRate']
+   alpha = sigmamodel_config['alpha']
+   stddev = sigmamodel_config['stddev']
+   final_layer_scale = sigmamodel_config['final_layer_scale']
+   norm_momentum = sigmamodel_config['norm_momentum']
+   network_function = sigmamodel_config['network_function']
+
    coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    #perm= tracker.SummaryTracker()
    #print("perm1")
@@ -941,18 +1000,21 @@ def train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metri
    activ = tf.square
    #load_func = BiholoModelFuncGENERALforSigma2_m13
    #load_func = BiholoModelFuncGENERALforSigmaWNorm
-   if (nHidden ==64) or (nHidden ==128) or nHidden<20 or nHidden==100:
-       #load_func = BiholoBadSectionModel
-       load_func =BiholoModelFuncGENERALforSigma2_m13
+   if network_function is None:
+      if (nHidden ==64) or (nHidden ==128) or nHidden<20 or nHidden==100:
+          #load_func = BiholoBadSectionModel
+          load_func =BiholoModelFuncGENERALforSigma2_m13
        #load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log
-   elif (nHidden ==65) or (nHidden ==129):
-       #load_func = BiholoModelFuncGENERALforSigmaWNorm
-       load_func = BiholoModelFuncGENERALforSigma2_m13
-   #if (nHidden ==66) or (nHidden ==130) or :
-   if nHidden in [66,130,250,430,200]:
-        load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log_residual 
-   if (nHidden==67) or (nHidden==131):
-        load_func = BiholoModelFuncGENERALforSigmaWNorm
+      elif (nHidden ==65) or (nHidden ==129):
+          #load_func = BiholoModelFuncGENERALforSigmaWNorm
+          load_func = BiholoModelFuncGENERALforSigma2_m13
+      #if (nHidden ==66) or (nHidden ==130) or :
+      if nHidden in [66,130,250,430,200]:
+           load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log_residual 
+      if (nHidden==67) or (nHidden==131):
+           load_func = BiholoModelFuncGENERALforSigmaWNorm
+   else:
+      load_func = network_function
    #if np.sum(np.abs(linebundleforHYM -np.array([0,0,1,-3])))<1e-8:
    #    k_phi_here = np.array([0,0,0,1])
    k_phi_here = np.array([0,0,0,0])
@@ -1173,7 +1235,19 @@ def train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metri
 
 
 
-def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,functionforbaseharmonicform_jbar,nlayer=3,nHidden=128,nEpochs=30,bSizes=[192,50000],lRate=0.001,alpha=[1,1],set_weights_to_zero=False,set_weights_to_random=False,final_layer_scale=1.0,skip_measures=False,norm_momentum=0.999):
+def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,functionforbaseharmonicform_jbar,sigmamodel_config,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
+   # Extract configuration parameters
+   nlayer = sigmamodel_config['depth']
+   nHidden = sigmamodel_config['width']
+   nEpochs = sigmamodel_config['nEpochs']
+   bSizes = sigmamodel_config['bSizes']
+   lRate = sigmamodel_config['lRate']
+   alpha = sigmamodel_config['alpha']
+   stddev = sigmamodel_config['stddev']
+   final_layer_scale = sigmamodel_config['final_layer_scale']
+   norm_momentum = sigmamodel_config['norm_momentum']
+   network_function = sigmamodel_config['network_function']
+
    coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
    nameOfBaseHF=functionforbaseharmonicform_jbar.__name__
    lbstring = ''.join(str(e) for e in linebundleforHYM)
@@ -1251,7 +1325,22 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    #load_func = BiholoModelFuncGENERALforSigma2_m13
    #load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log
 
-   load_func = BiholoModelFuncGENERALforSigma2_m13
+   # load_func = BiholoModelFuncGENERALforSigma2_m13
+   if network_function is None:
+      if (nHidden ==64) or (nHidden ==128) or nHidden<20 or nHidden==100:
+          #load_func = BiholoBadSectionModel
+          load_func =BiholoModelFuncGENERALforSigma2_m13
+       #load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log
+      elif (nHidden ==65) or (nHidden ==129):
+          #load_func = BiholoModelFuncGENERALforSigmaWNorm
+          load_func = BiholoModelFuncGENERALforSigma2_m13
+      #if (nHidden ==66) or (nHidden ==130) or :
+      if nHidden in [66,130,250,430,200]:
+           load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log_residual 
+      if (nHidden==67) or (nHidden==131):
+           load_func = BiholoModelFuncGENERALforSigmaWNorm
+   else:
+      load_func = network_function
 
    print("network arch:",load_func)
    print("activation: ",activ)
