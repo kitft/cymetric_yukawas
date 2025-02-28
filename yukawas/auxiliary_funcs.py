@@ -581,7 +581,9 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False):
     
     # Get the weighted mean
     weighted_mean = tf.reduce_mean(tf.cast(weights, values.dtype) * values)
-    weighted_stddev = tf.math.reduce_std(tf.cast(weights, values.dtype) * values)
+    weighted_stddev_real = tf.math.reduce_std(tf.math.real(tf.cast(weights, values.dtype) * values))
+    weighted_stddev_imag = tf.math.reduce_std(tf.math.imag(tf.cast(weights, values.dtype) * values))
+    weighted_stddev = complex(weighted_stddev_real, weighted_stddev_imag)
     stddev_estimator = weighted_stddev*1/np.sqrt(len(values))
     
    
