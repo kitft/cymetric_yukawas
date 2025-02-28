@@ -48,7 +48,7 @@ def get_coefficients_m1(free_coefficient):
    return coefficients
 
 
-def batch_process_helper_func(func, args, batch_indices=(0,), batch_size=10000, compile_func=False, actually_batch=True, kwargs=None):
+def batch_process_helper_func(func, args, batch_indices=(0,), batch_size=10000, compile_func=False, actually_batch=True, kwargs=None, print_progress=False):
     if kwargs is None:
         kwargs = {}
         
@@ -61,10 +61,10 @@ def batch_process_helper_func(func, args, batch_indices=(0,), batch_size=10000, 
         
     # Determine the number of batches based on the first batched argument
     num_batches = tf.math.ceil(tf.shape(args[batch_indices[0]])[0] / batch_size)
+    print(f"Batching function {func.__name__} with {num_batches} batches.")
     results_list = []
 
     for i in range(tf.cast(num_batches, tf.int32)):
-        print(i)
         start_idx = i * batch_size
         end_idx = tf.minimum((i + 1) * batch_size, tf.shape(args[batch_indices[0]])[0])
         
