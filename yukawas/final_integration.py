@@ -88,24 +88,33 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             H2=betamodel_LB2(real_pts) 
             H3=betamodel_LB3(real_pts) 
         elif not use_trained:
-            mets = phimodel.fubini_study_pb(real_pts,ts=tf.cast(kmoduli,complex_dtype))
-            vH =  HFmodel_vH.uncorrected_FS_harmonicform(real_pts)
-            hvHb =  tf.einsum('x,xb->xb',tf.cast(betamodel_LB1.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vH))
-            vQ3 = HFmodel_vQ3.uncorrected_FS_harmonicform(real_pts)
-            hvQ3b = tf.einsum('x,xb->xb',tf.cast(betamodel_LB2.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vQ3))
-            vU3 = HFmodel_vU3.uncorrected_FS_harmonicform(real_pts)
-            hvU3b = tf.einsum('x,xb->xb',tf.cast(betamodel_LB2.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vU3))
+            if len(real_pts)>100000:
+                actually_batch=True
+            else:
+                actually_batch=False
 
-            vQ1 = HFmodel_vQ1.uncorrected_FS_harmonicform(real_pts)
-            hvQ1b = tf.einsum('x,xb->xb',tf.cast(betamodel_LB3.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vQ1))
-            vQ2 = HFmodel_vQ2.uncorrected_FS_harmonicform(real_pts)
-            hvQ2b = tf.einsum('x,xb->xb',tf.cast(betamodel_LB3.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vQ2))
-
-            vU1 = HFmodel_vU1.uncorrected_FS_harmonicform(real_pts)
-            hvU1b = tf.einsum('x,xb->xb',tf.cast(betamodel_LB3.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vU1))
-            vU2 = HFmodel_vU2.uncorrected_FS_harmonicform(real_pts)
-            hvU2b = tf.einsum('x,xb->xb',tf.cast(betamodel_LB3.raw_FS_HYM_r(real_pts),complex_dtype),tf.math.conj(vU2))
-
+            mets = batch_process_helper_func(phimodel.fubini_study_pb, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'ts':tf.cast(kmoduli,complex_dtype)})
+            vH = batch_process_helper_func(HFmodel_vH.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            hvHb = tf.einsum('x,xb->xb', tf.cast(betamodel_LB1.raw_FS_HYM_r(real_pts), complex_dtype), tf.math.conj(vH))
+            
+            vQ3 = batch_process_helper_func(HFmodel_vQ3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            hvQ3b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB2.raw_FS_HYM_r(real_pts), complex_dtype), tf.math.conj(vQ3))
+            
+            vU3 = batch_process_helper_func(HFmodel_vU3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            hvU3b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB2.raw_FS_HYM_r(real_pts), complex_dtype), tf.math.conj(vU3))
+            
+            vQ1 = batch_process_helper_func(HFmodel_vQ1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            hvQ1b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB3.raw_FS_HYM_r(real_pts), complex_dtype), tf.math.conj(vQ1))
+            
+            vQ2 = batch_process_helper_func(HFmodel_vQ2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            hvQ2b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB3.raw_FS_HYM_r(real_pts), complex_dtype), tf.math.conj(vQ2))
+            
+            vU1 = batch_process_helper_func(HFmodel_vU1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            hvU1b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB3.raw_FS_HYM_r(real_pts), complex_dtype), tf.math.conj(vU1))
+            
+            vU2 = batch_process_helper_func(HFmodel_vU2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            hvU2b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB3.raw_FS_HYM_r(real_pts), complex_dtype), tf.math.conj(vU2))
+            
             H1=betamodel_LB1.raw_FS_HYM_r(real_pts) 
             H2=betamodel_LB2.raw_FS_HYM_r(real_pts) 
             H3=betamodel_LB3.raw_FS_HYM_r(real_pts) 
@@ -446,23 +455,29 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         holomorphic_Yukawas_trained_and_ref.append(m)
         print("without H * 10**6")
         print(np.round(np.array(mwoH)*10**6,1))
+        print("holomorphic Yukawa errors *10**6 (absolute value)")
+        print(np.round(np.abs(m_errorswoH)*10**6,1))
+
+        
         print("neffs without H")
         print(np.round(mwoH_neffs,1))
 
         print('proper calculation*10**6')
         print(np.round(np.array(m)*10**6,1))
+  
+         # Print holomorphic Yukawa matrix errors
+        print("holomorphic Yukawa errors *10**6 (absolute value)")
+        print(np.round(np.abs(m_errors)*10**6,1))
         print("neffs")
         print(np.round(m_neffs,1))
+
 
         # Use the new function to calculate physical Yukawas and their errors
         physical_yukawas, physical_yukawas_errors = propagate_errors_to_physical_yukawas(
             NormH, NormH_errors, NormQ, NormQ_errors, NormU, NormU_errors, m, m_errors
         )
 
-        # Print holomorphic Yukawa matrix errors
-        print("holomorphic Yukawa errors *10**6 (absolute value)")
-        print(np.round(np.abs(m_errors)*10**6,1))
-
+       
         print("physical_yukawas*10**6")
         print(np.round(physical_yukawas*10**6,1))
         print("physical_yukawas_errors*10**6 (absolute value)")

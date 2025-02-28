@@ -49,8 +49,13 @@ def get_coefficients_m1(free_coefficient):
    return coefficients
 
 
+def batch_process_helper_func(func, args, batch_indices=(0,), batch_size=10000, compile_func=False, actually_batch=True, kwargs=None):
+    if kwargs is None:
+        kwargs = {}
+        
+    if actually_batch==False:
+        return func(*args, **kwargs)
 
-def batch_process_helper_func(func, args, batch_indices=(0,), batch_size=10000, compile_func=False):
     # Optionally compile the function for better performance
     if compile_func:
         func = tf.function(func)
@@ -70,7 +75,7 @@ def batch_process_helper_func(func, args, batch_indices=(0,), batch_size=10000, 
             batched_args[idx] = args[idx][start_idx:end_idx]
         
         # Call the function with batched and static arguments
-        batch_results = func(*batched_args)
+        batch_results = func(*batched_args, **kwargs)
         results_list.append(batch_results)
 
     return tf.concat(results_list, axis=0)
