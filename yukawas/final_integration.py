@@ -56,68 +56,82 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             mets = batch_process_helper_func(phimodel, (real_pts,), batch_indices=(0,), batch_size=10000, compile_func=True)
             print('got mets', flush=True)
             dets = tf.linalg.det(mets)
+            batchbetamin = 1000000
+            if len(real_pts)>batchbetamin:
+                batch_betamodel= True
+            else:
+                batch_betamodel= False
+            
+            H1=batch_process_helper_func(betamodel_LB1, (real_pts,), batch_indices=(0,), batch_size=batchbetamin, compile_func=True, actually_batch=batch_betamodel) 
+            H2=batch_process_helper_func(betamodel_LB2, (real_pts,), batch_indices=(0,), batch_size=batchbetamin, compile_func=True, actually_batch=batch_betamodel) 
+            H3=batch_process_helper_func(betamodel_LB3, (real_pts,), batch_indices=(0,), batch_size=batchbetamin, compile_func=True, actually_batch=batch_betamodel) 
+
+            LB1c=tf.cast(H1, complex_dtype)
+            LB2c=tf.cast(H2, complex_dtype)
+            LB3c=tf.cast(H3, complex_dtype)
             # Batch process corrected harmonic forms
             vH = batch_process_helper_func(HFmodel_vH.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvHb = tf.einsum('x,xb->xb', tf.cast(betamodel_LB1(real_pts), complex_dtype), tf.math.conj(vH))
+            hvHb = tf.einsum('x,xb->xb', LB1c, tf.math.conj(vH))
             print('got vH', flush=True)
 
             vQ3 = batch_process_helper_func(HFmodel_vQ3.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvQ3b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB2(real_pts), complex_dtype), tf.math.conj(vQ3))
+            hvQ3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vQ3))
             print('got vQ3', flush=True)
 
             vU3 = batch_process_helper_func(HFmodel_vU3.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvU3b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB2(real_pts), complex_dtype), tf.math.conj(vU3))
+            hvU3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vU3))
             print('got vU3', flush=True)
 
             vQ1 = batch_process_helper_func(HFmodel_vQ1.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvQ1b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB3(real_pts), complex_dtype), tf.math.conj(vQ1))
+            hvQ1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ1))
             print('got vQ1', flush=True)
 
             vQ2 = batch_process_helper_func(HFmodel_vQ2.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvQ2b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB3(real_pts), complex_dtype), tf.math.conj(vQ2))
+            hvQ2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ2))
             print('got vQ2', flush=True)
 
             vU1 = batch_process_helper_func(HFmodel_vU1.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvU1b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB3(real_pts), complex_dtype), tf.math.conj(vU1))
+            hvU1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU1))
             print('got vU1', flush=True)
 
             vU2 = batch_process_helper_func(HFmodel_vU2.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvU2b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB3(real_pts), complex_dtype), tf.math.conj(vU2))
+            hvU2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU2))
             print('got vU2', flush=True)
-            H1=betamodel_LB1(real_pts) 
-            H2=betamodel_LB2(real_pts) 
-            H3=betamodel_LB3(real_pts) 
         elif not use_trained:
             if len(real_pts)>100000:
                 actually_batch=True
             else:
                 actually_batch=False
-
-            mets = batch_process_helper_func(phimodel.fubini_study_pb, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'ts':tf.cast(kmoduli,complex_dtype)})
-            vH = batch_process_helper_func(HFmodel_vH.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-            hvHb = tf.einsum('x,xb->xb', tf.cast(betamodel_LB1.raw_FS_HYM_r(real_pts), complex_dtype), tf.math.conj(vH))
-            
-            vQ3 = batch_process_helper_func(HFmodel_vQ3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-            hvQ3b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB2.raw_FS_HYM_r(real_pts), complex_dtype), tf.math.conj(vQ3))
-            
-            vU3 = batch_process_helper_func(HFmodel_vU3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-            hvU3b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB2.raw_FS_HYM_r(real_pts), complex_dtype), tf.math.conj(vU3))
-            
-            vQ1 = batch_process_helper_func(HFmodel_vQ1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-            hvQ1b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB3.raw_FS_HYM_r(real_pts), complex_dtype), tf.math.conj(vQ1))
-            
-            vQ2 = batch_process_helper_func(HFmodel_vQ2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-            hvQ2b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB3.raw_FS_HYM_r(real_pts), complex_dtype), tf.math.conj(vQ2))
-            
-            vU1 = batch_process_helper_func(HFmodel_vU1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-            hvU1b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB3.raw_FS_HYM_r(real_pts), complex_dtype), tf.math.conj(vU1))
-            
-            vU2 = batch_process_helper_func(HFmodel_vU2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-            hvU2b = tf.einsum('x,xb->xb', tf.cast(betamodel_LB3.raw_FS_HYM_r(real_pts), complex_dtype), tf.math.conj(vU2))
-            
+               
             H1=betamodel_LB1.raw_FS_HYM_r(real_pts) 
             H2=betamodel_LB2.raw_FS_HYM_r(real_pts) 
             H3=betamodel_LB3.raw_FS_HYM_r(real_pts) 
+            LB1c=tf.cast(H1, complex_dtype)
+            LB2c=tf.cast(H2, complex_dtype)
+            LB3c=tf.cast(H3, complex_dtype)
+
+            mets = batch_process_helper_func(phimodel.fubini_study_pb, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'ts':tf.cast(kmoduli,complex_dtype)})
+            vH = batch_process_helper_func(HFmodel_vH.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            hvHb = tf.einsum('x,xb->xb', LB1c, tf.math.conj(vH))
+            
+            vQ3 = batch_process_helper_func(HFmodel_vQ3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            hvQ3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vQ3))
+            
+            vU3 = batch_process_helper_func(HFmodel_vU3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            hvU3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vU3))
+            
+            vQ1 = batch_process_helper_func(HFmodel_vQ1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            hvQ1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ1))
+            
+            vQ2 = batch_process_helper_func(HFmodel_vQ2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            hvQ2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ2))
+            
+            vU1 = batch_process_helper_func(HFmodel_vU1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            hvU1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU1))
+            
+            vU2 = batch_process_helper_func(HFmodel_vU2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            hvU2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU2))
+         
 
         print("Now compute the integrals")
         #(1j) for each FS form #maybe should be (1j/2)??
@@ -456,7 +470,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         print("without H * 10**6")
         print(np.round(np.array(mwoH)*10**6,1))
         print("holomorphic Yukawa errors *10**6 (absolute value)")
-        print(np.round(np.abs(m_errorswoH)*10**6,1))
+        print(np.round(m_errorswoH*10**6,1))
 
         
         print("neffs without H")
@@ -467,7 +481,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
   
          # Print holomorphic Yukawa matrix errors
         print("holomorphic Yukawa errors *10**6 (absolute value)")
-        print(np.round(np.abs(m_errors)*10**6,1))
+        print(np.round(m_errors*10**6,1))
         print("neffs")
         print(np.round(m_neffs,1))
 
