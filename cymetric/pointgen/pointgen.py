@@ -1539,8 +1539,8 @@ class PointGenerator:
             np.float: kappa
         """
         weights, omegas = weights.flatten(), omegas.flatten()
-        pbs = self.pullbacks(points)
-        gFS = self.fubini_study_metrics(points)
+        pbs = self.batch_function(self.pullbacks, points)
+        gFS = self.batch_function(self.fubini_study_metrics, points)
         gFS_pbs = np.einsum('xai,xij,xbj->xab', pbs, gFS, np.conj(pbs))
         dets = np.real(np.linalg.det(gFS_pbs))
 
@@ -1642,3 +1642,39 @@ class PointGenerator:
             ndarray[(n_p, ncoords, ncoords), np.complex128]: g^FS
         """
         return self.fubini_study_metrics(points, vol_js=vol_js)
+
+    def batch_function(self, func, *args, batch_size=1000000, **kwargs):
+        """Batches any function to process data in chunks of specified size.
+        
+        Args:
+            func (callable): Function to batch process
+            *args: Arguments to pass to the function
+            batch_size (int, optional): Size of each batch. Defaults to 1000000.
+            **kwargs: Keyword arguments to pass to the function
+            
+        Returns:
+            Any: Combined results from all batches
+        """
+        # Get the first argument's length to determine number of batches
+        total_size = len(args[0])
+        if total_size<batch_size:
+            return func(*args, **kwargs)
+        results = []
+        
+        for i in range(0, total_size, batch_size):
+            # Create batch slices for all array arguments
+            batch_args = [arg[i:i+batch_size] if hasattr(arg, '__len__') else arg for arg in args]
+            batch_result = func(*batch_args, **kwargs)
+            results.append(batch_result)
+            
+        # Handle different return types
+        if isinstance(results[0], np.ndarray):
+            return np.concatenate(results)
+        elif isinstance(results[0], jnp.ndarray):
+            return jnp.concatenate(results)
+        else:
+            import tensorflow as tf
+            if isinstance(results[0], tf.Tensor):
+                return tf.concat(results, axis=0)
+            else:
+                raise ValueError(f"Unsupported return type: {type(results[0])}")
