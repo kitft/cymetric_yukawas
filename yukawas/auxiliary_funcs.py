@@ -621,14 +621,13 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False):
         
         # Calculate covariance between real and imaginary parts
         real_imag_values = tf.stack([real_values*weights, imag_values*weights], axis=1)
-        cov_matrix = tf.linalg.diag_part(tf.tensordot(
+        cov_matrix = tf.tensordot(
             tf.transpose(real_imag_values - tf.reduce_mean(real_imag_values, axis=0)),
             real_imag_values - tf.reduce_mean(real_imag_values, axis=0),
             axes=[[1], [0]]
-        ))
+        )
         
-        print(f"----Covariance matrix between real and imaginary parts: {cov_matrix}")
-        print(f"----sqrt of absval of covariance matrix between real and imaginary parts: {np.sqrt(np.abs(cov_matrix))}")
+        print(f"----Covariance matrix between real and imaginary parts: {cov_matrix} sqrt {np.sqrt(np.abs(cov_matrix))}")
         
         # Standard error for imaginary part
         #imag_se = imag_variance / np.sqrt(n_eff_c)
