@@ -65,7 +65,7 @@ def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10
     num_batches = tf.cast(tf.math.ceil(tf.shape(args[batch_indices[0]])[0] / batch_size), tf.int32)
     # Get function name safely - handle both regular functions and tf.function objects
     func_name = func_orig.__name__ if hasattr(func_orig, '__name__') else str(func_orig)
-    print(f"Batching function {func_name} with {num_batches} batches.")
+    print(f"Batching function {func_name} with {num_batches} batched, compiled? {compile_func}")
     results_list = []
     import time
     start_time = time.time()
