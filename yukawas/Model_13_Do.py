@@ -329,27 +329,7 @@ if __name__ == '__main__':
         return_random_HF = True
         return_random_HF_2 = True
 
-        if 'actual' in sys.argv[1:]:
-            nEpochsPhi = 1
-            nEpochsBeta = 1
-            if sys.argv[3] == 'testmid':
-                nEpochsSigma = 5
-                nEpochsSigma2 = 5
-            else:
-                nEpochsSigma = 30
-                nEpochsSigma2 = 30
-            depthPhi = 3
-            depthBeta = 3
-            depthSigma = 3
-            depthSigma2 = 3
-            widthPhi = 100
-            widthBeta = 100
-            widthSigma = 100
-            widthSigma2 = 100
-            return_random_phi = False
-            return_random_HYM = False
-            return_random_HF = False
-            return_random_HF_2 = False   
+
         else:
             nEpochsPhi = 1
             nEpochsBeta = 1
@@ -369,6 +349,29 @@ if __name__ == '__main__':
             os.environ["WANDB_MODE"] = "disabled"
             print("Wandb disabled")
 
+    if 'actual' in sys.argv[1:]:
+        if 'mid' in sys.argv[1:] :
+            nEpochsPhi = 1
+            nEpochsBeta = 1
+            nEpochsSigma = 5
+            nEpochsSigma2 = 5
+        else:
+            nEpochsPhi = 10
+            nEpochsBeta = 10
+            nEpochsSigma = 30
+            nEpochsSigma2 = 30
+        depthPhi = 3
+        depthBeta = 3
+        depthSigma = 3
+        depthSigma2 = 3
+        widthPhi = 100
+        widthBeta = 100
+        widthSigma = 100
+        widthSigma2 = 100
+        return_random_phi = False
+        return_random_HYM = False
+        return_random_HF = False
+        return_random_HF_2 = False   
     print(f"Skipping measures? phi? {skip_measuresPhi}, beta? {skip_measuresBeta}, HF? {skip_measuresHF}")
     print("Number of points: " + str(nPoints), "Number of points HF: " + str(nPointsHF), "Number of points to integrate: " + str(n_to_integrate))
     print(f"shapes, phi: {depthPhi}x{widthPhi}, beta: {depthBeta}x{widthBeta}, HF: {depthSigma}x{widthSigma}, HF2: {depthSigma2}x{widthSigma2}")

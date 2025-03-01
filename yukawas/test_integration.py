@@ -253,12 +253,20 @@ if __name__ == '__main__':
     skip_measuresBeta=True
     skip_measuresHF=True
     
-    force_generate_phi=True
-    force_generate_HYM=True
-    force_generate_HF=True
-    force_generate_HF_2=True
-    force_generate_eval=True
     
+    if 'loadalldata' in sys.argv[1:]:
+        force_generate_phi=False
+        force_generate_HYM=False
+        force_generate_HF=False
+        force_generate_HF_2=False
+        force_generate_eval=False
+    else:
+        force_generate_phi=True
+        force_generate_HYM=True
+        force_generate_HF=True
+        force_generate_HF_2=True
+        force_generate_eval=True
+
     return_zero_phi= True
     return_zero_HYM = True
     return_zero_HF = False
@@ -416,7 +424,7 @@ if __name__ ==  '__main__':
     
     
     
-    generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,seed_set=seed_for_gen)
+    generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,force_generate=force_generate_phi,seed_set=seed_for_gen)
     if train_phi:
         #phimodel,training_history=train_and_save_nn(manifold_name_and_data,depthPhi,widthPhi,nEpochsPhi,bSizes=[64,tr_batchsize],lRate=lRatePhi) 
         phimodel,training_history, measure_phi=train_and_save_nn(manifold_name_and_data,phimodel_config,use_zero_network=use_zero_network_phi)

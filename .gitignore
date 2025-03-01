@@ -132,3 +132,8 @@ notebooks/.DS_Store
 
 # PyCharm
 .idea/
+
+#extras
+CLAUDE.md
+.cursorignore
+*.ipynb
