@@ -1872,7 +1872,7 @@ class BiholoModelFuncGENERALforSigma2_m13(tf.keras.Model):
         ##i.e. shapeofnetwork=[nfirstlayer]+shapeofinternalnetwork+[1], so the first ones gets up to the +1
         #self.layers_list2+=[tf.keras.layers.Dense(units=2*nsections, use_bias=False,kernel_initializer=final_layer_inits)]# add the extra free parameter after the log
 
-        [256, 100, 100, 100, 18]
+        #[256, 100, 100, 100, 18]
 
         # self.layers_list = [tf.keras.layers.Dense(units=layer_sizes[i+1],activation=activation)
         #                     for i in range(len(layer_sizes)-2-1)]#i.e. 0->1,1->2,... layer_sizes-2->layer_sizes-3->layer_sizes-2. so misses the last 1. this should be 1.

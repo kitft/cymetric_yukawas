@@ -406,7 +406,7 @@ if __name__ ==  '__main__':
     manifold_name_and_data = (coefficientsTQ, kmoduliTQ, ambientTQ, monomialsTQ, foldername, unique_id_or_coeff)
     if start_from != 'end':
         wandb.init(project = foldername,
-            name = f'{modeltype}_fc_{unique_id_or_coeff}',
+            name = f'{modeltype}_fc_{unique_id_or_coeff}_{n_to_integrate}',
             config = {'unique_id_or_coeff': unique_id_or_coeff,
                       'phimodel_config': phimodel_config,
                       'betamodel_config': betamodel_config,

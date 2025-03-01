@@ -59,6 +59,7 @@ from auxiliary_funcs import *
 
 use_symmetry_reduced_TQ=False
 determine_n_funcs=2
+log_freq = 'batch'
 
 # ambient = np.array([1,1,1,1])
 # monomials = np.array([[2, 0, 2, 0, 2, 0, 2, 0], [2, 0, 2, 0, 2, 0, 1, 1], [2, 0, 2, 0, 2, 
@@ -195,7 +196,7 @@ def getcallbacksandmetrics(data, prefix, wandb = True):
    kcb = KaehlerCallback((data['X_val'], data['y_val']))
    tcb = TransitionCallback((data['X_val'], data['y_val']))
    if wandb:
-      wandbcb = PrefixedWandbMetricsLogger(prefix, log_freq=100)
+      wandbcb = PrefixedWandbMetricsLogger(prefix, log_freq=log_freq)
    else:
       wandbcb = None
    #cb_list = [rcb, scb, kcb, tcb, volkcb]
@@ -517,7 +518,7 @@ def getcallbacksandmetricsHYM(databeta, prefix, wandb = True):
    tcb = TransitionCallback((databeta['X_val'], databeta['y_val']))
    lplcb = LaplacianCallback(databeta_val_dict)
    if wandb:
-      wandbcb = PrefixedWandbMetricsLogger(prefix, log_freq=100)
+      wandbcb = PrefixedWandbMetricsLogger(prefix, log_freq=log_freq)
    else:
       wandbcb = None
    # lplcb = LaplacianCallback(data_val)
@@ -947,7 +948,7 @@ def getcallbacksandmetricsHF(dataHF, prefix, wandb = True):
    tcbHF = TransitionCallback((dataHF['X_val'], dataHF['y_val']))
    lplcbHF = LaplacianCallback(dataHF_val_dict)
    if wandb:
-      wandbcbHF = PrefixedWandbMetricsLogger(prefix, log_freq=100)
+      wandbcbHF = PrefixedWandbMetricsLogger(prefix, log_freq=log_freq)
    else:
       wandbcbHF = None
    NaNcbHF = NaNCallback()
