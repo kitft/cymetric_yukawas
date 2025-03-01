@@ -156,10 +156,10 @@ if __name__ == '__main__':
     #nEpochsSigma=40#changed below vH
 
 
-    nEpochsPhi=30
-    nEpochsBeta=50
-    nEpochsSigma=60#changed below vH
-    nEpochsSigma2=80#changed below vH
+    # nEpochsPhi=30
+    # nEpochsBeta=50
+    # nEpochsSigma=60#changed below vH
+    # nEpochsSigma2=80#changed below vH
 
 
     depthPhi=4
@@ -350,6 +350,11 @@ if __name__ == '__main__':
             return_random_HYM = False
             return_random_HF = False
             return_random_HF_2 = False   
+        else:
+            nEpochsPhi = 1
+            nEpochsBeta = 1
+            nEpochsSigma = 1
+            nEpochsSigma2 = 1
 
         if 'largenetworks' in sys.argv[1:]:
             depthPhi = 4
