@@ -329,7 +329,7 @@ if __name__ == '__main__':
         return_random_HF = True
         return_random_HF_2 = True
 
-        if len(sys.argv) > 4 and str(sys.argv[4]) == 'actual':
+        if 'actual' in sys.argv[1:]:
             nEpochsPhi = 1
             nEpochsBeta = 1
             if sys.argv[3] == 'testmid':
