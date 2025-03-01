@@ -1643,7 +1643,7 @@ class PointGenerator:
         """
         return self.fubini_study_metrics(points, vol_js=vol_js)
 
-    def batch_function(self, func, *args, batch_size=1000000, **kwargs):
+    def batch_function(self, func, *args, batch_size=300000, **kwargs):
         """Batches any function to process data in chunks of specified size.
         
         Args:
