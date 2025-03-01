@@ -44,8 +44,20 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
 
     #mem= = tracker.SummaryTracker()
     #print(sorted(mem(.create_summary(), reverse=True, key=itemgetter(2))[:10])
-
     batch_size_for_processing=min(100000, len(real_pts))
+    if len(real_pts)>100000:
+        actually_batch=True
+    else:
+        actually_batch=False
+    mets_bare = batch_process_helper_func(phimodel.fubini_study_pb, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'ts':tf.cast(kmoduli,complex_dtype)})
+    vH_bare = batch_process_helper_func(HFmodel_vH.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+    vQ3_bare = batch_process_helper_func(HFmodel_vQ3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+    vU3_bare = batch_process_helper_func(HFmodel_vU3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+    vQ1_bare = batch_process_helper_func(HFmodel_vQ1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+    vQ2_bare = batch_process_helper_func(HFmodel_vQ2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+    vU1_bare = batch_process_helper_func(HFmodel_vU1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+    vU2_bare = batch_process_helper_func(HFmodel_vU2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+
     mats=[]
     masses_trained_and_ref=[]
     use_trained = False
@@ -98,11 +110,6 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             hvU2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU2))
             print('got vU2', flush=True)
         elif not use_trained:
-            if len(real_pts)>100000:
-                actually_batch=True
-            else:
-                actually_batch=False
-               
             H1=betamodel_LB1.raw_FS_HYM_r(real_pts) 
             H2=betamodel_LB2.raw_FS_HYM_r(real_pts) 
             H3=betamodel_LB3.raw_FS_HYM_r(real_pts) 
@@ -110,26 +117,26 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             LB2c=tf.cast(H2, complex_dtype)
             LB3c=tf.cast(H3, complex_dtype)
 
-            mets = batch_process_helper_func(phimodel.fubini_study_pb, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'ts':tf.cast(kmoduli,complex_dtype)})
-            vH = batch_process_helper_func(HFmodel_vH.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            mets = mets_bare
+            vH = vH_bare
             hvHb = tf.einsum('x,xb->xb', LB1c, tf.math.conj(vH))
             
-            vQ3 = batch_process_helper_func(HFmodel_vQ3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            vQ3 = vQ3_bare
             hvQ3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vQ3))
             
-            vU3 = batch_process_helper_func(HFmodel_vU3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            vU3 = vU3_bare
             hvU3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vU3))
             
-            vQ1 = batch_process_helper_func(HFmodel_vQ1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            vQ1 = vQ1_bare
             hvQ1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ1))
             
-            vQ2 = batch_process_helper_func(HFmodel_vQ2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            vQ2 = vQ2_bare
             hvQ2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ2))
             
-            vU1 = batch_process_helper_func(HFmodel_vU1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            vU1 = vU1_bare
             hvU1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU1))
             
-            vU2 = batch_process_helper_func(HFmodel_vU2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+            vU2 = vU2_bare
             hvU2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU2))
          
 
@@ -259,14 +266,6 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
 
         if do_extra_stuff:
             print("\n\n\n\n\n\n\n\n Checking topological invariance if one of the forms is pure derivatives!")
-            vH_bare = HFmodel_vH.uncorrected_FS_harmonicform(real_pts)
-            vQ3_bare = HFmodel_vQ3.uncorrected_FS_harmonicform(real_pts)
-            vU2_bare = HFmodel_vU2.uncorrected_FS_harmonicform(real_pts)
-            vU1_bare = HFmodel_vU1.uncorrected_FS_harmonicform(real_pts)
-            vQ1_bare = HFmodel_vQ1.uncorrected_FS_harmonicform(real_pts)
-            vQ2_bare = HFmodel_vQ2.uncorrected_FS_harmonicform(real_pts)
-            vU3_bare = HFmodel_vU3.uncorrected_FS_harmonicform(real_pts)
-            
             # Check topological invariance with pure derivatives
             integrand_Q3U2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vU2)*omega_normalised_to_one
             integrand_bare_Q3U2_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH-vH_bare,vQ3,vU2)*omega_normalised_to_one
