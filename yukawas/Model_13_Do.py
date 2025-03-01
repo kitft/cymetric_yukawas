@@ -279,8 +279,8 @@ if __name__ == '__main__':
     n_to_integrate=1000000
     #n_to_integrate=100000
 
-    use_zero_network_phi = False # what does this do?
-    use_zero_network_beta = False
+    use_zero_network_phi = True # what does this do?
+    use_zero_network_beta = True
 
     print("sys.argv: ", sys.argv)
     if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall', 'alltiny']:

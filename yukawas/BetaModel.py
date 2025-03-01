@@ -673,10 +673,12 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     # Calculate sourcesCY as complex first to ensure numerical precision
     sourcesCY_complex = tf.einsum('xba,xab->x', tf.cast(inv_mets, complex_dtype), tf.cast(F_forsource_pb, complex_dtype))
     # Check if imaginary part exceeds numerical precision threshold
-    imag_part = tf.abs(tf.math.imag(sourcesCY_complex))
-    max_imag_part = tf.reduce_max(imag_part)
-    tf.debugging.assert_less(max_imag_part, tf.constant(1e-3, dtype=real_dtype), message=f"Error: Imaginary component exceeds numerical precision {max_imag_part}, mean: {tf.reduce_mean(imag_part)}, mean, max of abs real part: {tf.reduce_mean(tf.math.abs(tf.math.real(sourcesCY_complex)))}, {tf.reduce_max(tf.math.abs(tf.math.real(sourcesCY_complex)))}")
-    print("Max imaginary part, should be small: ", max_imag_part)
+    real_part = tf.math.abs(tf.math.real(sourcesCY_complex))
+    imag_part = tf.math.abs(tf.math.imag(sourcesCY_complex))
+    max_imag_part, mean_imag_part = tf.reduce_max(imag_part), tf.reduce_mean(imag_part)
+    max_real_part, mean_real_part = tf.reduce_max(real_part), tf.reduce_mean(real_part)
+    tf.debugging.assert_less(max_imag_part, tf.constant(1e-3, dtype=real_dtype), message=f"Error: Imaginary component exceeds numerical precision max {max_imag_part}, mean: {mean_imag_part}; vs max, mean of abs real part: {max_real_part}, {mean_real_part}")
+    print("Max imaginary part, should be small: ", max_imag_part, "mean: ", mean_imag_part, "vs max, mean of abs real part: ", max_real_part, mean_real_part)
 
     # Convert to real if safe
     sourcesCY = tf.cast(tf.math.real(sourcesCY_complex), real_dtype)

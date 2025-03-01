@@ -48,21 +48,21 @@ def get_coefficients_m1(free_coefficient):
    return coefficients
 
 
-def batch_process_helper_func(func, args, batch_indices=(0,), batch_size=10000, compile_func=False, actually_batch=True, kwargs=None, print_progress=False):
+def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10000, compile_func=False, actually_batch=True, kwargs=None, print_progress=False):
     if kwargs is None:
         kwargs = {}
         
     if actually_batch==False:
-        return func(*args, **kwargs)
+        return func_orig(*args, **kwargs)
 
     # Optionally compile the function for better performance
     if compile_func:
-        func = tf.function(func)
+        func = tf.function(func_orig)
         
     # Determine the number of batches based on the first batched argument
     num_batches = tf.cast(tf.math.ceil(tf.shape(args[batch_indices[0]])[0] / batch_size), tf.int32)
     # Get function name safely - handle both regular functions and tf.function objects
-    func_name = func.__name__ if hasattr(func, '__name__') else str(func)
+    func_name = func_orig.__name__ if hasattr(func_orig, '__name__') else str(func_orig)
     print(f"Batching function {func_name} with {num_batches} batches.")
     results_list = []
     import time
