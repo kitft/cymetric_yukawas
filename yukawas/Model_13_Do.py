@@ -330,11 +330,10 @@ if __name__ == '__main__':
         return_random_HF_2 = True
 
 
-        else:
-            nEpochsPhi = 1
-            nEpochsBeta = 1
-            nEpochsSigma = 1
-            nEpochsSigma2 = 1
+        nEpochsPhi = 1
+        nEpochsBeta = 1
+        nEpochsSigma = 1
+        nEpochsSigma2 = 1
 
         if 'largenetworks' in sys.argv[1:]:
             depthPhi = 4
@@ -350,7 +349,7 @@ if __name__ == '__main__':
             print("Wandb disabled")
 
     if 'actual' in sys.argv[1:]:
-        if 'mid' in sys.argv[1:] :
+        if 'mid' in sys.argv[1:]:
             nEpochsPhi = 1
             nEpochsBeta = 1
             nEpochsSigma = 5

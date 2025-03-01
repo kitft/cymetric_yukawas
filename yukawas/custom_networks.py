@@ -1885,7 +1885,7 @@ class BiholoModelFuncGENERALforSigma2_m13(tf.keras.Model):
         # self.layers_list2 += [tf.keras.layers.Dense(units=2*layer_sizes[len(layer_sizes)-1],activation=activation)]
         # self.layers_list2+=[tf.keras.layers.Dense(units=2*nsections, use_bias=False,kernel_initializer=final_layer_inits)]# add the extra free parameter after the log
         # # 
-        print("2 for no good reason")
+        #print("2 for no good reason - deleted")
         if nsections*2 != layer_sizes[-1]:
             raise ValueError(f"nsections does not match layer_sizes[-1]: {nsections} != {layer_sizes[-1]}")
         self.layers_list = [tf.keras.layers.Dense(units=widths_out,activation=activation)
