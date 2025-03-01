@@ -24,6 +24,17 @@ import sys
 import os
 import re
 import logging
+import wandb
+if os.path.exists('.wandb_key') and 'wandb' in sys.argv[1:]:
+    with open('.wandb_key', 'r') as f:
+        wandb_key = f.read().strip()
+        wandb.login(key=wandb_key)
+else:
+    use_wandb = False
+    os.environ["WANDB_MODE"] = "disabled"
+    print("Wandb disabled, need to set wandb_key")
+
+        
 import pickle
 #sys.path.append("/Users/kit/Documents/Phys_Working/MF metric")
 
@@ -57,13 +68,7 @@ if __name__ == '__main__':
 
     tf.get_logger().setLevel('ERROR')
 
-# Import the error calculation functions from auxiliary_funcs
-from auxiliary_funcs import (
-    effective_sample_size,
-    propagate_errors_to_singular_values,
-    weighted_mean_and_standard_error,
-    propagate_errors_to_physical_yukawas
-)
+
 
 from cymetric.models.tfmodels import PhiFSModel, MultFSModel, FreeModel, MatrixFSModel, AddFSModel, PhiFSModelToric, MatrixFSModelToric
 from cymetric.models.tfhelper import prepare_tf_basis, train_model
@@ -74,70 +79,116 @@ from NewCustomMetrics import *
 from HarmonicFormModel import *
 from BetaModel import *
 from laplacian_funcs import *
-from yukawas.generate_and_train_all_nnsHOLO_all import *# model13 fine
 from auxiliary_funcs import *
 from final_integration import *
+from yukawas.generate_and_train_all_nnsHOLO_all import *
 
-foldername = "testintegration_model1"
-get_coefficients_here = get_coefficients_m1
+modeltype = sys.argv[1]
+if modeltype == "m13":
+    foldername = "testintegration_model13"
+
+    get_coefficients_here = get_coefficients_m13# vs get_coefficients_m1
+    from yukawas.OneAndTwoFormsForLineBundlesModel13 import *
+    linebundleforHYM_LB1=np.array([0,2,-2,0]) 
+    linebundleforHYM_LB2=np.array([0,0,1,-3]) 
+    linebundleforHYM_LB3=np.array([0,-2,1,3]) 
+    ambientTQ = np.array([1,1,1,1])
+    monomialsTQ = np.array([[2, 0, 2, 0, 2, 0, 2, 0], [2, 0, 2, 0, 2, 0, 1, 1], [2, 0, 2, 0, 2, 
+      0, 0, 2], [2, 0, 2, 0, 1, 1, 2, 0], [2, 0, 2, 0, 1, 1, 1, 1], [2, 0,
+       2, 0, 1, 1, 0, 2], [2, 0, 2, 0, 0, 2, 2, 0], [2, 0, 2, 0, 0, 2, 1, 
+      1], [2, 0, 2, 0, 0, 2, 0, 2], [2, 0, 1, 1, 2, 0, 2, 0], [2, 0, 1, 1,
+       2, 0, 1, 1], [2, 0, 1, 1, 2, 0, 0, 2], [2, 0, 1, 1, 1, 1, 2, 
+      0], [2, 0, 1, 1, 1, 1, 1, 1], [2, 0, 1, 1, 1, 1, 0, 2], [2, 0, 1, 1,
+       0, 2, 2, 0], [2, 0, 1, 1, 0, 2, 1, 1], [2, 0, 1, 1, 0, 2, 0, 
+      2], [2, 0, 0, 2, 2, 0, 2, 0], [2, 0, 0, 2, 2, 0, 1, 1], [2, 0, 0, 2,
+       2, 0, 0, 2], [2, 0, 0, 2, 1, 1, 2, 0], [2, 0, 0, 2, 1, 1, 1, 
+      1], [2, 0, 0, 2, 1, 1, 0, 2], [2, 0, 0, 2, 0, 2, 2, 0], [2, 0, 0, 2,
+       0, 2, 1, 1], [2, 0, 0, 2, 0, 2, 0, 2], [1, 1, 2, 0, 2, 0, 2, 
+      0], [1, 1, 2, 0, 2, 0, 1, 1], [1, 1, 2, 0, 2, 0, 0, 2], [1, 1, 2, 0,
+       1, 1, 2, 0], [1, 1, 2, 0, 1, 1, 1, 1], [1, 1, 2, 0, 1, 1, 0, 
+      2], [1, 1, 2, 0, 0, 2, 2, 0], [1, 1, 2, 0, 0, 2, 1, 1], [1, 1, 2, 0,
+       0, 2, 0, 2], [1, 1, 1, 1, 2, 0, 2, 0], [1, 1, 1, 1, 2, 0, 1, 
+      1], [1, 1, 1, 1, 2, 0, 0, 2], [1, 1, 1, 1, 1, 1, 2, 0], [1, 1, 1, 1,
+       1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 2], [1, 1, 1, 1, 0, 2, 2, 
+      0], [1, 1, 1, 1, 0, 2, 1, 1], [1, 1, 1, 1, 0, 2, 0, 2], [1, 1, 0, 2,
+       2, 0, 2, 0], [1, 1, 0, 2, 2, 0, 1, 1], [1, 1, 0, 2, 2, 0, 0, 
+      2], [1, 1, 0, 2, 1, 1, 2, 0], [1, 1, 0, 2, 1, 1, 1, 1], [1, 1, 0, 2,
+       1, 1, 0, 2], [1, 1, 0, 2, 0, 2, 2, 0], [1, 1, 0, 2, 0, 2, 1, 
+      1], [1, 1, 0, 2, 0, 2, 0, 2], [0, 2, 2, 0, 2, 0, 2, 0], [0, 2, 2, 0,
+       2, 0, 1, 1], [0, 2, 2, 0, 2, 0, 0, 2], [0, 2, 2, 0, 1, 1, 2, 
+      0], [0, 2, 2, 0, 1, 1, 1, 1], [0, 2, 2, 0, 1, 1, 0, 2], [0, 2, 2, 0,
+       0, 2, 2, 0], [0, 2, 2, 0, 0, 2, 1, 1], [0, 2, 2, 0, 0, 2, 0, 
+      2], [0, 2, 1, 1, 2, 0, 2, 0], [0, 2, 1, 1, 2, 0, 1, 1], [0, 2, 1, 1,
+       2, 0, 0, 2], [0, 2, 1, 1, 1, 1, 2, 0], [0, 2, 1, 1, 1, 1, 1, 
+      1], [0, 2, 1, 1, 1, 1, 0, 2], [0, 2, 1, 1, 0, 2, 2, 0], [0, 2, 1, 1,
+       0, 2, 1, 1], [0, 2, 1, 1, 0, 2, 0, 2], [0, 2, 0, 2, 2, 0, 2, 
+      0], [0, 2, 0, 2, 2, 0, 1, 1], [0, 2, 0, 2, 2, 0, 0, 2], [0, 2, 0, 2,
+       1, 1, 2, 0], [0, 2, 0, 2, 1, 1, 1, 1], [0, 2, 0, 2, 1, 1, 0, 
+      2], [0, 2, 0, 2, 0, 2, 2, 0], [0, 2, 0, 2, 0, 2, 1, 1], [0, 2, 0, 2,
+       0, 2, 0, 2]])
+
+    kmoduliTQ = np.array([1,(np.sqrt(7)-2)/3,(np.sqrt(7)-2)/3,1])
+elif modeltype == "m1":
+    foldername = "testintegration_model1"
+    get_coefficients_here = get_coefficients_m1
 
 
-from yukawas.OneAndTwoFormsForLineBundlesModel1 import *
+    from yukawas.OneAndTwoFormsForLineBundlesModel1 import *
 
-linebundleforHYM_LB1=np.array([0,2,-2,0]) 
-linebundleforHYM_LB2=np.array([1,1,0,-2]) 
-linebundleforHYM_LB3=np.array([-1,-3,2,2]) 
+    linebundleforHYM_LB1=np.array([0,2,-2,0]) 
+    linebundleforHYM_LB2=np.array([1,1,0,-2]) 
+    linebundleforHYM_LB3=np.array([-1,-3,2,2]) 
 
-ambientTQ = np.array([1,1,1,1])
-monomialsTQ = np.array([[2, 0, 2, 0, 2, 0, 2, 0], [2, 0, 2, 0, 2, 0, 1, 1], [2, 0, 2, 0, 2, 
-  0, 0, 2], [2, 0, 2, 0, 1, 1, 2, 0], [2, 0, 2, 0, 1, 1, 1, 1], [2, 0,
-   2, 0, 1, 1, 0, 2], [2, 0, 2, 0, 0, 2, 2, 0], [2, 0, 2, 0, 0, 2, 1, 
-  1], [2, 0, 2, 0, 0, 2, 0, 2], [2, 0, 1, 1, 2, 0, 2, 0], [2, 0, 1, 1,
-   2, 0, 1, 1], [2, 0, 1, 1, 2, 0, 0, 2], [2, 0, 1, 1, 1, 1, 2, 
-  0], [2, 0, 1, 1, 1, 1, 1, 1], [2, 0, 1, 1, 1, 1, 0, 2], [2, 0, 1, 1,
-   0, 2, 2, 0], [2, 0, 1, 1, 0, 2, 1, 1], [2, 0, 1, 1, 0, 2, 0, 
-  2], [2, 0, 0, 2, 2, 0, 2, 0], [2, 0, 0, 2, 2, 0, 1, 1], [2, 0, 0, 2,
-   2, 0, 0, 2], [2, 0, 0, 2, 1, 1, 2, 0], [2, 0, 0, 2, 1, 1, 1, 
-  1], [2, 0, 0, 2, 1, 1, 0, 2], [2, 0, 0, 2, 0, 2, 2, 0], [2, 0, 0, 2,
-   0, 2, 1, 1], [2, 0, 0, 2, 0, 2, 0, 2], [1, 1, 2, 0, 2, 0, 2, 
-  0], [1, 1, 2, 0, 2, 0, 1, 1], [1, 1, 2, 0, 2, 0, 0, 2], [1, 1, 2, 0,
-   1, 1, 2, 0], [1, 1, 2, 0, 1, 1, 1, 1], [1, 1, 2, 0, 1, 1, 0, 
-  2], [1, 1, 2, 0, 0, 2, 2, 0], [1, 1, 2, 0, 0, 2, 1, 1], [1, 1, 2, 0,
-   0, 2, 0, 2], [1, 1, 1, 1, 2, 0, 2, 0], [1, 1, 1, 1, 2, 0, 1, 
-  1], [1, 1, 1, 1, 2, 0, 0, 2], [1, 1, 1, 1, 1, 1, 2, 0], [1, 1, 1, 1,
-   1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 2], [1, 1, 1, 1, 0, 2, 2, 
-  0], [1, 1, 1, 1, 0, 2, 1, 1], [1, 1, 1, 1, 0, 2, 0, 2], [1, 1, 0, 2,
-   2, 0, 2, 0], [1, 1, 0, 2, 2, 0, 1, 1], [1, 1, 0, 2, 2, 0, 0, 
-  2], [1, 1, 0, 2, 1, 1, 2, 0], [1, 1, 0, 2, 1, 1, 1, 1], [1, 1, 0, 2,
-   1, 1, 0, 2], [1, 1, 0, 2, 0, 2, 2, 0], [1, 1, 0, 2, 0, 2, 1, 
-  1], [1, 1, 0, 2, 0, 2, 0, 2], [0, 2, 2, 0, 2, 0, 2, 0], [0, 2, 2, 0,
-   2, 0, 1, 1], [0, 2, 2, 0, 2, 0, 0, 2], [0, 2, 2, 0, 1, 1, 2, 
-  0], [0, 2, 2, 0, 1, 1, 1, 1], [0, 2, 2, 0, 1, 1, 0, 2], [0, 2, 2, 0,
-   0, 2, 2, 0], [0, 2, 2, 0, 0, 2, 1, 1], [0, 2, 2, 0, 0, 2, 0, 
-  2], [0, 2, 1, 1, 2, 0, 2, 0], [0, 2, 1, 1, 2, 0, 1, 1], [0, 2, 1, 1,
-   2, 0, 0, 2], [0, 2, 1, 1, 1, 1, 2, 0], [0, 2, 1, 1, 1, 1, 1, 
-  1], [0, 2, 1, 1, 1, 1, 0, 2], [0, 2, 1, 1, 0, 2, 2, 0], [0, 2, 1, 1,
-   0, 2, 1, 1], [0, 2, 1, 1, 0, 2, 0, 2], [0, 2, 0, 2, 2, 0, 2, 
-  0], [0, 2, 0, 2, 2, 0, 1, 1], [0, 2, 0, 2, 2, 0, 0, 2], [0, 2, 0, 2,
-   1, 1, 2, 0], [0, 2, 0, 2, 1, 1, 1, 1], [0, 2, 0, 2, 1, 1, 0, 
-  2], [0, 2, 0, 2, 0, 2, 2, 0], [0, 2, 0, 2, 0, 2, 1, 1], [0, 2, 0, 2,
-   0, 2, 0, 2]])
+    ambientTQ = np.array([1,1,1,1])
+    monomialsTQ = np.array([[2, 0, 2, 0, 2, 0, 2, 0], [2, 0, 2, 0, 2, 0, 1, 1], [2, 0, 2, 0, 2, 
+      0, 0, 2], [2, 0, 2, 0, 1, 1, 2, 0], [2, 0, 2, 0, 1, 1, 1, 1], [2, 0,
+       2, 0, 1, 1, 0, 2], [2, 0, 2, 0, 0, 2, 2, 0], [2, 0, 2, 0, 0, 2, 1, 
+      1], [2, 0, 2, 0, 0, 2, 0, 2], [2, 0, 1, 1, 2, 0, 2, 0], [2, 0, 1, 1,
+       2, 0, 1, 1], [2, 0, 1, 1, 2, 0, 0, 2], [2, 0, 1, 1, 1, 1, 2, 
+      0], [2, 0, 1, 1, 1, 1, 1, 1], [2, 0, 1, 1, 1, 1, 0, 2], [2, 0, 1, 1,
+       0, 2, 2, 0], [2, 0, 1, 1, 0, 2, 1, 1], [2, 0, 1, 1, 0, 2, 0, 
+      2], [2, 0, 0, 2, 2, 0, 2, 0], [2, 0, 0, 2, 2, 0, 1, 1], [2, 0, 0, 2,
+       2, 0, 0, 2], [2, 0, 0, 2, 1, 1, 2, 0], [2, 0, 0, 2, 1, 1, 1, 
+      1], [2, 0, 0, 2, 1, 1, 0, 2], [2, 0, 0, 2, 0, 2, 2, 0], [2, 0, 0, 2,
+       0, 2, 1, 1], [2, 0, 0, 2, 0, 2, 0, 2], [1, 1, 2, 0, 2, 0, 2, 
+      0], [1, 1, 2, 0, 2, 0, 1, 1], [1, 1, 2, 0, 2, 0, 0, 2], [1, 1, 2, 0,
+       1, 1, 2, 0], [1, 1, 2, 0, 1, 1, 1, 1], [1, 1, 2, 0, 1, 1, 0, 
+      2], [1, 1, 2, 0, 0, 2, 2, 0], [1, 1, 2, 0, 0, 2, 1, 1], [1, 1, 2, 0,
+       0, 2, 0, 2], [1, 1, 1, 1, 2, 0, 2, 0], [1, 1, 1, 1, 2, 0, 1, 
+      1], [1, 1, 1, 1, 2, 0, 0, 2], [1, 1, 1, 1, 1, 1, 2, 0], [1, 1, 1, 1,
+       1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 2], [1, 1, 1, 1, 0, 2, 2, 
+      0], [1, 1, 1, 1, 0, 2, 1, 1], [1, 1, 1, 1, 0, 2, 0, 2], [1, 1, 0, 2,
+       2, 0, 2, 0], [1, 1, 0, 2, 2, 0, 1, 1], [1, 1, 0, 2, 2, 0, 0, 
+      2], [1, 1, 0, 2, 1, 1, 2, 0], [1, 1, 0, 2, 1, 1, 1, 1], [1, 1, 0, 2,
+       1, 1, 0, 2], [1, 1, 0, 2, 0, 2, 2, 0], [1, 1, 0, 2, 0, 2, 1, 
+      1], [1, 1, 0, 2, 0, 2, 0, 2], [0, 2, 2, 0, 2, 0, 2, 0], [0, 2, 2, 0,
+       2, 0, 1, 1], [0, 2, 2, 0, 2, 0, 0, 2], [0, 2, 2, 0, 1, 1, 2, 
+      0], [0, 2, 2, 0, 1, 1, 1, 1], [0, 2, 2, 0, 1, 1, 0, 2], [0, 2, 2, 0,
+       0, 2, 2, 0], [0, 2, 2, 0, 0, 2, 1, 1], [0, 2, 2, 0, 0, 2, 0, 
+      2], [0, 2, 1, 1, 2, 0, 2, 0], [0, 2, 1, 1, 2, 0, 1, 1], [0, 2, 1, 1,
+       2, 0, 0, 2], [0, 2, 1, 1, 1, 1, 2, 0], [0, 2, 1, 1, 1, 1, 1, 
+      1], [0, 2, 1, 1, 1, 1, 0, 2], [0, 2, 1, 1, 0, 2, 2, 0], [0, 2, 1, 1,
+       0, 2, 1, 1], [0, 2, 1, 1, 0, 2, 0, 2], [0, 2, 0, 2, 2, 0, 2, 
+      0], [0, 2, 0, 2, 2, 0, 1, 1], [0, 2, 0, 2, 2, 0, 0, 2], [0, 2, 0, 2,
+       1, 1, 2, 0], [0, 2, 0, 2, 1, 1, 1, 1], [0, 2, 0, 2, 1, 1, 0, 
+      2], [0, 2, 0, 2, 0, 2, 2, 0], [0, 2, 0, 2, 0, 2, 1, 1], [0, 2, 0, 2,
+       0, 2, 0, 2]])
 
-kmoduliTQ = np.array([1,1,1,1])
+    kmoduliTQ = np.array([1,1,1,1])
 
-def functionforbaseharmonicform_jbar_for_vQ1(x):
-    return getTypeIIs(x,monomialsTQ,coefficientsTQ,'vQ1')
-def functionforbaseharmonicform_jbar_for_vQ2(x):
-    return getTypeIIs(x,monomialsTQ,coefficientsTQ,'vQ2')
-def functionforbaseharmonicform_jbar_for_vU1(x):
-    return getTypeIIs(x,monomialsTQ,coefficientsTQ,'vU1')
-def functionforbaseharmonicform_jbar_for_vU2(x):
-    return getTypeIIs(x,monomialsTQ,coefficientsTQ,'vU2')
+    def functionforbaseharmonicform_jbar_for_vQ1(x):
+        return getTypeIIs(x,monomialsTQ,coefficientsTQ,'vQ1')
+    def functionforbaseharmonicform_jbar_for_vQ2(x):
+        return getTypeIIs(x,monomialsTQ,coefficientsTQ,'vQ2')
+    def functionforbaseharmonicform_jbar_for_vU1(x):
+        return getTypeIIs(x,monomialsTQ,coefficientsTQ,'vU1')
+    def functionforbaseharmonicform_jbar_for_vU2(x):
+        return getTypeIIs(x,monomialsTQ,coefficientsTQ,'vU2')
 
-functionforbaseharmonicform_jbar_for_vQ1.line_bundle = np.array([-1,-3,2,2]) 
-functionforbaseharmonicform_jbar_for_vQ2.line_bundle = np.array([-1,-3,2,2]) 
-functionforbaseharmonicform_jbar_for_vU1.line_bundle = np.array([-1,-3,2,2]) 
-functionforbaseharmonicform_jbar_for_vU2.line_bundle = np.array([-1,-3,2,2]) 
+    functionforbaseharmonicform_jbar_for_vQ1.line_bundle = np.array([-1,-3,2,2]) 
+    functionforbaseharmonicform_jbar_for_vQ2.line_bundle = np.array([-1,-3,2,2]) 
+    functionforbaseharmonicform_jbar_for_vU1.line_bundle = np.array([-1,-3,2,2]) 
+    functionforbaseharmonicform_jbar_for_vU2.line_bundle = np.array([-1,-3,2,2]) 
 
 
 
@@ -147,11 +198,10 @@ if __name__ == '__main__':
     tr_batchsize=64
     #free_coefficient=1.000000004# when the coefficient is 1, ensure that it's 1., not 1 for the sake of the filename
     import sys
-    free_coefficient = float(sys.argv[1])
+    free_coefficient = float(sys.argv[2])
     seed_for_gen=int((int(free_coefficient*100000000000)+free_coefficient*1000000))%4294967294 # modulo largest seed
     print("seed for gen", seed_for_gen)
-    coefficientsTQ=get_coefficients_here(free_coefficient)
-
+    coefficientsTQ = get_coefficients_here(free_coefficient)
 
 
     alphabeta=[1,10]
@@ -164,14 +214,9 @@ if __name__ == '__main__':
     lRateSigma=0.001#//10# perhaps best as 0.03
     lRateSigma2=0.001#//10# perhaps best as 0.03
 
-    print("Learning rate: phi:",lRatePhi)
-    print("Learning rate: beta:",lRateBeta)
-    print("Learning rate: sigma:",lRateSigma)
-    print("Learning rate decays by a factor, typically 10, over the course of learning")
-
 
     # Use command-line arguments if provided, starting from the second argument
-    start_from = sys.argv[2] if len(sys.argv) > 2 else 'phi'
+    start_from = sys.argv[3] if len(sys.argv) > 3 else 'phi'
 
     training_flags = determine_training_flags(start_from)
     
@@ -208,18 +253,11 @@ if __name__ == '__main__':
     skip_measuresBeta=True
     skip_measuresHF=True
     
-    if 'loadalldata' in sys.argv[1:]:
-        force_generate_phi=False
-        force_generate_HYM=False
-        force_generate_HF=False
-        force_generate_HF_2=False
-        force_generate_eval=False
-    else:
-        force_generate_phi=True
-        force_generate_HYM=True
-        force_generate_HF=True
-        force_generate_HF_2=True
-        force_generate_eval=True
+    force_generate_phi=True
+    force_generate_HYM=True
+    force_generate_HF=True
+    force_generate_HF_2=True
+    force_generate_eval=True
     
     return_zero_phi= True
     return_zero_HYM = True
@@ -242,23 +280,23 @@ if __name__ == '__main__':
     elif 'regulardata' in sys.argv[1:]:
         nPoints = 100
         nPointsHF = 100
-        n_to_integrate = 1000000
+        n_to_integrate = 1_000_000
     elif 'hugedata' in sys.argv[1:]:
         nPoints = 100
         nPointsHF = 100
-        n_to_integrate = 10000000
+        n_to_integrate = 10_000_000
     elif 'small' in sys.argv[1:]:
         n_to_integrate = 1000
     elif 'allbig' in sys.argv[1:]:
-        nPoints = 100000
-        nPointsHF = 100000
-        n_to_integrate = 100000
+        nPoints = 100_000
+        nPointsHF = 100_000
+        n_to_integrate = 100_000
     elif 'allhuge' in sys.argv[1:]:
-        nPoints = 1000000
-        nPointsHF = 1000000
-        n_to_integrate = 1000000
+        nPoints = 1_000_000
+        nPointsHF = 1_000_000
+        n_to_integrate = 1_000_000
     else:
-        n_to_integrate = 1000000
+        n_to_integrate = 1_000_000
     #tr_batchsize = 10
     #SecondBSize = 10
     nEpochsPhi = 1
@@ -283,15 +321,13 @@ if __name__ == '__main__':
         widthSigma = 100
         depthSigma2 = 4
         widthSigma2 = 100
+
     
     return_random_phi = False
     return_random_HYM = False
     return_random_HF = True
     return_random_HF_2 = True
     
-    print("Number of points: " + str(nPoints), "Number of points HF: " + str(nPointsHF), "Number of points to integrate: " + str(n_to_integrate))
-    print(f"shapes, phi: {depthPhi}x{widthPhi}, beta: {depthBeta}x{widthBeta}, HF: {depthSigma}x{widthSigma}, HF2: {depthSigma2}x{widthSigma2}")
-
 
     phi_model_load_function = None 
     beta_model_load_function = None
@@ -314,6 +350,7 @@ if __name__ == '__main__':
     norm_momentum_sigma = 0.999
     norm_momentum_sigma2 = 0.999
 
+
     activationphi = None
     activationbeta = None
     activationsigma = None
@@ -329,17 +366,25 @@ if __name__ == '__main__':
     print("sigma2model_config: ", sigma2model_config)
 
 
+    print("Number of points: " + str(nPoints), "Number of points HF: " + str(nPointsHF), "Number of points to integrate: " + str(n_to_integrate))
+    print(f"shapes, phi: {depthPhi}x{widthPhi}, beta: {depthBeta}x{widthBeta}, HF: {depthSigma}x{widthSigma}, HF2: {depthSigma2}x{widthSigma2}")
 
-    print("Name of invoking script: ", sys.argv[0], "namespace of vH: ", functionforbaseharmonicform_jbar_for_vH.__module__)
-    if '13' in sys.argv[0]:
+    print("phimodel_config: ", phimodel_config)
+    print("betamodel_config: ", betamodel_config)
+    print("sigmamodel_config: ", sigmamodel_config)
+    print("sigma2model_config: ", sigma2model_config)
+    
+
+
+    print("Name of invoking script: ", sys.argv[0], "modeltype: ", modeltype, "namespace of vH: ", functionforbaseharmonicform_jbar_for_vH.__module__)
+    if modeltype == "m13":
         if get_coefficients_here != get_coefficients_m13 or functionforbaseharmonicform_jbar_for_vH.__module__ not in ['yukawas.OneAndTwoFormsForLineBundlesModel13','OneAndTwoFormsForLineBundlesModel13']:
             raise ValueError("invalid configuration for m13: ", get_coefficients_here, functionforbaseharmonicform_jbar_for_vH.__module__)
-    elif '1' in sys.argv[0]:
+    elif modeltype == "m1":
         if get_coefficients_here != get_coefficients_m1 or  functionforbaseharmonicform_jbar_for_vH.__module__ not in ['yukawas.OneAndTwoFormsForLineBundlesModel1','OneAndTwoFormsForLineBundlesModel1']:
             raise ValueError("invalid configuration for m1: ", get_coefficients_here, functionforbaseharmonicform_jbar_for_vH.__module__)
     else:
         raise ValueError("Invalid model specified")
-
 
 
 
@@ -349,15 +394,26 @@ def purge_dicts_and_mem():
     tf.keras.backend.clear_session()
  
 do_extra_stuff_for_integration = True
+    
 
 if __name__ ==  '__main__':
-    free_coefficient = float(sys.argv[1])
+    free_coefficient = float(sys.argv[2])
     seed_for_gen=int((int(free_coefficient*100000000000)+free_coefficient*1000000))%4294967294 # modulo largest seed
     print("seed for gen", seed_for_gen)
 
     unique_id_or_coeff = free_coefficient
     coefficientsTQ = get_coefficients_here(free_coefficient)
     manifold_name_and_data = (coefficientsTQ, kmoduliTQ, ambientTQ, monomialsTQ, foldername, unique_id_or_coeff)
+    if start_from != 'end':
+        wandb.init(project = foldername,
+            name = f'{modeltype}_fc_{unique_id_or_coeff}',
+            config = {'unique_id_or_coeff': unique_id_or_coeff,
+                      'phimodel_config': phimodel_config,
+                      'betamodel_config': betamodel_config,
+                      'sigmamodel_config': sigmamodel_config,
+                      'sigma2model_config': sigma2model_config,
+                      'invoking_command': ' '.join(sys.argv)})
+    
     
     
     generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,seed_set=seed_for_gen)

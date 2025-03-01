@@ -21,3 +21,4 @@ test*results/*
 model13/*
 datamodel13/*
 datamodel1/*
+wandb

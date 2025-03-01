@@ -12,6 +12,38 @@ from cymetric.models.tfmodels import PhiFSModel, MultFSModel, FreeModel, MatrixF
 from cymetric.models.tfhelper import prepare_tf_basis, train_model
 from cymetric.models.callbacks import SigmaCallback, KaehlerCallback, TransitionCallback, RicciCallback, VolkCallback, AlphaCallback
 from cymetric.models.metrics import SigmaLoss, KaehlerLoss, TransitionLoss, RicciLoss, VolkLoss, TotalLoss
+from wandb.integration.keras import WandbMetricsLogger
+import wandb
+
+# Extend WandbMetricsLogger to add prefixes
+class PrefixedWandbMetricsLogger(WandbMetricsLogger):
+    def __init__(self, prefix, **kwargs):
+        super().__init__(**kwargs)
+        self.prefix = prefix
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = dict() if logs is None else {f"{self.prefix}/{k}": v for k, v in logs.items()}
+        logs[f"{self.prefix}/epoch"] = epoch
+        
+        lr = self._get_lr()
+        if lr is not None:
+            logs[f"{self.prefix}/learning_rate"] = lr
+            
+        wandb.log(logs)
+        
+    def on_batch_end(self, batch, logs=None):
+        self.global_step += 1
+        if self.logging_batch_wise and batch % self.log_freq == 0:
+            logs = {f"{self.prefix}/{k}": v for k, v in logs.items()} if logs else {}
+            logs[f"{self.prefix}/batch_step"] = self.global_batch
+            
+            lr = self._get_lr()
+            if lr is not None:
+                logs[f"{self.prefix}/learning_rate"] = lr
+                
+            wandb.log(logs)
+            
+            self.global_batch += self.log_freq
 
 import os
 import numpy as np
@@ -156,16 +188,20 @@ def generate_points_and_save_using_defaults(manifold_name_and_data,number_points
          pg.prepare_basis(dirname, kappa=kappa)
    
 
-def getcallbacksandmetrics(data):
+def getcallbacksandmetrics(data, prefix, wandb = True):
    #rcb = RicciCallback((data['X_val'], data['y_val']), data['val_pullbacks'])
    scb = SigmaCallback((data['X_val'], data['y_val']))
    volkcb = VolkCallback((data['X_val'], data['y_val']))
    kcb = KaehlerCallback((data['X_val'], data['y_val']))
    tcb = TransitionCallback((data['X_val'], data['y_val']))
+   if wandb:
+      wandbcb = PrefixedWandbMetricsLogger(prefix, log_freq=100)
+   else:
+      wandbcb = None
    #cb_list = [rcb, scb, kcb, tcb, volkcb]
    #cb_list = [ scb, kcb, tcb, volkcb]
    #cmetrics = [TotalLoss(), SigmaLoss(), KaehlerLoss(), TransitionLoss(), VolkLoss()]#, RicciLoss()]
-   cb_list = [ scb ]
+   cb_list = [ scb, wandbcb] if wandb else [ scb]
    cmetrics = [TotalLoss(), SigmaLoss()]#, RicciLoss()]
    return cb_list, cmetrics
 def train_and_save_nn(manifold_name_and_data, phimodel_config=None,use_zero_network=False):
@@ -188,7 +224,7 @@ def train_and_save_nn(manifold_name_and_data, phimodel_config=None,use_zero_netw
    data = convert_to_tensor_dict(data)
    BASIS = prepare_tf_basis(np.load(os.path.join(dirname, 'basis.pickle'), allow_pickle=True))
 
-   cb_list, cmetrics = getcallbacksandmetrics(data)
+   cb_list, cmetrics = getcallbacksandmetrics(data, 'phi', wandb = True)
 
    #nlayer = 3
    #nHidden = 128
@@ -308,7 +344,7 @@ def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=
    data = convert_to_tensor_dict(data)
    BASIS = prepare_tf_basis(np.load(os.path.join(dirname, 'basis.pickle'), allow_pickle=True))
 
-   cb_list, cmetrics = getcallbacksandmetrics(data)
+   cb_list, cmetrics = getcallbacksandmetrics(data, 'phi', wandb = False)
 
    #nlayer = 3
    #nHidden = 128
@@ -476,12 +512,16 @@ def generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundle
       
    
 
-def getcallbacksandmetricsHYM(databeta):
+def getcallbacksandmetricsHYM(databeta, prefix, wandb = True):
    databeta_val_dict=dict(list(dict(databeta).items())[len(dict(databeta))//2:])
    tcb = TransitionCallback((databeta['X_val'], databeta['y_val']))
    lplcb = LaplacianCallback(databeta_val_dict)
+   if wandb:
+      wandbcb = PrefixedWandbMetricsLogger(prefix, log_freq=100)
+   else:
+      wandbcb = None
    # lplcb = LaplacianCallback(data_val)
-   cb_list = [lplcb,tcb]
+   cb_list = [lplcb,tcb, wandbcb] if wandb else [lplcb,tcb]
    cmetrics = [TotalLoss(), LaplacianLoss(), TransitionLoss()]
    return cb_list, cmetrics
 
@@ -530,7 +570,7 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
    print("sources integrated ",integrated_source)
    print("abs sources integrated ",integrated_abs_source)
 
-   cb_list, cmetrics = getcallbacksandmetricsHYM(databeta)
+   cb_list, cmetrics = getcallbacksandmetricsHYM(databeta, prefix = lbstring, wandb = True)
 
    #nlayer = 3
    #nHidden = 128
@@ -736,7 +776,7 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,set_wei
    databeta_val_dict=dict(list(dict(databeta).items())[len(dict(databeta))//2:])
    datacasted=[databeta['X_val'],databeta['y_val']]
 
-   cb_list, cmetrics = getcallbacksandmetricsHYM(databeta)
+   cb_list, cmetrics = getcallbacksandmetricsHYM(databeta, prefix = lbstring, wandb = False)
 
    #nlayer = 3
    #nHidden = 128
@@ -901,14 +941,18 @@ def generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundlef
          kappaHarmonic=prepare_dataset_HarmonicForm(pg,data,number_pointsHarmonic,dirnameHarmonic,phimodel,linebundleforHYM,BASIS,functionforbaseharmonicform_jbar,betamodel)
    
 
-def getcallbacksandmetricsHF(dataHF):
+def getcallbacksandmetricsHF(dataHF, prefix, wandb = True):
    dataHF_val_dict=dict(list(dict(dataHF).items())[len(dict(dataHF))//2:])
 
    tcbHF = TransitionCallback((dataHF['X_val'], dataHF['y_val']))
    lplcbHF = LaplacianCallback(dataHF_val_dict)
+   if wandb:
+      wandbcbHF = PrefixedWandbMetricsLogger(prefix, log_freq=100)
+   else:
+      wandbcbHF = None
    NaNcbHF = NaNCallback()
    # lplcb = LaplacianCallback(dataHF_val)
-   cb_listHF = [lplcbHF,tcbHF, NaNcbHF]
+   cb_listHF = [lplcbHF,tcbHF, NaNcbHF, wandbcbHF] if wandb else [lplcbHF,tcbHF, NaNcbHF]
    cmetricsHF = [TotalLoss(), LaplacianLoss(), TransitionLoss()]
    return cb_listHF, cmetricsHF
 
@@ -958,7 +1002,8 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
 
    #print("perm3")
    #print(perm.print_diff())
-   cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF)
+   prefix = nameOfBaseHF.split('_')[-1]
+   cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF, prefix = prefix, wandb = True)
 
    #nlayer = 3
    #nHidden = 128
@@ -1274,8 +1319,8 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    datacasted=[dataHF['X_val'],dataHF['y_val']]
 
 
-
-   cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF)
+   prefix = nameOfBaseHF.split('_')[-1]
+   cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF, prefix = prefix, wandb = False)
 
    #nlayer = 3
    #nHidden = 128

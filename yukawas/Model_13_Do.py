@@ -23,6 +23,16 @@ import os
 import re
 import logging
 import pickle
+import wandb
+# Check if wandb key file exists and login if it does
+if os.path.exists('.wandb_key'):
+    use_wandb = True
+    with open('.wandb_key', 'r') as f:
+        wandb_key = f.read().strip()
+        wandb.login(key=wandb_key)
+else:
+    use_wandb = False
+
 #sys.path.append("/Users/kit/Documents/Phys_Working/MF metric")
 
 logging.basicConfig(stream=sys.stdout)
@@ -297,9 +307,9 @@ if __name__ == '__main__':
             nPointsHF = 100
             n_to_integrate = 100
         elif sys.argv[3] == 'testmid':
-            nPoints = 100000
-            nPointsHF = 100000
-            n_to_integrate = 1000000
+            nPoints = 10000
+            nPointsHF = 10000
+            n_to_integrate = 100000
         else:
             nPoints = 300000
             nPointsHF = 300000
@@ -354,6 +364,11 @@ if __name__ == '__main__':
             widthBeta = 100
             depthSigma = 4
             widthSigma = 100
+
+        if 'notwandb' in sys.argv[1:] or use_wandb == False:
+            import os
+            os.environ["WANDB_MODE"] = "disabled"
+            print("Wandb disabled")
 
     print(f"Skipping measures? phi? {skip_measuresPhi}, beta? {skip_measuresBeta}, HF? {skip_measuresHF}")
     print("Number of points: " + str(nPoints), "Number of points HF: " + str(nPointsHF), "Number of points to integrate: " + str(n_to_integrate))
@@ -421,6 +436,7 @@ def purge_dicts_and_mem():
 do_extra_stuff_for_integration = False
 
 if __name__ ==  '__main__':
+   
     free_coefficient = float(sys.argv[1])
     seed_for_gen=int((int(free_coefficient*100000000000)+free_coefficient*1000000))%4294967294 # modulo largest seed
     print("seed for gen", seed_for_gen)
@@ -428,6 +444,15 @@ if __name__ ==  '__main__':
     unique_id_or_coeff = free_coefficient
     coefficientsTQ = get_coefficients_here(free_coefficient)
     manifold_name_and_data = (coefficientsTQ, kmoduliTQ, ambientTQ, monomialsTQ, foldername, unique_id_or_coeff)
+    if start_from != 'end':
+        wandb.init(project = foldername,
+                name = f'M13_fc_{unique_id_or_coeff}',
+                config = {'unique_id_or_coeff': unique_id_or_coeff,
+                          'phimodel_config': phimodel_config,
+                          'betamodel_config': betamodel_config,
+                          'sigmamodel_config': sigmamodel_config,
+                          'sigma2model_config': sigma2model_config,
+                          'invoking_command': ' '.join(sys.argv)})
     
     
     generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,seed_set=seed_for_gen)
