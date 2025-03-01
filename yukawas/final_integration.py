@@ -9,6 +9,7 @@ from laplacian_funcs import *
 import gc
 import uuid
 from datetime import datetime
+import wandb
 
 def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None):
     (_, kmoduli, _, _, foldername, unique_id_or_coeff) = manifold_name_and_data
@@ -518,6 +519,30 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         print("masses ± errors")
         for i in range(len(s)):
             print(f"{s[i]:.6e} ± {singular_value_errors[i]:.6e}")
+
+        # Log masses and their errors to wandb
+        if wandb.run is not None:
+            # Create a dictionary to log masses and their errors
+            mass_data = {}
+            # Add trained or untrained prefix to the logs
+            prefix = "trained_" if use_trained else "ref_"
+            
+            for i in range(len(s)):
+                mass_data[f"{prefix}mass_{i+1}"] = s[i]
+                mass_data[f"{prefix}mass_{i+1}_error"] = singular_value_errors[i]
+            
+            # Log the data to wandb
+            wandb.log(mass_data)
+            
+            # Also log the full matrix for visualization
+            wandb.log({
+                f"{prefix}physical_yukawa_matrix": wandb.Table(
+                    data=[[i, j, np.abs(physical_yukawas[i,j]), np.abs(physical_yukawas_errors[i,j])] 
+                          for i in range(physical_yukawas.shape[0]) 
+                          for j in range(physical_yukawas.shape[1])],
+                    columns=["row", "col", "magnitude", "error"]
+                )
+            })
 
         ## Calculate effective sample size for the full dataset
         #full_eff_n = effective_sample_size(aux_weights[0:n_p]).numpy()

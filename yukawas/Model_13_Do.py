@@ -289,8 +289,8 @@ if __name__ == '__main__':
     n_to_integrate=1000000
     #n_to_integrate=100000
 
-    use_zero_network_phi = True # what does this do?
-    use_zero_network_beta = True
+    use_zero_network_phi = False # what does this do?
+    use_zero_network_beta = False
 
     print("sys.argv: ", sys.argv)
     if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall', 'alltiny']:
@@ -314,13 +314,7 @@ if __name__ == '__main__':
             nPoints = 300000
             nPointsHF = 300000
             n_to_integrate = 1000000
-        #tr_batchsize = 10
-        #SecondBSize = 10
-        nEpochsPhi = 1
-        nEpochsBeta = 1
-        nEpochsSigma = 1
-        nEpochsSigma2 = 1
-
+        
         depthPhi = 2
         widthPhi = 10
         depthBeta = 2
@@ -339,17 +333,17 @@ if __name__ == '__main__':
             nEpochsPhi = 1
             nEpochsBeta = 1
             if sys.argv[3] == 'testmid':
-                nEpochsSigma = 2
-                nEpochsSigma2 = 2
-            else:
                 nEpochsSigma = 5
                 nEpochsSigma2 = 5
-            depthPhi = 2
-            depthBeta = 2
+            else:
+                nEpochsSigma = 30
+                nEpochsSigma2 = 30
+            depthPhi = 3
+            depthBeta = 3
             depthSigma = 3
             depthSigma2 = 3
-            widthPhi = 10
-            widthBeta = 10
+            widthPhi = 100
+            widthBeta = 100
             widthSigma = 100
             widthSigma2 = 100
             return_random_phi = False

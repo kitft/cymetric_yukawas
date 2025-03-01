@@ -747,6 +747,7 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
    print("time to do that: ",time.time()-start)
 
    tf.keras.backend.clear_session()
+   wandb.log({lbstring + "MeanFailure": meanfailuretosolveequation})
    return betamodel,training_historyBeta, meanfailuretosolveequation
 
 def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
@@ -1281,6 +1282,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    #print(perm.print_diff())
    print("--------------------------------")
    print("\n\n")
+   wandb.log({prefix + "MeanFailure": meanfailuretosolveequation})
    return HFmodel,training_historyHF,meanfailuretosolveequation
 
 
