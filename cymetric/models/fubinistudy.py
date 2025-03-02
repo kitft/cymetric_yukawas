@@ -18,7 +18,7 @@ class FSModel(tfk.Model):
     for training of CICYs. Toric hypersurfaces require some extra routines,
     which are implemented here: `cymetric.models.tfmodels.ToricModel`
     """
-    def __init__(self, BASIS, norm=None):
+    def __init__(self, BASIS, norm=None, unique_name=None):
         r"""A tensorflow implementation of the pulled back Fubini-Study metric.
 
         Args:
@@ -44,6 +44,7 @@ class FSModel(tfk.Model):
         self.pi = tf.constant(tf.cast(np.pi, dtype=complex_dtype))
         self.nhyper = int(tf.cast(BASIS['NHYPER'], dtype=tf.int32))
         self._generate_helpers()
+        self.unique_name = unique_name
         
     def _generate_helpers(self):
         r"""Bunch of helper functions to run during initialization"""

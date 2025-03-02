@@ -124,10 +124,10 @@ def create_adam_optimizer_with_decay(initial_learning_rate, nEpochs, final_lr_fa
 
 def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,number_points,force_generate=False,seed_set=0):
    print("\n\n")
-   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
    pg = PointGenerator(monomials, coefficients, kmoduli, ambient)
    pg._set_seed(seed_set)
-   dirname =foldername + '/tetraquadric_pg_for_eval_with_'+str(unique_id_or_coeff) 
+   dirname = "data/"+type_folder + '/'+manifold_name+'_pg_for_eval_with_'+str(unique_id_or_coeff) 
    print("dirname: " + dirname)
    #test if the directory exists, if not, create it
    if force_generate or (not os.path.exists(dirname)):
@@ -157,10 +157,10 @@ def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,numb
 
 
 def generate_points_and_save_using_defaults(manifold_name_and_data,number_points,force_generate=False,seed_set=0):
-   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = manifold_name_and_data
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = manifold_name_and_data
    pg = PointGenerator(monomials, coefficients, kmoduli, ambient)
    pg._set_seed(seed_set)
-   dirname = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff) 
+   dirname = "data/"+type_folder + '/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff) 
    print("dirname: " + dirname)
    #test if the directory exists, if not, create it
    if force_generate or (not os.path.exists(dirname)):
@@ -205,7 +205,7 @@ def getcallbacksandmetrics(data, prefix, wandb = True):
    cb_list = [ scb, wandbcb] if wandb else [ scb]
    cmetrics = [TotalLoss(), SigmaLoss()]#, RicciLoss()]
    return cb_list, cmetrics
-def train_and_save_nn(manifold_name_and_data, phimodel_config=None,use_zero_network=False):
+def train_and_save_nn(manifold_name_and_data, phimodel_config=None,use_zero_network=False, unique_name='phi'):
    nlayer = phimodel_config['depth']
    nHidden = phimodel_config['width']
    nEpochs = phimodel_config['nEpochs']
@@ -215,9 +215,9 @@ def train_and_save_nn(manifold_name_and_data, phimodel_config=None,use_zero_netw
    network_function = phimodel_config['network_function']
    activation = phimodel_config['activation']
 
-   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
-   dirname = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff)
-   name = 'phimodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(bSizes[1]) + 's' + str(nlayer) + 'x' +str(nHidden)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
+   dirname = "data/"+type_folder + '/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff)
+   name = 'phimodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(bSizes[1]) + 's' + str(nlayer) + 'x' +str(nHidden)+'_'+unique_name
    print('dirname: ' + dirname)
    print('name: ' + name)
    
@@ -251,8 +251,9 @@ def train_and_save_nn(manifold_name_and_data, phimodel_config=None,use_zero_netw
    nn_phi = load_func(shapeofnetwork,BASIS,stddev=stddev,use_zero_network=use_zero_network,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    nn_phi_zero = load_func(shapeofnetwork,BASIS,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
-   phimodel = PhiFSModel(nn_phi, BASIS, alpha=alpha)
-   phimodelzero = PhiFSModel(nn_phi_zero, BASIS, alpha=alpha)
+   phimodel = PhiFSModel(nn_phi, BASIS, alpha=alpha, unique_name=unique_name)
+   phimodelzero = PhiFSModel(nn_phi_zero, BASIS, alpha=alpha, unique_name=unique_name)
+   
    #print('nn_phi ' )
    #print('nn_phi ' + str(phimodel(data['X_train'][0:10])))
 
@@ -327,7 +328,7 @@ def train_and_save_nn(manifold_name_and_data, phimodel_config=None,use_zero_netw
    print("\n\n")
    return phimodel,training_history, None
 
-def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
+def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False, unique_name='LB'):
    nlayer = phimodel_config['depth']
    nHidden = phimodel_config['width']
    nEpochs = phimodel_config['nEpochs']
@@ -335,9 +336,9 @@ def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=
    stddev = phimodel_config['stddev']
    bSizes = phimodel_config['bSizes']
    network_function = phimodel_config['network_function']
-   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
-   dirname = foldername + '/tetraquadric_pg_with_'+str(unique_id_or_coeff)
-   name = 'phimodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(bSizes[1]) + 's' + str(nlayer) + 'x' +str(nHidden)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
+   dirname = "data/"+ type_folder + '/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff)
+   name = 'phimodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(bSizes[1]) + 's' + str(nlayer) + 'x' +str(nHidden)+'_'+unique_name
    print(dirname)
    print(name)
    
@@ -379,8 +380,8 @@ def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=
 
    #    nn_phi = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
    #    nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
-   phimodel = PhiFSModel(nn_phi, BASIS, alpha=alpha)
-   phimodelzero = PhiFSModel(nn_phi_zero, BASIS, alpha=alpha)
+   phimodel = PhiFSModel(nn_phi, BASIS, alpha=alpha, unique_name=unique_name)
+   phimodelzero = PhiFSModel(nn_phi_zero, BASIS, alpha=alpha, unique_name=unique_name)
    #initialise weights
    phimodel(datacasted[0][0:1])
    phimodelzero(datacasted[0][0:1])
@@ -479,10 +480,10 @@ def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=
 
 def generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundleforHYM,number_pointsHYM,phimodel,force_generate=False,seed_set=0):
    print("\n\n")
-   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameHYM = foldername +'/tetraquadricHYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring
-   dirnameForMetric = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff)
+   dirnameHYM = "data/"+ type_folder +'/'+manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+phimodel.unique_name
+   dirnameForMetric = "data/"+ type_folder +'/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff)
    print("dirname for beta: " + dirnameHYM)
 
    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameForMetric, 'basis.pickle'), allow_pickle=True))
@@ -534,7 +535,7 @@ def convert_to_tensor_dict(data):
          else value
     for key, value in data.items()
    }
-def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,use_zero_network=False,load_network=False):
+def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,phimodel,use_zero_network=False,load_network=False, unique_name='LB'):
    nlayer = betamodel_config['depth']
    nHidden = betamodel_config['width']
    nEpochs = betamodel_config['nEpochs']
@@ -545,10 +546,10 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
    network_function = betamodel_config['network_function']
    activation = betamodel_config['activation']
 
-   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameHYM = foldername +'/tetraquadricHYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring
-   dirnameForMetric = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff)
+   dirnameHYM = "data/"+ type_folder +'/'+manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+phimodel.unique_name
+   dirnameForMetric = "data/"+ type_folder +'/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff)
 
    #data = np.load(os.path.join(dirname, 'dataset.npz'))
    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameForMetric, 'basis.pickle'), allow_pickle=True))
@@ -583,7 +584,7 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
    n_in = 2*8
    n_out = 1
    #lRate = 0.001
-   name = 'betamodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(nlayer) + 'x' +str(nHidden)
+   name = 'betamodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(nlayer) + 'x' +str(nHidden)+'_'+unique_name
    print("name: " + name)
 
    ambient=tf.cast(BASIS['AMBIENT'],tf.int32)
@@ -626,7 +627,7 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
    #nn_beta = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network,kernel_initializer=initializer)#note we don't need a last bias (flat direction)
    #nn_beta_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)#note we don't need a last bias (flat direction)
    
-   betamodel= BetaModel(nn_beta,BASIS, linebundleforHYM,alpha=alpha,norm = [1. for _ in range(2)])
+   betamodel= BetaModel(nn_beta,BASIS, linebundleforHYM,alpha=alpha,norm = [1. for _ in range(2)], unique_name=unique_name)
    if load_network:
       print("loading network")
       #betamodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirnameHYM,name),call_endpoint="serving_default")
@@ -635,7 +636,7 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
       betamodel.model.load_weights(os.path.join(dirnameHYM, name) + '.weights.h5')
       print("network loaded")
 
-   betamodelzero= BetaModel(nn_beta_zero,BASIS, linebundleforHYM,alpha=alpha,norm = [1. for _ in range(2)])
+   betamodelzero= BetaModel(nn_beta_zero,BASIS, linebundleforHYM,alpha=alpha,norm = [1. for _ in range(2)], unique_name=unique_name)
 
    #Note, currently running legacy due to ongoing tf issue with M1/M2. 
    #Use the commented line instead if not on an M1/M2 machine
@@ -750,7 +751,7 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
    wandb.log({lbstring + "MeanFailure": meanfailuretosolveequation})
    return betamodel,training_historyBeta, meanfailuretosolveequation
 
-def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
+def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,phimodel,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False, unique_name='LB'):
    nlayer = betamodel_config['depth']
    nHidden = betamodel_config['width']
    nEpochs = betamodel_config['nEpochs']
@@ -761,10 +762,10 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,set_wei
    network_function = betamodel_config['network_function']
    activation = betamodel_config['activation']
 
-   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameHYM = foldername +'/tetraquadricHYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring
-   dirnameForMetric = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff)
+   dirnameHYM = "data/"+ type_folder +'/'+manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+phimodel.unique_name
+   dirnameForMetric = "data/"+ type_folder +'/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff)
    name = 'betamodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(nlayer) + 'x' +str(nHidden)
    print("name of network of line bundle: " + name)
 
@@ -825,8 +826,8 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,set_wei
    #nn_beta = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)#note we don't need a last bias (flat direction)
    #nn_beta_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)#note we don't need a last bias (flat direction)
    
-   betamodel= BetaModel(nn_beta,BASIS, linebundleforHYM,alpha=alpha,norm = [1. for _ in range(2)])
-   betamodelzero= BetaModel(nn_beta_zero,BASIS, linebundleforHYM,alpha=alpha,norm = [1. for _ in range(2)])
+   betamodel= BetaModel(nn_beta,BASIS, linebundleforHYM,alpha=alpha,norm = [1. for _ in range(2)], unique_name=unique_name)
+   betamodelzero= BetaModel(nn_beta_zero,BASIS, linebundleforHYM,alpha=alpha,norm = [1. for _ in range(2)], unique_name=unique_name)
    print("example data:")
    print("betamodel: " + str(betamodel(datacasted[0][0:1])))
    print("betamodelzero: " + str(betamodelzero(datacasted[0][0:1])))
@@ -905,12 +906,12 @@ def generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundlef
    if not all(functionforbaseharmonicform_jbar.line_bundle == linebundleforHYM):
       raise ValueError("Line bundle not set for harmonic form, or not equal: " + str(functionforbaseharmonicform_jbar.line_bundle) + " != " + str(linebundleforHYM))
    print("\n\n")
-   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
    nameOfBaseHF=functionforbaseharmonicform_jbar.__name__
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameForMetric = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff)
-   dirnameHYM = foldername +'/tetraquadricHYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring
-   dirnameHarmonic = foldername +'/tetraquadricHarmonicH_pg'+str(unique_id_or_coeff)+'forLB_'+lbstring+nameOfBaseHF
+   dirnameForMetric = "data/"+ type_folder +'/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff)
+   dirnameHYM = "data/"+ type_folder +'/'+manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+phimodel.unique_name
+   dirnameHarmonic = "data/"+ type_folder +'/'+manifold_name+'_HF_pg'+str(unique_id_or_coeff)+'forLB_'+lbstring+nameOfBaseHF+'_using_'+phimodel.unique_name+'_and_'+betamodel.unique_name
    print("dirname for harmonic form: " + dirnameHarmonic)
 
    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameForMetric, 'basis.pickle'), allow_pickle=True))
@@ -959,7 +960,7 @@ def getcallbacksandmetricsHF(dataHF, prefix, wandb = True):
    return cb_listHF, cmetricsHF
 
    
-def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, metric_model, functionforbaseharmonicform_jbar, sigmamodel_config, use_zero_network=False, load_network=False):
+def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, metric_model, functionforbaseharmonicform_jbar, sigmamodel_config, use_zero_network=False, load_network=False, unique_name='v'):
    # Extract configuration parameters
    nlayer = sigmamodel_config['depth']
    nHidden = sigmamodel_config['width']
@@ -973,16 +974,16 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    network_function = sigmamodel_config['network_function']
    activation = sigmamodel_config['activation']
 
-   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
    #perm= tracker.SummaryTracker()
    #print("perm1")
    #print(perm.print_diff())
 
    nameOfBaseHF=functionforbaseharmonicform_jbar.__name__
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameHYM = foldername +'/tetraquadricHYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring
-   dirnameForMetric = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff)
-   dirnameHarmonic = foldername +'/tetraquadricHarmonicH_pg'+str(unique_id_or_coeff)+'forLB_'+lbstring+nameOfBaseHF
+   dirnameForMetric = "data/"+ type_folder +'/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff)
+   dirnameHYM = "data/"+ type_folder +'/'+manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+metric_model.unique_name
+   dirnameHarmonic = "data/"+ type_folder +'/'+manifold_name+'_HF_pg'+str(unique_id_or_coeff)+'forLB_'+lbstring+nameOfBaseHF+'_using_'+metric_model.unique_name + '_and_'+betamodel.unique_name
    name = 'HFmodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+  str(nlayer) + 'x' +str(nHidden)
    print("dirname: " + dirnameHarmonic)
    print("name: " + name)
@@ -1074,8 +1075,8 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
   
    print('network arch:',load_func)
    print("activation: ",activation)
-   HFmodel = HarmonicFormModel(nn_HF,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)])
-   HFmodelzero = HarmonicFormModel(nn_HF_zero,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)])
+   HFmodel = HarmonicFormModel(nn_HF,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)], unique_name=unique_name)
+   HFmodelzero = HarmonicFormModel(nn_HF_zero,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)], unique_name=unique_name)
    if load_network:
       print("loading network from weights")
       #HFmodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirnameHarmonic,name),call_endpoint="serving_default")
@@ -1287,7 +1288,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
 
 
 
-def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,functionforbaseharmonicform_jbar,sigmamodel_config,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False):
+def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,functionforbaseharmonicform_jbar,sigmamodel_config,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False, unique_name='v'):
    # Extract configuration parameters
    nlayer = sigmamodel_config['depth']
    nHidden = sigmamodel_config['width']
@@ -1301,12 +1302,12 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    network_function = sigmamodel_config['network_function']
    activation = sigmamodel_config['activation']
 
-   coefficients, kmoduli, ambient, monomials, foldername, unique_id_or_coeff = (manifold_name_and_data)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
    nameOfBaseHF=functionforbaseharmonicform_jbar.__name__
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameHYM = foldername +'/tetraquadricHYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring
-   dirnameForMetric = foldername +'/tetraquadric_pg_with_'+str(unique_id_or_coeff)
-   dirnameHarmonic = foldername +'/tetraquadricHarmonicH_pg'+str(unique_id_or_coeff)+'forLB_'+lbstring+nameOfBaseHF
+   dirnameForMetric = "data/"+ type_folder +'/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff)
+   dirnameHYM = "data/"+ type_folder +'/'+manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+metric_model.unique_name
+   dirnameHarmonic = "data/"+ type_folder +'/'+manifold_name+'_HF_pg'+str(unique_id_or_coeff)+'forLB_'+lbstring+nameOfBaseHF+'_using_'+metric_model.unique_name + '_and_'+betamodel.unique_name
    name = 'HFmodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+  str(nlayer) + 'x' +str(nHidden)
    print("dirname: " + dirnameHarmonic)
    print("name: " + name)
@@ -1399,8 +1400,8 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    nn_HF = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activation,stddev=stddev,use_zero_network=False,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    nn_HF_zero  = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activation,stddev=stddev,use_zero_network=True,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    
-   HFmodel = HarmonicFormModel(nn_HF,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)])
-   HFmodelzero = HarmonicFormModel(nn_HF_zero,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)])
+   HFmodel = HarmonicFormModel(nn_HF,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)], unique_name=unique_name)
+   HFmodelzero = HarmonicFormModel(nn_HF_zero,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)], unique_name=unique_name)
    print("example data:")
    print("HFmodel: " + str(HFmodel(dataHF_val_dict['X_val'][0:1])))
    print("HFmodelzero: " + str(HFmodelzero(dataHF_val_dict['X_val'][0:1])))

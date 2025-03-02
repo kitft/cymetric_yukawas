@@ -20,7 +20,8 @@ name_of_invoking_script = sys.argv[0]
 integrate_or_run = sys.argv[1] # integrate or run
 modeltype = sys.argv[2] # m13 or m1
 free_coefficient = float(sys.argv[3]) # free coefficient
-start_from = sys.argv[4] if len(sys.argv) > 3 else 'phi' # start from phi, LB1, etc...
+start_from = sys.argv[4] if len(sys.argv) > 3+1 else 'phi' # start from phi, LB1, etc...
+npoints_config = sys.argv[5] if len(sys.argv) > 4+1 else '1hundred'
 job_id = sys.argv[-1] # job id
 
 if integrate_or_run not in ['integrate', 'run']:
@@ -42,11 +43,23 @@ except (ValueError, IndexError):
     job_id = "direct" 
     print(f"Running with job ID: {job_id}")
 
+# Default wandb behavior: disabled for 'integrate', enabled for 'run'
+use_wandb = integrate_or_run == 'run'
 
-if os.path.exists('.wandb_key') and 'wandb' in sys.argv[1:]:
-    with open('.wandb_key', 'r') as f:
-        wandb_key = f.read().strip()
-        wandb.login(key=wandb_key)
+if os.path.exists('.wandb_key'):
+    # Override default with explicit command line flag
+    if 'wandb' in sys.argv[1:]:
+        use_wandb = True
+    elif 'nowandb' in sys.argv[1:]:
+        use_wandb = False
+        
+    if use_wandb:
+        with open('.wandb_key', 'r') as f:
+            wandb_key = f.read().strip()
+            wandb.login(key=wandb_key)
+    else:
+        os.environ["WANDB_MODE"] = "disabled"
+        print("Wandb disabled")
 else:
     use_wandb = False
     os.environ["WANDB_MODE"] = "disabled"
@@ -97,9 +110,9 @@ from auxiliary_funcs import *
 from final_integration import *
 from yukawas.generate_and_train_all_nnsHOLO_all import *
 
-
+manifold_name = 'TQ'
 if modeltype == "m13":
-    foldername = integrate_or_run+"model13"
+    type_folder = integrate_or_run+"model13"
     get_coefficients_here = get_coefficients_m13# vs get_coefficients_m1
     from yukawas.OneAndTwoFormsForLineBundlesModel13 import *
     linebundleforHYM_LB1=np.array([0,2,-2,0]) 
@@ -142,7 +155,7 @@ if modeltype == "m13":
 
     kmoduliTQ = np.array([1,(np.sqrt(7)-2)/3,(np.sqrt(7)-2)/3,1])
 elif modeltype == "m1":
-    foldername = integrate_or_run+"model1"
+    type_folder = integrate_or_run+"model1"
     get_coefficients_here = get_coefficients_m1
 
 
@@ -151,7 +164,7 @@ elif modeltype == "m1":
     linebundleforHYM_LB1=np.array([0,2,-2,0]) 
     linebundleforHYM_LB2=np.array([1,1,0,-2]) 
     linebundleforHYM_LB3=np.array([-1,-3,2,2]) 
-
+    
     ambientTQ = np.array([1,1,1,1])
     monomialsTQ = np.array([[2, 0, 2, 0, 2, 0, 2, 0], [2, 0, 2, 0, 2, 0, 1, 1], [2, 0, 2, 0, 2, 
       0, 0, 2], [2, 0, 2, 0, 1, 1, 2, 0], [2, 0, 2, 0, 1, 1, 1, 1], [2, 0,
@@ -259,50 +272,50 @@ if __name__ == '__main__':
     
     nPoints = 1000
     if integrate_or_run == 'integrate':
-        if '1hundred' in sys.argv[1:]:
+        if '1hundred' == npoints_config:
             nPoints = 100
             n_to_integrate = 100
-        elif '1million' in sys.argv[1:]:
+        elif '1million' == npoints_config:
             nPoints = 100
             n_to_integrate = 1_000_000
-        elif '10million' in sys.argv[1:]:
+        elif '10million' == npoints_config:
             nPoints = 100
             n_to_integrate = 10_000_000
-        elif 'all100k' in sys.argv[1:]:
+        elif 'all100k' == npoints_config:
             nPoints = 100_000
             n_to_integrate = 100_000
-        elif 'allhuge' in sys.argv[1:]:
+        elif 'allhuge' == npoints_config:
             nPoints = 1_000_000
             n_to_integrate = 1_000_000
-        elif 'allvast' in sys.argv[1:]:
+        elif 'allvast' == npoints_config:
             nPoints = 10_000_000
             n_to_integrate = 10_000_000
         else:
-            raise ValueError("Invalid data size: " + sys.argv[1:])
+            raise ValueError("Invalid data size: " + npoints_config)
     elif integrate_or_run == 'run':
-        if '1hundred_1hundred' in sys.argv[1:]:
+        if '1hundred_1hundred' == npoints_config:
             nPoints = 100
             n_to_integrate = 100
-        elif '300k_1million' in sys.argv[1:]:
+        elif '300k_1million' == npoints_config:
             nPoints = 300_000
             n_to_integrate = 1_000_000
-        elif '300k_10million' in sys.argv[1:]:
+        elif '300k_10million' == npoints_config:
             nPoints = 300_000
             n_to_integrate = 10_000_000
-        elif '100k_100k' in sys.argv[1:]:
+        elif '100k_100k' == npoints_config:
             nPoints = 100_000
             n_to_integrate = 100_000
-        elif '1million_1million' in sys.argv[1:]:
+        elif '1million_1million' == npoints_config:
             nPoints = 1_000_000
             n_to_integrate = 1_000_000
-        elif '1hundred_1million' in sys.argv[1:]:
+        elif '1hundred_1million' == npoints_config:
             nPoints = 100
             n_to_integrate = 1_000_000
-        elif '1hundred_10million' in sys.argv[1:]:
+        elif '1hundred_10million' == npoints_config:
             nPoints = 100
             n_to_integrate = 10_000_000
         else:
-            raise ValueError("Invalid data size: " + sys.argv[1:])
+            raise ValueError("Invalid data size: " + npoints_config)
     #tr_batchsize = 10
     #SecondBSize = 10
     nEpochsPhi = 1
@@ -369,7 +382,17 @@ if __name__ == '__main__':
         force_generate_eval=True
 
 
-
+    unique_name_phi = 'phi'
+    unique_name_LB1 = 'LB1'
+    unique_name_LB2 = 'LB2'
+    unique_name_LB3 = 'LB3'
+    unique_name_vH = 'vH'
+    unique_name_vQ3 = 'vQ3'
+    unique_name_vU3 = 'vU3'
+    unique_name_vQ1 = 'vQ1'
+    unique_name_vQ2 = 'vQ2'
+    unique_name_vU1 = 'vU1'
+    unique_name_vU2 = 'vU2'
 
 
     phimodel_config = {'depth': depthPhi, 'width': widthPhi, 'nEpochs': nEpochsPhi, 'lRate': lRatePhi, 'stddev': stddev_phi, 'bSizes': [tr_batchsize,SecondBSize], 'network_function': phi_model_load_function, 'activation': activationphi}
@@ -439,9 +462,10 @@ if __name__ ==  '__main__':
 
     unique_id_or_coeff = free_coefficient
     coefficientsTQ = get_coefficients_here(free_coefficient)
-    manifold_name_and_data = (coefficientsTQ, kmoduliTQ, ambientTQ, monomialsTQ, foldername, unique_id_or_coeff)
+    manifold_name_and_data = (coefficientsTQ, kmoduliTQ, ambientTQ, monomialsTQ, type_folder, unique_id_or_coeff, manifold_name)
+    
     if start_from != 'end':
-        wandb.init(project = foldername,
+        wandb.init(project = type_folder,
             name = f'{modeltype}_fc_{unique_id_or_coeff}_{n_to_integrate}_{job_id}',
             config = {'unique_id_or_coeff': unique_id_or_coeff,
                       'phimodel_config': phimodel_config,
@@ -464,25 +488,25 @@ if __name__ ==  '__main__':
 
     generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundleforHYM_LB1,nPoints,phimodel,force_generate=force_generate_HYM,seed_set=seed_for_gen)
     if train_LB1:
-        betamodel_LB1,training_historyBeta_LB1, measure_LB1 = train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM_LB1,betamodel_config,load_network=False,use_zero_network=use_zero_network_beta, unique_name=unique_name_LB1)
+        betamodel_LB1,training_historyBeta_LB1, measure_LB1 = train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM_LB1,betamodel_config,phimodel,load_network=False,use_zero_network=use_zero_network_beta, unique_name=unique_name_LB1)
     else: 
-        betamodel_LB1,training_historyBeta_LB1, measure_LB1=load_nn_HYM(manifold_name_and_data,linebundleforHYM_LB1,betamodel_config,set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM, unique_name=unique_name_LB1)
+        betamodel_LB1,training_historyBeta_LB1, measure_LB1=load_nn_HYM(manifold_name_and_data,linebundleforHYM_LB1,betamodel_config,phimodel,set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM, unique_name=unique_name_LB1)
     purge_dicts_and_mem()
 
     
     generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundleforHYM_LB2,nPoints,phimodel,force_generate=force_generate_HYM,seed_set=seed_for_gen)
     if train_LB2:
-        betamodel_LB2,training_historyBeta_LB2, measure_LB2 = train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM_LB2,betamodel_config,load_network=False,use_zero_network=use_zero_network_beta, unique_name=unique_name_LB2)
+        betamodel_LB2,training_historyBeta_LB2, measure_LB2 = train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM_LB2,betamodel_config,phimodel,load_network=False,use_zero_network=use_zero_network_beta, unique_name=unique_name_LB2)
     else:
-        betamodel_LB2,training_historyBeta_LB2, measure_LB2=load_nn_HYM(manifold_name_and_data,linebundleforHYM_LB2,betamodel_config,set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM, unique_name=unique_name_LB2)
+        betamodel_LB2,training_historyBeta_LB2, measure_LB2=load_nn_HYM(manifold_name_and_data,linebundleforHYM_LB2,betamodel_config,phimodel,set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM, unique_name=unique_name_LB2)
     purge_dicts_and_mem()
   
 
     generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundleforHYM_LB3,nPoints,phimodel,force_generate=force_generate_HYM,seed_set=seed_for_gen)
     if train_LB3:
-        betamodel_LB3,training_historyBeta_LB3, measure_LB3 = train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM_LB3,betamodel_config,load_network=False,use_zero_network=use_zero_network_beta, unique_name=unique_name_LB3)
+        betamodel_LB3,training_historyBeta_LB3, measure_LB3 = train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM_LB3,betamodel_config,phimodel,load_network=False,use_zero_network=use_zero_network_beta, unique_name=unique_name_LB3)
     else:
-        betamodel_LB3,training_historyBeta_LB3, measure_LB3=load_nn_HYM(manifold_name_and_data,linebundleforHYM_LB3,betamodel_config,set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM, unique_name=unique_name_LB3)
+        betamodel_LB3,training_historyBeta_LB3, measure_LB3=load_nn_HYM(manifold_name_and_data,linebundleforHYM_LB3,betamodel_config,phimodel,set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM, unique_name=unique_name_LB3)
     purge_dicts_and_mem()
 
     generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB1,functionforbaseharmonicform_jbar_for_vH,phimodel,betamodel_LB1,nPoints,force_generate=force_generate_HF,seed_set=seed_for_gen)
@@ -492,8 +516,6 @@ if __name__ ==  '__main__':
         #was /100
     else:
         HFmodel_vH,trainingHistoryHF_vH, measure_HF1=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB1,betamodel_LB1,phimodel,functionforbaseharmonicform_jbar_for_vH,sigmamodel_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vH)
-
-
     purge_dicts_and_mem()
 
 
@@ -509,12 +531,10 @@ if __name__ ==  '__main__':
 
 
     generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB2,functionforbaseharmonicform_jbar_for_vU3,phimodel,betamodel_LB2,nPoints,force_generate=force_generate_HF,seed_set=seed_for_gen)
-
     if train_vU3:
         HFmodel_vU3,trainingHistoryHF_vU3, measure_HF3 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB2,betamodel_LB2,phimodel,functionforbaseharmonicform_jbar_for_vU3,sigmamodel_config, unique_name=unique_name_vU3)
     else:
         HFmodel_vU3,trainingHistoryHF_vU3, measure_HF3=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB2,betamodel_LB2,phimodel,functionforbaseharmonicform_jbar_for_vU3,sigmamodel_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vU3)
-
     purge_dicts_and_mem()
 
 
@@ -534,7 +554,7 @@ if __name__ ==  '__main__':
     if train_vQ2:   
         HFmodel_vQ2,trainingHistoryHF_vQ2, measure_HF5 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vQ2,sigma2model_config, unique_name=unique_name_vQ2)
     else:
-        HFmodel_vQ2,trainingHistoryHF_vQ2, measure_HF5=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vQ2,sigma2model_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vQ2, unique_name=unique_name_vQ2)  
+        HFmodel_vQ2,trainingHistoryHF_vQ2, measure_HF5=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vQ2,sigma2model_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vQ2)
     purge_dicts_and_mem()   
 
     generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB3,functionforbaseharmonicform_jbar_for_vU1,phimodel,betamodel_LB3,nPoints,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
@@ -555,7 +575,7 @@ if __name__ ==  '__main__':
     
 
     pg,kmoduli=generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,n_to_integrate,seed_set=seed_for_gen,force_generate=force_generate_eval)
-    dataEval=np.load(os.path.join(foldername,'tetraquadric_pg_for_eval_with_'+str(unique_id_or_coeff), 'dataset.npz'))
+    dataEval=np.load(os.path.join("data",type_folder,f'{manifold_name}_pg_for_eval_with_{unique_id_or_coeff}', 'dataset.npz'))
 
 
     network_params = {        # Network parameters
