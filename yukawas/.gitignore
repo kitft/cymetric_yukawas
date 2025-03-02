@@ -24,3 +24,4 @@ datamodel1/*
 wandb
 .wandb_key
 logs
+old_data
