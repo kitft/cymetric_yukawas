@@ -59,7 +59,7 @@ jobs:
         # Print directory contents for debugging
         ls -la
         # Run with error output
-        python model_do.py integrate m13 -1.00300101533232333 'end' '1hundred' 1312321|| { echo "Command failed with exit code $?"; exit 1; }
+        python do_model.py integrate m13 -1.00300101533232333 'end' '1hundred' 1312321 || { echo "Command failed with exit code $?"; exit 1; }
       timeout-minutes: 10  # Set a timeout to prevent long-running tests 
 
     - name: Run test_integration.py
@@ -71,7 +71,7 @@ jobs:
         # Print directory contents for debugging
         ls -la
         # Run with error output
-        python model_do.py integrate m1 -1.00300101533232333 'end' '1hundred' 1231231 || { echo "Command failed with exit code $?"; exit 1; }
+        python do_model.py integrate m1 -1.00300101533232333 'end' '1hundred' 1231231 || { echo "Command failed with exit code $?"; exit 1; }
       timeout-minutes: 10  # Set a timeout to prevent long-running tests 
 
     - name: run Model_13_Do.py
@@ -80,5 +80,5 @@ jobs:
         TF_CPP_MIN_LOG_LEVEL: "2"   # Reduce TensorFlow logging
       run: |
         cd yukawas
-        python model_do.py run m1 -1.2324123412 'phi' '1hundred_1hundred' 'skipnone' 'eager' 1231232|| { echo "Command failed with exit code $?"; exit 1; }
+        python do_model.py run m1 -1.2324123412 'phi' '1hundred_1hundred' 'skipnone' 'eager' 1231232 || { echo "Command failed with exit code $?"; exit 1; }
       timeout-minutes: 30  # Set a timeout to prevent long-running tests 
