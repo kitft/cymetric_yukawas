@@ -686,9 +686,10 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     sources_train = sourcesCY[:t_i]
     sources_val = sourcesCY[t_i:]
     
-    print("check slope: isec, FSmetric, CYomega,CYdirect") 
-    print(tf.einsum('abc,a,b,c', BASIS["INTNUMS"], point_gen.kmoduli, point_gen.kmoduli, linebundleforHYM))
-    
+    slopeexact = tf.einsum('abc,a,b,c', BASIS["INTNUMS"], point_gen.kmoduli, point_gen.kmoduli, linebundleforHYM)
+    print("check slope: isec, FSmetric, CYomega,CYdirect: ", slopeexact) 
+    tf.debugging.assert_less(tf.abs(slopeexact), tf.constant(0.1, dtype=real_dtype), 
+                            message=f"Error: Slope {slopeexact} exceeds threshold of 0.1")
     # Calculate volume metrics
     det = tf.cast(tf.math.real(absdets), real_dtype)
     det_over_omega = det / omega[:,0]
@@ -699,22 +700,45 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     # Ensure consistent dtype
     kappaover6 = tf.cast(kappaover6, real_dtype)
     weightsreal = tf.cast(weights[:,0], real_dtype)
-    
     print(f'kappa over 6 : {kappaover6}')
+    slopeassertlimit = 10 if len(sourcesCY) < 10000 else 3
     
-    # Calculate volumes and slopes
-    volfromCY = tf.math.real(tf.reduce_mean(weightsreal, axis=-1)) * kappaover6
-    slopefromvolCYrhoCY = (1/6) * (2/np.pi) * tf.math.real(tf.reduce_mean(weightsreal * sourcesCY, axis=-1)) * kappaover6
-    print("CY volume and slope: " + str(volfromCY) + " and " + str(slopefromvolCYrhoCY))
+    # Calculate volumes and slopes using weighted mean and standard error
+    vol_integrand = weightsreal
+    vol_mean, vol_se, _, _ = weighted_mean_and_standard_error(vol_integrand, weightsreal, is_top_form=True)
+    volfromCY = tf.math.real(vol_mean) * kappaover6
     
-    integratedabsolutesource = (1/6) * (2/np.pi) * tf.math.real(tf.reduce_mean(weightsreal * tf.math.abs(sourcesCY), axis=-1)) * kappaover6
-    print("Integrated slope but with absolute val: " + str(integratedabsolutesource))
+    slope_integrand = (1/6) * (2/np.pi) * sourcesCY
+    slope_mean, slope_se, _, _ = weighted_mean_and_standard_error(slope_integrand, weightsreal, is_top_form=True)
+    slopefromvolCYrhoCY = tf.math.real(slope_mean) * kappaover6
+    print("all dtypes; ", vol_integrand.dtype, vol_mean.dtype, vol_se.dtype, slope_integrand.dtype, slope_mean.dtype, slope_se.dtype, weightsreal.dtype, kappaover6.dtype)
+    slope_error = tf.math.real(slope_se) * kappaover6
+
+    print("CY volume and slope: " + str(volfromCY.numpy().item()) + " and " + str(slopefromvolCYrhoCY.numpy().item()) + " ± " + str(slope_error.numpy().item()))
+    tf.debugging.assert_less(tf.abs(slopefromvolCYrhoCY), tf.constant(slopeassertlimit, dtype=real_dtype) * tf.abs(slope_error),
+                            message=f"Error: Slope {slopefromvolCYrhoCY} exceeds threshold of {slopeassertlimit} times error {slope_error}")
+    
+    abs_slope_integrand = (1/6) * (2/np.pi) * tf.math.abs(sourcesCY)
+    abs_slope_mean, abs_slope_se, _, _ = weighted_mean_and_standard_error(abs_slope_integrand, weightsreal, is_top_form=True)
+    integratedabsolutesource = tf.math.real(abs_slope_mean) * kappaover6
+    print("  vs. integrated slope but with absolute val: " + str(integratedabsolutesource.numpy().item()))
     
     # Calculate FS metrics
     sourceFS = tf.cast(-tf.einsum('xba,xab->x', FSmetricinv, F_forsource_pb), real_dtype)
-    slopefromvolFSrhoFS = (1/6) * (2/np.pi) * tf.reduce_mean(weightsreal * (tf.cast(FSmetricdets, real_dtype) / omega[:,0]) * sourceFS, axis=-1)
-    volfromFSmetric = tf.reduce_mean(weightsreal * (tf.cast(FSmetricdets, real_dtype) / omega[:,0]), axis=-1)
-    print('FS vol and slope: ' + str(volfromFSmetric) + " " + str(slopefromvolFSrhoFS))
+    fs_weight_factor = tf.cast(FSmetricdets, real_dtype) / omega[:,0]
+    fs_slope_integrand = (1/6) * (2/np.pi) * sourceFS
+    fs_vol_integrand = tf.ones_like(sourceFS)
+    
+    fs_slope_mean, fs_slope_se, _, _ = weighted_mean_and_standard_error(fs_slope_integrand, weightsreal * fs_weight_factor, is_top_form=True)
+    fs_vol_mean, fs_vol_se, _, _ = weighted_mean_and_standard_error(fs_vol_integrand, weightsreal * fs_weight_factor, is_top_form=True)
+    
+    slopefromvolFSrhoFS = tf.math.real(fs_slope_mean)
+    volfromFSmetric = tf.math.real(fs_vol_mean)
+    fs_slope_error = tf.math.real(fs_slope_se)
+    
+    print('FS vol and slope: ' + str(volfromFSmetric) + " and " + str(slopefromvolFSrhoFS) + " ± " + str(fs_slope_error))
+    tf.debugging.assert_less(tf.abs(slopefromvolFSrhoFS), tf.constant(slopeassertlimit//2, dtype=real_dtype) * tf.abs(fs_slope_error), 
+                            message=f"Error: Slope {slopefromvolFSrhoFS} exceeds threshold of {slopeassertlimit//2} times error {fs_slope_error}")
     
     # Calculate effective sample size and error
     ess = tf.square(tf.reduce_sum(weightsreal)) / tf.reduce_sum(tf.square(weightsreal))

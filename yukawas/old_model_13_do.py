@@ -16,26 +16,30 @@ if __name__ == '__main__':
     print(device_lib.list_local_devices())
 
 
-
 import csv
 import numpy as np
 import gc
-import sys
 import os
 import re
 import logging
+import pickle
 import wandb
-if os.path.exists('.wandb_key') and 'wandb' in sys.argv[1:]:
+# Check if wandb key file exists and login if it does
+if os.path.exists('.wandb_key'):
+    use_wandb = True
     with open('.wandb_key', 'r') as f:
         wandb_key = f.read().strip()
         wandb.login(key=wandb_key)
 else:
     use_wandb = False
-    os.environ["WANDB_MODE"] = "disabled"
-    print("Wandb disabled, need to set wandb_key")
 
-        
-import pickle
+try:
+    job_id = int(sys.argv[-1])
+    print(f"Running with job ID: {job_id}")
+except (ValueError, IndexError):
+    job_id = "direct" 
+
+
 #sys.path.append("/Users/kit/Documents/Phys_Working/MF metric")
 
 logging.basicConfig(stream=sys.stdout)
@@ -49,7 +53,7 @@ import tensorflow.keras as tfk
 if __name__ == '__main__':
     # Default to not eager unless explicitly requested
     run_eagerly = False
-    if 'eager' in sys.argv[1:]:
+    if len(sys.argv) > 5 and 'eager' in sys.argv:
         run_eagerly = True
 
     tf.config.run_functions_eagerly(run_eagerly)
@@ -69,7 +73,6 @@ if __name__ == '__main__':
     tf.get_logger().setLevel('ERROR')
 
 
-
 from cymetric.models.tfmodels import PhiFSModel, MultFSModel, FreeModel, MatrixFSModel, AddFSModel, PhiFSModelToric, MatrixFSModelToric
 from cymetric.models.tfhelper import prepare_tf_basis, train_model
 from cymetric.models.callbacks import SigmaCallback, KaehlerCallback, TransitionCallback, RicciCallback, VolkCallback, AlphaCallback
@@ -79,147 +82,158 @@ from NewCustomMetrics import *
 from HarmonicFormModel import *
 from BetaModel import *
 from laplacian_funcs import *
-from auxiliary_funcs import *
 from final_integration import *
 from yukawas.generate_and_train_all_nnsHOLO_all import *
+from auxiliary_funcs import *
 
-modeltype = sys.argv[1]
-if modeltype == "m13":
-    foldername = "testintegration_model13"
+foldername = "datamodel13"
+get_coefficients_here = get_coefficients_m13# vs get_coefficients_m1
+from OneAndTwoFormsForLineBundlesModel13 import *
+linebundleforHYM_LB1=np.array([0,2,-2,0]) 
+linebundleforHYM_LB2=np.array([0,0,1,-3]) 
+linebundleforHYM_LB3=np.array([0,-2,1,3]) 
+ambientTQ = np.array([1,1,1,1])
+monomialsTQ = np.array([[2, 0, 2, 0, 2, 0, 2, 0], [2, 0, 2, 0, 2, 0, 1, 1], [2, 0, 2, 0, 2, 
+  0, 0, 2], [2, 0, 2, 0, 1, 1, 2, 0], [2, 0, 2, 0, 1, 1, 1, 1], [2, 0,
+   2, 0, 1, 1, 0, 2], [2, 0, 2, 0, 0, 2, 2, 0], [2, 0, 2, 0, 0, 2, 1, 
+  1], [2, 0, 2, 0, 0, 2, 0, 2], [2, 0, 1, 1, 2, 0, 2, 0], [2, 0, 1, 1,
+   2, 0, 1, 1], [2, 0, 1, 1, 2, 0, 0, 2], [2, 0, 1, 1, 1, 1, 2, 
+  0], [2, 0, 1, 1, 1, 1, 1, 1], [2, 0, 1, 1, 1, 1, 0, 2], [2, 0, 1, 1,
+   0, 2, 2, 0], [2, 0, 1, 1, 0, 2, 1, 1], [2, 0, 1, 1, 0, 2, 0, 
+  2], [2, 0, 0, 2, 2, 0, 2, 0], [2, 0, 0, 2, 2, 0, 1, 1], [2, 0, 0, 2,
+   2, 0, 0, 2], [2, 0, 0, 2, 1, 1, 2, 0], [2, 0, 0, 2, 1, 1, 1, 
+  1], [2, 0, 0, 2, 1, 1, 0, 2], [2, 0, 0, 2, 0, 2, 2, 0], [2, 0, 0, 2,
+   0, 2, 1, 1], [2, 0, 0, 2, 0, 2, 0, 2], [1, 1, 2, 0, 2, 0, 2, 
+  0], [1, 1, 2, 0, 2, 0, 1, 1], [1, 1, 2, 0, 2, 0, 0, 2], [1, 1, 2, 0,
+   1, 1, 2, 0], [1, 1, 2, 0, 1, 1, 1, 1], [1, 1, 2, 0, 1, 1, 0, 
+  2], [1, 1, 2, 0, 0, 2, 2, 0], [1, 1, 2, 0, 0, 2, 1, 1], [1, 1, 2, 0,
+   0, 2, 0, 2], [1, 1, 1, 1, 2, 0, 2, 0], [1, 1, 1, 1, 2, 0, 1, 
+  1], [1, 1, 1, 1, 2, 0, 0, 2], [1, 1, 1, 1, 1, 1, 2, 0], [1, 1, 1, 1,
+   1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 2], [1, 1, 1, 1, 0, 2, 2, 
+  0], [1, 1, 1, 1, 0, 2, 1, 1], [1, 1, 1, 1, 0, 2, 0, 2], [1, 1, 0, 2,
+   2, 0, 2, 0], [1, 1, 0, 2, 2, 0, 1, 1], [1, 1, 0, 2, 2, 0, 0, 
+  2], [1, 1, 0, 2, 1, 1, 2, 0], [1, 1, 0, 2, 1, 1, 1, 1], [1, 1, 0, 2,
+   1, 1, 0, 2], [1, 1, 0, 2, 0, 2, 2, 0], [1, 1, 0, 2, 0, 2, 1, 
+  1], [1, 1, 0, 2, 0, 2, 0, 2], [0, 2, 2, 0, 2, 0, 2, 0], [0, 2, 2, 0,
+   2, 0, 1, 1], [0, 2, 2, 0, 2, 0, 0, 2], [0, 2, 2, 0, 1, 1, 2, 
+  0], [0, 2, 2, 0, 1, 1, 1, 1], [0, 2, 2, 0, 1, 1, 0, 2], [0, 2, 2, 0,
+   0, 2, 2, 0], [0, 2, 2, 0, 0, 2, 1, 1], [0, 2, 2, 0, 0, 2, 0, 
+  2], [0, 2, 1, 1, 2, 0, 2, 0], [0, 2, 1, 1, 2, 0, 1, 1], [0, 2, 1, 1,
+   2, 0, 0, 2], [0, 2, 1, 1, 1, 1, 2, 0], [0, 2, 1, 1, 1, 1, 1, 
+  1], [0, 2, 1, 1, 1, 1, 0, 2], [0, 2, 1, 1, 0, 2, 2, 0], [0, 2, 1, 1,
+   0, 2, 1, 1], [0, 2, 1, 1, 0, 2, 0, 2], [0, 2, 0, 2, 2, 0, 2, 
+  0], [0, 2, 0, 2, 2, 0, 1, 1], [0, 2, 0, 2, 2, 0, 0, 2], [0, 2, 0, 2,
+   1, 1, 2, 0], [0, 2, 0, 2, 1, 1, 1, 1], [0, 2, 0, 2, 1, 1, 0, 
+  2], [0, 2, 0, 2, 0, 2, 2, 0], [0, 2, 0, 2, 0, 2, 1, 1], [0, 2, 0, 2,
+   0, 2, 0, 2]])
 
-    get_coefficients_here = get_coefficients_m13# vs get_coefficients_m1
-    from yukawas.OneAndTwoFormsForLineBundlesModel13 import *
-    linebundleforHYM_LB1=np.array([0,2,-2,0]) 
-    linebundleforHYM_LB2=np.array([0,0,1,-3]) 
-    linebundleforHYM_LB3=np.array([0,-2,1,3]) 
-    ambientTQ = np.array([1,1,1,1])
-    monomialsTQ = np.array([[2, 0, 2, 0, 2, 0, 2, 0], [2, 0, 2, 0, 2, 0, 1, 1], [2, 0, 2, 0, 2, 
-      0, 0, 2], [2, 0, 2, 0, 1, 1, 2, 0], [2, 0, 2, 0, 1, 1, 1, 1], [2, 0,
-       2, 0, 1, 1, 0, 2], [2, 0, 2, 0, 0, 2, 2, 0], [2, 0, 2, 0, 0, 2, 1, 
-      1], [2, 0, 2, 0, 0, 2, 0, 2], [2, 0, 1, 1, 2, 0, 2, 0], [2, 0, 1, 1,
-       2, 0, 1, 1], [2, 0, 1, 1, 2, 0, 0, 2], [2, 0, 1, 1, 1, 1, 2, 
-      0], [2, 0, 1, 1, 1, 1, 1, 1], [2, 0, 1, 1, 1, 1, 0, 2], [2, 0, 1, 1,
-       0, 2, 2, 0], [2, 0, 1, 1, 0, 2, 1, 1], [2, 0, 1, 1, 0, 2, 0, 
-      2], [2, 0, 0, 2, 2, 0, 2, 0], [2, 0, 0, 2, 2, 0, 1, 1], [2, 0, 0, 2,
-       2, 0, 0, 2], [2, 0, 0, 2, 1, 1, 2, 0], [2, 0, 0, 2, 1, 1, 1, 
-      1], [2, 0, 0, 2, 1, 1, 0, 2], [2, 0, 0, 2, 0, 2, 2, 0], [2, 0, 0, 2,
-       0, 2, 1, 1], [2, 0, 0, 2, 0, 2, 0, 2], [1, 1, 2, 0, 2, 0, 2, 
-      0], [1, 1, 2, 0, 2, 0, 1, 1], [1, 1, 2, 0, 2, 0, 0, 2], [1, 1, 2, 0,
-       1, 1, 2, 0], [1, 1, 2, 0, 1, 1, 1, 1], [1, 1, 2, 0, 1, 1, 0, 
-      2], [1, 1, 2, 0, 0, 2, 2, 0], [1, 1, 2, 0, 0, 2, 1, 1], [1, 1, 2, 0,
-       0, 2, 0, 2], [1, 1, 1, 1, 2, 0, 2, 0], [1, 1, 1, 1, 2, 0, 1, 
-      1], [1, 1, 1, 1, 2, 0, 0, 2], [1, 1, 1, 1, 1, 1, 2, 0], [1, 1, 1, 1,
-       1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 2], [1, 1, 1, 1, 0, 2, 2, 
-      0], [1, 1, 1, 1, 0, 2, 1, 1], [1, 1, 1, 1, 0, 2, 0, 2], [1, 1, 0, 2,
-       2, 0, 2, 0], [1, 1, 0, 2, 2, 0, 1, 1], [1, 1, 0, 2, 2, 0, 0, 
-      2], [1, 1, 0, 2, 1, 1, 2, 0], [1, 1, 0, 2, 1, 1, 1, 1], [1, 1, 0, 2,
-       1, 1, 0, 2], [1, 1, 0, 2, 0, 2, 2, 0], [1, 1, 0, 2, 0, 2, 1, 
-      1], [1, 1, 0, 2, 0, 2, 0, 2], [0, 2, 2, 0, 2, 0, 2, 0], [0, 2, 2, 0,
-       2, 0, 1, 1], [0, 2, 2, 0, 2, 0, 0, 2], [0, 2, 2, 0, 1, 1, 2, 
-      0], [0, 2, 2, 0, 1, 1, 1, 1], [0, 2, 2, 0, 1, 1, 0, 2], [0, 2, 2, 0,
-       0, 2, 2, 0], [0, 2, 2, 0, 0, 2, 1, 1], [0, 2, 2, 0, 0, 2, 0, 
-      2], [0, 2, 1, 1, 2, 0, 2, 0], [0, 2, 1, 1, 2, 0, 1, 1], [0, 2, 1, 1,
-       2, 0, 0, 2], [0, 2, 1, 1, 1, 1, 2, 0], [0, 2, 1, 1, 1, 1, 1, 
-      1], [0, 2, 1, 1, 1, 1, 0, 2], [0, 2, 1, 1, 0, 2, 2, 0], [0, 2, 1, 1,
-       0, 2, 1, 1], [0, 2, 1, 1, 0, 2, 0, 2], [0, 2, 0, 2, 2, 0, 2, 
-      0], [0, 2, 0, 2, 2, 0, 1, 1], [0, 2, 0, 2, 2, 0, 0, 2], [0, 2, 0, 2,
-       1, 1, 2, 0], [0, 2, 0, 2, 1, 1, 1, 1], [0, 2, 0, 2, 1, 1, 0, 
-      2], [0, 2, 0, 2, 0, 2, 2, 0], [0, 2, 0, 2, 0, 2, 1, 1], [0, 2, 0, 2,
-       0, 2, 0, 2]])
+kmoduliTQ = np.array([1,(np.sqrt(7)-2)/3,(np.sqrt(7)-2)/3,1])
+# kmoduliTQ = np.array([1,1,1,1])
 
-    kmoduliTQ = np.array([1,(np.sqrt(7)-2)/3,(np.sqrt(7)-2)/3,1])
-elif modeltype == "m1":
-    foldername = "testintegration_model1"
-    get_coefficients_here = get_coefficients_m1
-
-
-    from yukawas.OneAndTwoFormsForLineBundlesModel1 import *
-
-    linebundleforHYM_LB1=np.array([0,2,-2,0]) 
-    linebundleforHYM_LB2=np.array([1,1,0,-2]) 
-    linebundleforHYM_LB3=np.array([-1,-3,2,2]) 
-
-    ambientTQ = np.array([1,1,1,1])
-    monomialsTQ = np.array([[2, 0, 2, 0, 2, 0, 2, 0], [2, 0, 2, 0, 2, 0, 1, 1], [2, 0, 2, 0, 2, 
-      0, 0, 2], [2, 0, 2, 0, 1, 1, 2, 0], [2, 0, 2, 0, 1, 1, 1, 1], [2, 0,
-       2, 0, 1, 1, 0, 2], [2, 0, 2, 0, 0, 2, 2, 0], [2, 0, 2, 0, 0, 2, 1, 
-      1], [2, 0, 2, 0, 0, 2, 0, 2], [2, 0, 1, 1, 2, 0, 2, 0], [2, 0, 1, 1,
-       2, 0, 1, 1], [2, 0, 1, 1, 2, 0, 0, 2], [2, 0, 1, 1, 1, 1, 2, 
-      0], [2, 0, 1, 1, 1, 1, 1, 1], [2, 0, 1, 1, 1, 1, 0, 2], [2, 0, 1, 1,
-       0, 2, 2, 0], [2, 0, 1, 1, 0, 2, 1, 1], [2, 0, 1, 1, 0, 2, 0, 
-      2], [2, 0, 0, 2, 2, 0, 2, 0], [2, 0, 0, 2, 2, 0, 1, 1], [2, 0, 0, 2,
-       2, 0, 0, 2], [2, 0, 0, 2, 1, 1, 2, 0], [2, 0, 0, 2, 1, 1, 1, 
-      1], [2, 0, 0, 2, 1, 1, 0, 2], [2, 0, 0, 2, 0, 2, 2, 0], [2, 0, 0, 2,
-       0, 2, 1, 1], [2, 0, 0, 2, 0, 2, 0, 2], [1, 1, 2, 0, 2, 0, 2, 
-      0], [1, 1, 2, 0, 2, 0, 1, 1], [1, 1, 2, 0, 2, 0, 0, 2], [1, 1, 2, 0,
-       1, 1, 2, 0], [1, 1, 2, 0, 1, 1, 1, 1], [1, 1, 2, 0, 1, 1, 0, 
-      2], [1, 1, 2, 0, 0, 2, 2, 0], [1, 1, 2, 0, 0, 2, 1, 1], [1, 1, 2, 0,
-       0, 2, 0, 2], [1, 1, 1, 1, 2, 0, 2, 0], [1, 1, 1, 1, 2, 0, 1, 
-      1], [1, 1, 1, 1, 2, 0, 0, 2], [1, 1, 1, 1, 1, 1, 2, 0], [1, 1, 1, 1,
-       1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 0, 2], [1, 1, 1, 1, 0, 2, 2, 
-      0], [1, 1, 1, 1, 0, 2, 1, 1], [1, 1, 1, 1, 0, 2, 0, 2], [1, 1, 0, 2,
-       2, 0, 2, 0], [1, 1, 0, 2, 2, 0, 1, 1], [1, 1, 0, 2, 2, 0, 0, 
-      2], [1, 1, 0, 2, 1, 1, 2, 0], [1, 1, 0, 2, 1, 1, 1, 1], [1, 1, 0, 2,
-       1, 1, 0, 2], [1, 1, 0, 2, 0, 2, 2, 0], [1, 1, 0, 2, 0, 2, 1, 
-      1], [1, 1, 0, 2, 0, 2, 0, 2], [0, 2, 2, 0, 2, 0, 2, 0], [0, 2, 2, 0,
-       2, 0, 1, 1], [0, 2, 2, 0, 2, 0, 0, 2], [0, 2, 2, 0, 1, 1, 2, 
-      0], [0, 2, 2, 0, 1, 1, 1, 1], [0, 2, 2, 0, 1, 1, 0, 2], [0, 2, 2, 0,
-       0, 2, 2, 0], [0, 2, 2, 0, 0, 2, 1, 1], [0, 2, 2, 0, 0, 2, 0, 
-      2], [0, 2, 1, 1, 2, 0, 2, 0], [0, 2, 1, 1, 2, 0, 1, 1], [0, 2, 1, 1,
-       2, 0, 0, 2], [0, 2, 1, 1, 1, 1, 2, 0], [0, 2, 1, 1, 1, 1, 1, 
-      1], [0, 2, 1, 1, 1, 1, 0, 2], [0, 2, 1, 1, 0, 2, 2, 0], [0, 2, 1, 1,
-       0, 2, 1, 1], [0, 2, 1, 1, 0, 2, 0, 2], [0, 2, 0, 2, 2, 0, 2, 
-      0], [0, 2, 0, 2, 2, 0, 1, 1], [0, 2, 0, 2, 2, 0, 0, 2], [0, 2, 0, 2,
-       1, 1, 2, 0], [0, 2, 0, 2, 1, 1, 1, 1], [0, 2, 0, 2, 1, 1, 0, 
-      2], [0, 2, 0, 2, 0, 2, 2, 0], [0, 2, 0, 2, 0, 2, 1, 1], [0, 2, 0, 2,
-       0, 2, 0, 2]])
-
-    kmoduliTQ = np.array([1,1,1,1])
-
-    def functionforbaseharmonicform_jbar_for_vQ1(x):
-        return getTypeIIs(x,monomialsTQ,coefficientsTQ,'vQ1')
-    def functionforbaseharmonicform_jbar_for_vQ2(x):
-        return getTypeIIs(x,monomialsTQ,coefficientsTQ,'vQ2')
-    def functionforbaseharmonicform_jbar_for_vU1(x):
-        return getTypeIIs(x,monomialsTQ,coefficientsTQ,'vU1')
-    def functionforbaseharmonicform_jbar_for_vU2(x):
-        return getTypeIIs(x,monomialsTQ,coefficientsTQ,'vU2')
-
-    functionforbaseharmonicform_jbar_for_vQ1.line_bundle = np.array([-1,-3,2,2]) 
-    functionforbaseharmonicform_jbar_for_vQ2.line_bundle = np.array([-1,-3,2,2]) 
-    functionforbaseharmonicform_jbar_for_vU1.line_bundle = np.array([-1,-3,2,2]) 
-    functionforbaseharmonicform_jbar_for_vU2.line_bundle = np.array([-1,-3,2,2]) 
-
-
-
-print_memory_usage(start_time_of_process=start_time_of_process, name = __name__)
+print_memory_usage(start_time_of_process=start_time_of_process)
 
 if __name__ == '__main__':
+
+    #print('fixed directory')
+
+    # nPoints=300000
+    # free_coefficient=1.# when the coefficient is 1, ensure that it's 1., not 1 for the sake of the filename
+    # nEpochsPhi=100
+    # nEpochsBeta=60
+    # nEpochsSigma=50
+
+
+    nPoints=300000
+    nPointsHF=300000
+    #nPoints=10000
+    #nPointsHF=10000
+    #nPoints=1000
+    #nPointsHF=1000
+    #nPoints=10000
+    #nPointsHF=10000
+
     tr_batchsize=64
     #free_coefficient=1.000000004# when the coefficient is 1, ensure that it's 1., not 1 for the sake of the filename
     import sys
-    free_coefficient = float(sys.argv[2])
-    seed_for_gen=int((int(free_coefficient*100000000000)+free_coefficient*1000000))%4294967294 # modulo largest seed
-    print("seed for gen", seed_for_gen)
-    coefficientsTQ = get_coefficients_here(free_coefficient)
+
+    #free_coefficient=1.# when the coefficient is 1, ensure that it's 1., not 1 for the sake of the filename
+    #nEpochsPhi=100
+    #nEpochsPhi=10
+    #nEpochsBeta=10
+    #nEpochsSigma=40#changed below vH
+
+
+    # nEpochsPhi=30
+    # nEpochsBeta=50
+    # nEpochsSigma=60#changed below vH
+    # nEpochsSigma2=80#changed below vH
+
+
+    depthPhi=4
+    widthPhi=196#128 4 in the 1.0s
+    depthBeta=4
+    widthBeta=196
+    depthSigma=4
+    widthSigma=130 # up from 256
+    depthSigma2=4
+    widthSigma2=130 # up from 256
+
+
+    #depthPhi=4
+    #widthPhi=128#128 4 in the 1.0s
+    #depthBeta=3
+    #widthBeta=128
+    #depthSigma=3+2
+    #widthSigma=128//2 # up from 256
+    #depthSigma2=3+2
+    #widthSigma2=196//2 # up from 256
+
+    #nEpochsPhi=1
+    #nEpochsBeta=1
+    #nEpochsSigma=1#changed below vH
+    #nEpochsSigma2=1#changed below vH
+    #
+    #
+    #depthPhi=4
+    #widthPhi=128#128 4 in the 1.0s
+    #depthBeta=4
+    #widthBeta=128
+    #depthSigma=4
+    #widthSigma=128 # up from 256
+    #depthSigma2=4
+    #widthSigma2=128 # up from 256
+
 
 
     alphabeta=[1,10]
     alphasigma1=[1,10] # down form 50
     alphasigma2=[1,80] # down from 200
 
+
+    #lRatePhi= 0.0000005
+    #lRateBeta=0.0000005
+    #lRateSigma=0.0000005# perhaps best as 0.03
+
     lRatePhi= 0.005
     lRateBeta=0.005
+    lRateSigma=0.005# perhaps best as 0.03
+    lRateSigma=0.005//10# perhaps best as 0.03
+    lRateSigma2=0.003//10# perhaps best as 0.03
+
     lRateSigma=0.001# perhaps best as 0.03
     lRateSigma=0.001#//10# perhaps best as 0.03
     lRateSigma2=0.001#//10# perhaps best as 0.03
 
+    #lRatePhi= 0.00
+    #lRateBeta=0.00
+    #lRateSigma=0.0
+    #lRateSigma2=0.0
+
 
     # Use command-line arguments if provided, starting from the second argument
-    start_from = sys.argv[3] if len(sys.argv) > 3 else 'phi'
-
+    start_from = sys.argv[2] if len(sys.argv) > 2 else 'phi'
     training_flags = determine_training_flags(start_from)
-    
+
     # Unpack training flags
     train_phi, train_LB1, train_LB2, train_LB3, train_vH, train_vQ3, train_vU3, train_vQ1, train_vQ2, train_vU1, train_vU2 = (
         training_flags['phi'],
@@ -234,109 +248,142 @@ if __name__ == '__main__':
         training_flags['vU1'],
         training_flags['vU2']
     )
-    
-    
+
+
     stddev_Q12U12=1.0#0.5
     final_layer_scale_Q12U12=1.0#0.3#0.000001#0.01
     stddev_Q12U12=0.5#0.5
     final_layer_scale_Q12U12=0.01#0.3#0.000001#0.01
     #lRateSigma=0.0
-    
-    
+
+
     stddev_H33=0.5
     stddev_H33=1
     #stddev_H33=1
     #final_layer_scale_H33=0.1
     final_layer_scale_H33=0.01#0.01
-    
-    skip_measuresPhi=True
-    skip_measuresBeta=True
-    skip_measuresHF=True
-    
-    
-    if 'loadalldata' in sys.argv[1:]:
-        force_generate_phi=False
-        force_generate_HYM=False
-        force_generate_HF=False
-        force_generate_HF_2=False
-        force_generate_eval=False
+
+
+    if len(sys.argv) > 4 and str(sys.argv[4]) == 'skipall':
+        print("Requested to skip all measures")
+        skip_measuresPhi=True
+        skip_measuresBeta=True
+        skip_measuresHF=True
+    elif len(sys.argv) > 4 and str(sys.argv[4]) == 'skipnone':
+        skip_measuresPhi=False
+        skip_measuresBeta=False
+        skip_measuresHF=False
+        print("Requested to skip none of the measures")
     else:
-        force_generate_phi=True
-        force_generate_HYM=True
-        force_generate_HF=True
-        force_generate_HF_2=True
-        force_generate_eval=True
+        print("Requested to skip some of the measures")
+        skip_measuresPhi=True
+        skip_measuresBeta=True
+        skip_measuresHF=False
+        #skip_measuresHF
+
+    force_generate_phi=False
+    force_generate_HYM=False
+    force_generate_HF=False
+    force_generate_HF_2=False
+    force_generate_eval=False
 
     return_zero_phi= True
     return_zero_HYM = True
     return_zero_HF = False
     return_zero_HF_2 = False
-    
-    SecondBSize=1000
+
+    SecondBSize=50000
     n_to_integrate=1000000
     #n_to_integrate=100000
-    
-    use_zero_network_phi = True
-    use_zero_network_beta = True
-    
-    nPoints = 1000
-    nPointsHF = 1000
-    if 'alltiny' in sys.argv[1:]:
-        nPoints = 100
-        nPointsHF = 100
-        n_to_integrate = 100
-    elif 'regulardata' in sys.argv[1:]:
-        nPoints = 100
-        nPointsHF = 100
-        n_to_integrate = 1_000_000
-    elif 'hugedata' in sys.argv[1:]:
-        nPoints = 100
-        nPointsHF = 100
-        n_to_integrate = 10_000_000
-    elif 'small' in sys.argv[1:]:
-        n_to_integrate = 1000
-    elif 'allbig' in sys.argv[1:]:
-        nPoints = 100_000
-        nPointsHF = 100_000
-        n_to_integrate = 100_000
-    elif 'allhuge' in sys.argv[1:]:
-        nPoints = 1_000_000
-        nPointsHF = 1_000_000
-        n_to_integrate = 1_000_000
-    else:
-        n_to_integrate = 1_000_000
-    #tr_batchsize = 10
-    #SecondBSize = 10
-    nEpochsPhi = 1
-    nEpochsBeta = 1
-    nEpochsSigma = 1
-    nEpochsSigma2 = 1
-    
-    depthPhi = 2
-    widthPhi = 3
-    depthBeta = 2
-    widthBeta = 3
-    depthSigma = 2
-    widthSigma = 3
-    depthSigma2 = 2
-    widthSigma2 = 3
-    if 'largenetworks' in sys.argv[1:]:
-        depthPhi = 4
-        widthPhi = 100
-        depthBeta = 4
-        widthBeta = 100
-        depthSigma = 4
-        widthSigma = 100
-        depthSigma2 = 4
-        widthSigma2 = 100
 
-    
+    use_zero_network_phi = False # what does this do?
+    use_zero_network_beta = False
+
+    print("sys.argv: ", sys.argv)
+    if len(sys.argv) > 3 and str(sys.argv[3]) in ['test','testmid','testsmall', 'alltiny']:
+        # Override with small test values
+        if str(sys.argv[3]) == 'alltiny':
+            nPoints = 30
+            nPointsHF = 30
+            n_to_integrate = 30
+            skip_measuresPhi=True
+            skip_measuresBeta=True
+            skip_measuresHF=True
+        elif str(sys.argv[3]) == 'testsmall':
+            nPoints = 100
+            n_to_integrate = 100
+        elif sys.argv[3] == 'testmid':
+            nPoints = 100000
+            n_to_integrate = 1000000
+        else:
+            nPoints = 300000
+            n_to_integrate = 1000000
+        
+        depthPhi = 2
+        widthPhi = 10
+        depthBeta = 2
+        widthBeta = 10
+        depthSigma = 2
+        widthSigma = 10
+        depthSigma2 = 2
+        widthSigma2 = 10
+
+        return_random_phi = False
+        return_random_HYM = False
+        return_random_HF = True
+        return_random_HF_2 = True
+
+
+        nEpochsPhi = 1
+        nEpochsBeta = 1
+        nEpochsSigma = 1
+        nEpochsSigma2 = 1
+
+        if 'largenetworks' in sys.argv[1:]:
+            depthPhi = 4
+            widthPhi = 100
+            depthBeta = 4
+            widthBeta = 100
+            depthSigma = 4
+            widthSigma = 100
+
+        if 'notwandb' in sys.argv[1:] or use_wandb == False:
+            import os
+            os.environ["WANDB_MODE"] = "disabled"
+            print("Wandb disabled")
+
+    if 'actual' in sys.argv[1:]:
+        if 'mid' in sys.argv[1:]:
+            nEpochsPhi = 1
+            nEpochsBeta = 1
+            nEpochsSigma = 5
+            nEpochsSigma2 = 5
+        else:
+            nEpochsPhi = 10
+            nEpochsBeta = 10
+            nEpochsSigma = 30
+            nEpochsSigma2 = 30
+        depthPhi = 3
+        depthBeta = 3
+        depthSigma = 3
+        depthSigma2 = 3
+        widthPhi = 100
+        widthBeta = 100
+        widthSigma = 100
+        widthSigma2 = 100
+        return_random_phi = False
+        return_random_HYM = False
+        return_random_HF = False
+        return_random_HF_2 = False   
+    print(f"Skipping measures? phi? {skip_measuresPhi}, beta? {skip_measuresBeta}, HF? {skip_measuresHF}")
+    print("Number of points: " + str(nPoints), "Number of points HF: " + str(nPointsHF), "Number of points to integrate: " + str(n_to_integrate))
+    print(f"shapes, phi: {depthPhi}x{widthPhi}, beta: {depthBeta}x{widthBeta}, HF: {depthSigma}x{widthSigma}, HF2: {depthSigma2}x{widthSigma2}")
+
+   
     return_random_phi = False
     return_random_HYM = False
     return_random_HF = True
     return_random_HF_2 = True
-    
-
     phi_model_load_function = None 
     beta_model_load_function = None
     sigma_model_load_function = None
@@ -358,7 +405,6 @@ if __name__ == '__main__':
     norm_momentum_sigma = 0.999
     norm_momentum_sigma2 = 0.999
 
-
     activationphi = None
     activationbeta = None
     activationsigma = None
@@ -372,27 +418,18 @@ if __name__ == '__main__':
     print("betamodel_config: ", betamodel_config)
     print("sigmamodel_config: ", sigmamodel_config)
     print("sigma2model_config: ", sigma2model_config)
-
-
-    print("Number of points: " + str(nPoints), "Number of points HF: " + str(nPointsHF), "Number of points to integrate: " + str(n_to_integrate))
-    print(f"shapes, phi: {depthPhi}x{widthPhi}, beta: {depthBeta}x{widthBeta}, HF: {depthSigma}x{widthSigma}, HF2: {depthSigma2}x{widthSigma2}")
-
-    print("phimodel_config: ", phimodel_config)
-    print("betamodel_config: ", betamodel_config)
-    print("sigmamodel_config: ", sigmamodel_config)
-    print("sigma2model_config: ", sigma2model_config)
     
 
-
-    print("Name of invoking script: ", sys.argv[0], "modeltype: ", modeltype, "namespace of vH: ", functionforbaseharmonicform_jbar_for_vH.__module__)
-    if modeltype == "m13":
+    print("Name of invoking script: ", sys.argv[0], "namespace of vH: ", functionforbaseharmonicform_jbar_for_vH.__module__)
+    if '13' in sys.argv[0]:
         if get_coefficients_here != get_coefficients_m13 or functionforbaseharmonicform_jbar_for_vH.__module__ not in ['yukawas.OneAndTwoFormsForLineBundlesModel13','OneAndTwoFormsForLineBundlesModel13']:
             raise ValueError("invalid configuration for m13: ", get_coefficients_here, functionforbaseharmonicform_jbar_for_vH.__module__)
-    elif modeltype == "m1":
+    elif '1' in sys.argv[0]:
         if get_coefficients_here != get_coefficients_m1 or  functionforbaseharmonicform_jbar_for_vH.__module__ not in ['yukawas.OneAndTwoFormsForLineBundlesModel1','OneAndTwoFormsForLineBundlesModel1']:
             raise ValueError("invalid configuration for m1: ", get_coefficients_here, functionforbaseharmonicform_jbar_for_vH.__module__)
     else:
         raise ValueError("Invalid model specified")
+
 
 
 
@@ -401,11 +438,11 @@ def purge_dicts_and_mem():
     gc.collect()
     tf.keras.backend.clear_session()
  
-do_extra_stuff_for_integration = True
-    
+do_extra_stuff_for_integration = False
 
 if __name__ ==  '__main__':
-    free_coefficient = float(sys.argv[2])
+   
+    free_coefficient = float(sys.argv[1])
     seed_for_gen=int((int(free_coefficient*100000000000)+free_coefficient*1000000))%4294967294 # modulo largest seed
     print("seed for gen", seed_for_gen)
 
@@ -414,17 +451,16 @@ if __name__ ==  '__main__':
     manifold_name_and_data = (coefficientsTQ, kmoduliTQ, ambientTQ, monomialsTQ, foldername, unique_id_or_coeff)
     if start_from != 'end':
         wandb.init(project = foldername,
-            name = f'{modeltype}_fc_{unique_id_or_coeff}_{n_to_integrate}',
-            config = {'unique_id_or_coeff': unique_id_or_coeff,
-                      'phimodel_config': phimodel_config,
-                      'betamodel_config': betamodel_config,
-                      'sigmamodel_config': sigmamodel_config,
-                      'sigma2model_config': sigma2model_config,
-                      'invoking_command': ' '.join(sys.argv)})
+                name = f'M13_fc_{unique_id_or_coeff}_{job_id}',
+                config = {'unique_id_or_coeff': unique_id_or_coeff,
+                          'phimodel_config': phimodel_config,
+                          'betamodel_config': betamodel_config,
+                          'sigmamodel_config': sigmamodel_config,
+                          'sigma2model_config': sigma2model_config,
+                          'invoking_command': ' '.join(sys.argv)})
     
     
-    
-    generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,force_generate=force_generate_phi,seed_set=seed_for_gen)
+    generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,seed_set=seed_for_gen)
     if train_phi:
         #phimodel,training_history=train_and_save_nn(manifold_name_and_data,depthPhi,widthPhi,nEpochsPhi,bSizes=[64,tr_batchsize],lRate=lRatePhi) 
         phimodel,training_history, measure_phi=train_and_save_nn(manifold_name_and_data,phimodel_config,use_zero_network=use_zero_network_phi)
@@ -484,6 +520,8 @@ if __name__ ==  '__main__':
 
 
     purge_dicts_and_mem()
+    #nEpochsSigma=50#changed below vH
+    #nEpochsSigma=10
 
     # Stop the profiler
     #print("stopping profiler")

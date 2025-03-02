@@ -607,14 +607,15 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False):
     
     # Get the weighted mean
     weighted_mean = tf.reduce_mean(tf.cast(weights, values.dtype) * values)
-    weighted_stddev_real = tf.math.reduce_std(tf.math.real(tf.cast(weights, values.dtype) * values))
-    weighted_stddev_imag = tf.math.reduce_std(tf.math.imag(tf.cast(weights, values.dtype) * values))
-    weighted_stddev = complex(weighted_stddev_real, weighted_stddev_imag)
-    stddev_estimator = weighted_stddev*1/np.sqrt(len(values))
+
     
    
     # Check if values are complex
     if hasattr(values, 'dtype') and 'complex' in str(values.dtype):
+        weighted_stddev_real = tf.math.reduce_std(tf.math.real(tf.cast(weights, values.dtype) * values))
+        weighted_stddev_imag = tf.math.reduce_std(tf.math.imag(tf.cast(weights, values.dtype) * values))
+        weighted_stddev = complex(weighted_stddev_real, weighted_stddev_imag)
+        stddev_estimator = weighted_stddev*1/np.sqrt(len(values))
          # Calculate the effective sample size
 
         n_eff_r = effective_sample_size(weights*tf.cast(tf.math.real(values), real_dtype))
@@ -648,8 +649,9 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False):
             real_imag_values - tf.reduce_mean(real_imag_values, axis=0),
             axes=[[1], [0]]
         )
-        
-        print(f"----Covariance matrix between real and imaginary parts: {cov_matrix} sqrt {np.sqrt(np.abs(cov_matrix))}")
+        # Handle tensor elements individually to avoid scalar conversion error
+        cov_matrix_np = cov_matrix.numpy()
+        print(f"----Covariance matrix Re/Im: [{np.format_float_scientific(cov_matrix_np[0,0], precision=2)},{np.format_float_scientific(cov_matrix_np[1,1], precision=2)}], sqrtabs:[{np.format_float_scientific(np.sqrt(np.abs(cov_matrix_np[0,0])), precision=2)},{np.format_float_scientific(np.sqrt(np.abs(cov_matrix_np[1,1])), precision=2)}]")
         
         # Standard error for imaginary part
         #imag_se = imag_variance / np.sqrt(n_eff_c)
@@ -663,6 +665,8 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False):
             n_eff = effective_sample_size(weights*values)
         else:
             n_eff = effective_sample_size(weights)
+        weighted_stddev = tf.math.reduce_std(weights*values)
+        stddev_estimator = weighted_stddev*1/np.sqrt(len(values))
 
         #real_se = tf.math.reduce_std(weights*values) / np.sqrt(n_eff)
             # Return real standard error

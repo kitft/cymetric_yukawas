@@ -566,7 +566,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         'network_params': network_params,
         # Results matrices
         'physical_yukawas': np.array(mats),
-        'singular_values': np.array(masses_trained_and_ref),
+        'masses_values': np.array(masses_trained_and_ref),
         'holomorphic_yukawas': np.array(holomorphic_Yukawas_trained_and_ref),
         'holomorphic_yukawas_errors': m_errors,
 
@@ -574,7 +574,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         'integral_stats': integral_stats,
         'matrix_stats': matrix_stats,
         'physical_yukawas_errors': physical_yukawas_errors,
-        'singular_values_errors': singular_value_errors,
+        'masses_errors': singular_value_errors,
         'm_neffs': m_neffs,
         'mwoH_neffs': mwoH_neffs,
         'Qneffs': Qneffs,
@@ -620,4 +620,4 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     if do_extra_stuff:    
         pass
 
-    return
+    return np.array(masses_trained_and_ref), np.array(singular_value_errors)
