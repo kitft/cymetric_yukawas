@@ -341,6 +341,7 @@ if __name__ == '__main__':
         depthSigma2 = 4
         widthSigma2 = 100
 
+
     
     return_random_phi = False
     return_random_HYM = False
@@ -348,10 +349,6 @@ if __name__ == '__main__':
     return_random_HF_2 = True
     
 
-    phi_model_load_function = None 
-    beta_model_load_function = None
-    sigma_model_load_function = None
-    sigma2_model_load_function = None
 
 
 
@@ -361,6 +358,11 @@ if __name__ == '__main__':
     norm_momentum_sigma2 = 0.999
 
 
+
+    phi_model_load_function = None 
+    beta_model_load_function = None
+    sigma_model_load_function = None
+    sigma2_model_load_function = None
     activationphi = None
     activationbeta = None
     activationsigma = None
