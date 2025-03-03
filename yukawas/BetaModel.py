@@ -677,8 +677,8 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     imag_part = tf.math.abs(tf.math.imag(sourcesCY_complex))
     max_imag_part, mean_imag_part = tf.reduce_max(imag_part), tf.reduce_mean(imag_part)
     max_real_part, mean_real_part = tf.reduce_max(real_part), tf.reduce_mean(real_part)
-    tf.debugging.assert_less(max_imag_part, tf.constant(1e-3, dtype=real_dtype), message=f"Error: Imaginary component exceeds numerical precision max {max_imag_part}, mean: {mean_imag_part}; vs max, mean of abs real part: {max_real_part}, {mean_real_part}")
-    print("Max imaginary part, should be small: ", max_imag_part, "mean: ", mean_imag_part, "vs max, mean of abs real part: ", max_real_part, mean_real_part)
+    tf.debugging.assert_less(max_imag_part, tf.constant(1e-3, dtype=real_dtype), message=f"Error: Imaginary component exceeds numerical precision max {max_imag_part.numpy().item()}, mean: {mean_imag_part.numpy().item()}; vs max, mean of abs real part: {max_real_part.numpy().item()}, {mean_real_part.numpy().item()}")
+    print("Max imaginary part, should be small: ", max_imag_part.numpy().item(), "mean: ", mean_imag_part.numpy().item(), "vs max, mean of abs real part: ", max_real_part.numpy().item(), mean_real_part.numpy().item())
 
     # Convert to real if safe
     sourcesCY = tf.cast(tf.math.real(sourcesCY_complex), real_dtype)
@@ -736,14 +736,14 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     volfromFSmetric = tf.math.real(fs_vol_mean)
     fs_slope_error = tf.math.real(fs_slope_se)
     
-    print('FS vol and slope: ' + str(volfromFSmetric) + " and " + str(slopefromvolFSrhoFS) + " ± " + str(fs_slope_error))
+    print('FS vol and slope: ' + str(volfromFSmetric.numpy().item()) + " and " + str(slopefromvolFSrhoFS.numpy().item()) + " ± " + str(fs_slope_error.numpy().item()))
     tf.debugging.assert_less(tf.abs(slopefromvolFSrhoFS), tf.constant(slopeassertlimit//2, dtype=real_dtype) * tf.abs(fs_slope_error), 
                             message=f"Error: Slope {slopefromvolFSrhoFS} exceeds threshold of {slopeassertlimit//2} times error {fs_slope_error}")
     
     # Calculate effective sample size and error
     ess = tf.square(tf.reduce_sum(weightsreal)) / tf.reduce_sum(tf.square(weightsreal))
     error = 1/tf.sqrt(ess)
-    print(f"ESS: {ess}, error: {error}")
+    print(f"ESS on CY vs FS: {ess}, proportional error: {error}")
     print(f"Data dimensions: Train: {len(X_train)} samples, Val: {len(X_val)} samples")
     
     # Verify all train, val arrays have same length

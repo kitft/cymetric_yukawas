@@ -11,15 +11,39 @@ import uuid
 from datetime import datetime
 import wandb
 
-def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None):
-    (_, kmoduli, _, _, foldername, unique_id_or_coeff, manifold_name) = manifold_name_and_data
-    n_p = len(dataEval['X_train'])
-    points64=dataEval['X_train'][0:n_p]
-    real_pts=tf.cast(dataEval['X_train'][0:n_p],real_dtype)
-    volCY_from_Om=tf.reduce_mean(dataEval['y_train'][:n_p,0])/6 #this is the actual volume of the CY computed from Omega.since J^J^J^ = K Om^Ombar?? not totally sure here:
-    pointsComplex=tf.cast(point_vec_to_complex(points64),complex_dtype)# we have to cast to complex64 from complex128 sometimes. Just for safety. point_vec_to_complex does the obvious thing
-    weights=dataEval['y_train'][:n_p,0]
-    omegasquared=dataEval['y_train'][:n_p,1]
+
+def convert_to_nested_tensor_dict(data):
+   if isinstance(data, dict):
+      result = {}
+      for key, value in data.items():
+         if isinstance(value, np.ndarray):
+            if value.dtype in [np.complex64, np.complex128]:
+               result[key] = tf.convert_to_tensor(value, dtype=complex_dtype)
+            elif value.dtype in [np.float32, np.float64]:
+               result[key] = tf.convert_to_tensor(value, dtype=real_dtype)
+            elif value.dtype == np.int32:
+               result[key] = tf.convert_to_tensor(value, dtype=value.dtype)
+            else:
+               result[key] = value  # Keep original if not a handled dtype
+         elif isinstance(value, dict):
+            result[key] = convert_to_nested_tensor_dict(value)
+         else:
+            result[key] = value
+      return result
+   else:
+      return data
+
+def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, savevecs=False, loadvecs=False):
+    (_, kmoduli, _, _, type_folder, unique_id_or_coeff, manifold_name) = manifold_name_and_data
+    points64=tf.concat((dataEval['X_train'], dataEval['X_val']),axis=0)
+    ytrain64 = tf.concat((dataEval['y_train'], dataEval['y_val']),axis=0)
+    n_p = len(points64)# len(dataEval['X_train'])# len(points64)
+    real_pts=tf.cast(points64[:n_p],real_dtype)
+    volCY_from_Om=tf.reduce_mean(ytrain64[:n_p,0])/6 #this is the actual volume of the CY computed from Omega.since J^J^J^ = K Om^Ombar?? not totally sure here:
+    pointsComplex=tf.cast(point_vec_to_complex(points64[:n_p]),complex_dtype)# we have to cast to complex64 from complex128 sometimes. Just for safety. point_vec_to_complex does the obvious thing
+    weights=tf.cast(ytrain64[:n_p,0],real_dtype)
+    omegasquared=tf.cast(ytrain64[:n_p,1],real_dtype)
+    mulweightsby=omegasquared/tf.reduce_mean(omegasquared)# arbitrary normalisation
 
     print("\n do analysis: \n\n\n")
 
@@ -28,10 +52,15 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     #volCY_from_Om=tf.reduce_mean(dataEval['y_train'][:n_p,0])
     print("Compute holomorphic Yukawas")
     #consider omega normalisation
-    omega = tf.cast(batch_process_helper_func(pg.holomorphic_volume_form, [pointsComplex], batch_indices=[0], batch_size=100000),complex_dtype)
+    if not loadvecs:
+        omega = tf.cast(batch_process_helper_func(pg.holomorphic_volume_form, [pointsComplex], batch_indices=[0], batch_size=100000),complex_dtype)
+    else:
+        filename = os.path.join("data",type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{False}.npz")
+        data = np.load(filename)
+        omega = tf.cast(data['omega'],complex_dtype)
     # Verify that dataEval['y_train'][:n_p,1] equals |omega|^2
-    omega_abs_squared = tf.math.real(omega * tf.math.conj(omega))
-    assert tf.reduce_all(tf.abs(omega_abs_squared[:100] - dataEval['y_train'][:100,1]) < 1e-5), "First elements of dataEval['y_train'][:,1] should equal |omega|^2"
+    omega_abs_squared_calculated = tf.math.real(omega * tf.math.conj(omega))
+    assert tf.reduce_all(tf.abs(omega_abs_squared_calculated[:100] - omegasquared[:100]) < 1e-5), "First elements of dataEval['y_train'][:,1] should equal |omega|^2"
     #put the omega here, not the omegabar
     omega_normalised_to_one=omega/tf.cast(np.sqrt(volCY_from_Om),complex_dtype) # this is the omega that's normalised to 1. VERIFIED yes.
 
@@ -50,96 +79,146 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         actually_batch=True
     else:
         actually_batch=False
-    mets_bare = batch_process_helper_func(phimodel.fubini_study_pb, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'ts':tf.cast(kmoduli,complex_dtype)})
-    vH_bare = batch_process_helper_func(HFmodel_vH.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-    vQ3_bare = batch_process_helper_func(HFmodel_vQ3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-    vU3_bare = batch_process_helper_func(HFmodel_vU3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-    vQ1_bare = batch_process_helper_func(HFmodel_vQ1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-    vQ2_bare = batch_process_helper_func(HFmodel_vQ2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-    vU1_bare = batch_process_helper_func(HFmodel_vU1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-    vU2_bare = batch_process_helper_func(HFmodel_vU2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+
+    if not loadvecs:
+        mets_bare = batch_process_helper_func(phimodel.fubini_study_pb, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'ts':tf.cast(kmoduli,complex_dtype)})
+        vH_bare = batch_process_helper_func(HFmodel_vH.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+        vQ3_bare = batch_process_helper_func(HFmodel_vQ3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+        vU3_bare = batch_process_helper_func(HFmodel_vU3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+        vQ1_bare = batch_process_helper_func(HFmodel_vQ1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+        vQ2_bare = batch_process_helper_func(HFmodel_vQ2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+        vU1_bare = batch_process_helper_func(HFmodel_vU1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+        vU2_bare = batch_process_helper_func(HFmodel_vU2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
 
     mats=[]
     masses_trained_and_ref=[]
     use_trained = False
     holomorphic_Yukawas_trained_and_ref=[]
     for use_trained in [True,False]:
-        print("using trained? " + str(use_trained))
-        if use_trained:
-            mets = batch_process_helper_func(phimodel, (real_pts,), batch_indices=(0,), batch_size=10000, compile_func=True)
-            print('got mets', flush=True)
-            dets = tf.linalg.det(mets)
-            batchbetamin = 1000000
-            if len(real_pts)>batchbetamin:
-                batch_betamodel= True
-            else:
-                batch_betamodel= False
-            
-            H1=batch_process_helper_func(betamodel_LB1, (real_pts,), batch_indices=(0,), batch_size=batchbetamin, compile_func=True, actually_batch=batch_betamodel) 
-            H2=batch_process_helper_func(betamodel_LB2, (real_pts,), batch_indices=(0,), batch_size=batchbetamin, compile_func=True, actually_batch=batch_betamodel) 
-            H3=batch_process_helper_func(betamodel_LB3, (real_pts,), batch_indices=(0,), batch_size=batchbetamin, compile_func=True, actually_batch=batch_betamodel) 
+        if loadvecs:
+            filename = os.path.join("data",type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{use_trained}.npz")
+            data = np.load(filename, allow_pickle=True)
+            data = convert_to_nested_tensor_dict(data)
+            vH_bare, vQ3_bare, vU3_bare, vQ1_bare, vQ2_bare, vU1_bare, vU2_bare = data['vH.barevec'], data['vQ3.barevec'], data['vU3.barevec'], data['vQ1.barevec'], data['vQ2.barevec'], data['vU1.barevec'], data['vU2.barevec']
+            H1, H2, H3, LB1c, LB2c, LB3c, vH, vQ3, vU3, vQ1, vQ2, vU1, vU2, mets = data['H1'], data['H2'], data['H3'], data['LB1c'], data['LB2c'], data['LB3c'], data['vH.vec'], data['vQ3.vec'], data['vU3.vec'], data['vQ1.vec'], data['vQ2.vec'], data['vU1.vec'], data['vU2.vec'], data['mets']
+            hvHb, hvQ3b, hvU3b, hvQ1b, hvQ2b, hvU1b, hvU2b = data['vH.Hconj'], data['vQ3.Hconj'], data['vU3.Hconj'], data['vQ1.Hconj'], data['vQ2.Hconj'], data['vU1.Hconj'], data['vU2.Hconj']
+            print("loaded data", flush=True)
+        else:
+            print("using trained? " + str(use_trained))
+            if use_trained:
+                mets = batch_process_helper_func(phimodel, (real_pts,), batch_indices=(0,), batch_size=10000, compile_func=True)
+                print('got mets', flush=True)
+                batchbetamin = 1000000
+                if len(real_pts)>batchbetamin:
+                    batch_betamodel= True
+                else:
+                    batch_betamodel= False
 
-            LB1c=tf.cast(H1, complex_dtype)
-            LB2c=tf.cast(H2, complex_dtype)
-            LB3c=tf.cast(H3, complex_dtype)
-            # Batch process corrected harmonic forms
-            vH = batch_process_helper_func(HFmodel_vH.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvHb = tf.einsum('x,xb->xb', LB1c, tf.math.conj(vH))
-            print('got vH', flush=True)
+                H1=batch_process_helper_func(betamodel_LB1, (real_pts,), batch_indices=(0,), batch_size=batchbetamin, compile_func=True, actually_batch=batch_betamodel) 
+                H2=batch_process_helper_func(betamodel_LB2, (real_pts,), batch_indices=(0,), batch_size=batchbetamin, compile_func=True, actually_batch=batch_betamodel) 
+                H3=batch_process_helper_func(betamodel_LB3, (real_pts,), batch_indices=(0,), batch_size=batchbetamin, compile_func=True, actually_batch=batch_betamodel) 
 
-            vQ3 = batch_process_helper_func(HFmodel_vQ3.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvQ3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vQ3))
-            print('got vQ3', flush=True)
+                LB1c=tf.cast(H1, complex_dtype)
+                LB2c=tf.cast(H2, complex_dtype)
+                LB3c=tf.cast(H3, complex_dtype)
+                # Batch process corrected harmonic forms
+                vH = batch_process_helper_func(HFmodel_vH.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
+                hvHb = tf.einsum('x,xb->xb', LB1c, tf.math.conj(vH))
+                print('got vH', flush=True)
 
-            vU3 = batch_process_helper_func(HFmodel_vU3.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvU3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vU3))
-            print('got vU3', flush=True)
+                vQ3 = batch_process_helper_func(HFmodel_vQ3.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
+                hvQ3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vQ3))
+                print('got vQ3', flush=True)
 
-            vQ1 = batch_process_helper_func(HFmodel_vQ1.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvQ1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ1))
-            print('got vQ1', flush=True)
+                vU3 = batch_process_helper_func(HFmodel_vU3.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
+                hvU3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vU3))
+                print('got vU3', flush=True)
 
-            vQ2 = batch_process_helper_func(HFmodel_vQ2.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvQ2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ2))
-            print('got vQ2', flush=True)
+                vQ1 = batch_process_helper_func(HFmodel_vQ1.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
+                hvQ1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ1))
+                print('got vQ1', flush=True)
 
-            vU1 = batch_process_helper_func(HFmodel_vU1.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvU1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU1))
-            print('got vU1', flush=True)
+                vQ2 = batch_process_helper_func(HFmodel_vQ2.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
+                hvQ2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ2))
+                print('got vQ2', flush=True)
 
-            vU2 = batch_process_helper_func(HFmodel_vU2.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
-            hvU2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU2))
-            print('got vU2', flush=True)
-        elif not use_trained:
-            H1=betamodel_LB1.raw_FS_HYM_r(real_pts) 
-            H2=betamodel_LB2.raw_FS_HYM_r(real_pts) 
-            H3=betamodel_LB3.raw_FS_HYM_r(real_pts) 
-            LB1c=tf.cast(H1, complex_dtype)
-            LB2c=tf.cast(H2, complex_dtype)
-            LB3c=tf.cast(H3, complex_dtype)
+                vU1 = batch_process_helper_func(HFmodel_vU1.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
+                hvU1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU1))
+                print('got vU1', flush=True)
 
-            mets = mets_bare
-            vH = vH_bare
-            hvHb = tf.einsum('x,xb->xb', LB1c, tf.math.conj(vH))
-            
-            vQ3 = vQ3_bare
-            hvQ3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vQ3))
-            
-            vU3 = vU3_bare
-            hvU3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vU3))
-            
-            vQ1 = vQ1_bare
-            hvQ1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ1))
-            
-            vQ2 = vQ2_bare
-            hvQ2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ2))
-            
-            vU1 = vU1_bare
-            hvU1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU1))
-            
-            vU2 = vU2_bare
-            hvU2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU2))
-         
+                vU2 = batch_process_helper_func(HFmodel_vU2.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
+                hvU2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU2))
+                print('got vU2', flush=True)
+            elif not use_trained:
+                H1=betamodel_LB1.raw_FS_HYM_r(real_pts) 
+                H2=betamodel_LB2.raw_FS_HYM_r(real_pts) 
+                H3=betamodel_LB3.raw_FS_HYM_r(real_pts) 
+                LB1c=tf.cast(H1, complex_dtype)
+                LB2c=tf.cast(H2, complex_dtype)
+                LB3c=tf.cast(H3, complex_dtype)
+
+                mets = mets_bare
+                vH = vH_bare
+                hvHb = tf.einsum('x,xb->xb', LB1c, tf.math.conj(vH))
+
+                vQ3 = vQ3_bare
+                hvQ3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vQ3))
+
+                vU3 = vU3_bare
+                hvU3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vU3))
+
+                vQ1 = vQ1_bare
+                hvQ1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ1))
+
+                vQ2 = vQ2_bare
+                hvQ2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ2))
+
+                vU1 = vU1_bare
+                hvU1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU1))
+
+                vU2 = vU2_bare
+                hvU2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU2))
+        
+        # Save vectors to file if requested
+        if savevecs:
+            print("Saving vectors to file...")
+            save_data = {
+                'H1': H1.numpy(),
+                'H2': H2.numpy(),
+                'H3': H3.numpy(),
+                'LB1c': LB1c.numpy(),
+                'LB2c': LB2c.numpy(),
+                'LB3c': LB3c.numpy(),
+                'vH.vec': vH.numpy(),
+                'vH.Hconj': hvHb.numpy(),
+                'vH.barevec': vH_bare.numpy(),
+                'vQ3.vec': vQ3.numpy(),
+                'vQ3.Hconj': hvQ3b.numpy(),
+                'vQ3.barevec': vQ3_bare.numpy(),
+                'vU3.vec': vU3.numpy(),
+                'vU3.Hconj': hvU3b.numpy(),
+                'vU3.barevec': vU3_bare.numpy(),
+                'vQ1.vec': vQ1.numpy(),
+                'vQ1.Hconj': hvQ1b.numpy(),
+                'vQ1.barevec': vQ1_bare.numpy(),
+                'vQ2.vec': vQ2.numpy(),
+                'vQ2.Hconj': hvQ2b.numpy(),
+                'vQ2.barevec': vQ2_bare.numpy(),
+                'vU1.vec': vU1.numpy(),
+                'vU1.Hconj': hvU1b.numpy(),
+                'vU1.barevec': vU1_bare.numpy(),
+                'vU2.vec': vU2.numpy(),
+                'vU2.Hconj': hvU2b.numpy(),
+                'vU2.barevec': vU2_bare.numpy(),
+                'mets': mets.numpy(),
+                'mets_bare': mets_bare.numpy(),
+                'omega': omega.numpy(),
+            }
+
+            # Create filename with unique identifier
+            filename = os.path.join("data",type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{use_trained}.npz")
+            np.savez(filename, **save_data)
+            print(f"(Trained? {use_trained}) vectors saved to {filename}")
 
         print("Now compute the integrals")
         #(1j) for each FS form #maybe should be (1j/2)??
@@ -156,61 +235,61 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
 
         # Calculate HuHu and its standard error
         HuHu_integrand = (-1j/2)*(-1j/2)**2*(-2j)**3*(-1)*tf.einsum('xab,xcd,xe,xf,acf,bde->x',mets,mets,vH,hvHb,lc_c,lc_c)
-        HuHu, HuHu_se, HuHu_eff_n, integral_stats['HuHu'] = weighted_mean_and_standard_error(HuHu_integrand, aux_weights,is_top_form=True)
+        HuHu, HuHu_se, HuHu_eff_n, integral_stats['HuHu'] = weighted_mean_and_standard_error(HuHu_integrand, aux_weights,is_top_form=True, mulweightsby=mulweightsby)
         print("(Hu,Hu) = " + str(HuHu) + " ± " + str(HuHu_se) + " (eff. n = " + str(HuHu_eff_n) + ")")
         print(f"  Real part: {tf.math.real(HuHu).numpy():.6e} ± {tf.math.real(HuHu_se).numpy():.6e}")
         print(f"  Imag part: {tf.math.imag(HuHu).numpy():.6e} ± {tf.math.imag(HuHu_se).numpy():.6e}")
 
         # Calculate Q3Q3 and its standard error
         Q3Q3_integrand = (-1j/2)*(-1j/2)**2*(-2j)**3*(-1)*tf.einsum('xab,xcd,xe,xf,acf,bde->x',mets,mets,vQ3,hvQ3b,lc_c,lc_c)
-        Q3Q3, Q3Q3_se, Q3Q3_eff_n, integral_stats['Q3Q3'] = weighted_mean_and_standard_error(Q3Q3_integrand, aux_weights, is_top_form=True)
+        Q3Q3, Q3Q3_se, Q3Q3_eff_n, integral_stats['Q3Q3'] = weighted_mean_and_standard_error(Q3Q3_integrand, aux_weights, is_top_form=True,mulweightsby=mulweightsby)
         print("(Q3,Q3) = " + str(Q3Q3) + " ± " + str(Q3Q3_se) + " (eff. n = " + str(Q3Q3_eff_n) + ")")
 
         # Calculate U3U3 and its standard error
-        U3U3_integrand = (-1j/2)*(-1j/2)**2*(-2j)**3*(-1)*tf.einsum('xab,xcd,xe,xf,acf,bde->x',mets,mets,vU3,hvU3b,lc_c,lc_c,)
-        U3U3, U3U3_se, U3U3_eff_n, integral_stats['U3U3'] = weighted_mean_and_standard_error(U3U3_integrand, aux_weights, is_top_form=True)
+        U3U3_integrand = (-1j/2)*(-1j/2)**2*(-2j)**3*(-1)*tf.einsum('xab,xcd,xe,xf,acf,bde->x',mets,mets,vU3,hvU3b,lc_c,lc_c)
+        U3U3, U3U3_se, U3U3_eff_n, integral_stats['U3U3'] = weighted_mean_and_standard_error(U3U3_integrand, aux_weights, is_top_form=True, mulweightsby=mulweightsby)
         print("(U3,U3) = " + str(U3U3) + " ± " + str(U3U3_se) + " (eff. n = " + str(U3U3_eff_n) + ")")
 
         # Calculate U1U1 and its standard error
         U1U1_integrand = (-1j/2)*(-1j/2)**2*(-2j)**3*(-1)*tf.einsum('xab,xcd,xe,xf,acf,bde->x',mets,mets,vU1,hvU1b,lc_c,lc_c)
-        U1U1, U1U1_se, U1U1_eff_n, integral_stats['U1U1'] = weighted_mean_and_standard_error(U1U1_integrand, aux_weights,is_top_form=True)
+        U1U1, U1U1_se, U1U1_eff_n, integral_stats['U1U1'] = weighted_mean_and_standard_error(U1U1_integrand, aux_weights,is_top_form=True, mulweightsby=mulweightsby)
         print("(U1,U1) = " + str(U1U1) + " ± " + str(U1U1_se) + " (eff. n = " + str(U1U1_eff_n) + ")")
 
         # Calculate U2U2 and its standard error
         U2U2_integrand = (-1j/2)*(-1j/2)**2*(-2j)**3*(-1)*tf.einsum('xab,xcd,xe,xf,acf,bde->x',mets,mets,vU2,hvU2b,lc_c,lc_c)
-        U2U2, U2U2_se, U2U2_eff_n, integral_stats['U2U2'] = weighted_mean_and_standard_error(U2U2_integrand, aux_weights,is_top_form=True)
+        U2U2, U2U2_se, U2U2_eff_n, integral_stats['U2U2'] = weighted_mean_and_standard_error(U2U2_integrand, aux_weights,is_top_form=True, mulweightsby=mulweightsby)
         print("(U2,U2) = " + str(U2U2) + " ± " + str(U2U2_se) + " (eff. n = " + str(U2U2_eff_n) + ")")
 
         # Calculate Q1Q1 and its standard error
         Q1Q1_integrand = (-1j/2)*(-1j/2)**2*(-2j)**3*(-1)*tf.einsum('xab,xcd,xe,xf,acf,bde->x',mets,mets,vQ1,hvQ1b,lc_c,lc_c)
-        Q1Q1, Q1Q1_se, Q1Q1_eff_n, integral_stats['Q1Q1'] = weighted_mean_and_standard_error(Q1Q1_integrand, aux_weights,is_top_form=True)
+        Q1Q1, Q1Q1_se, Q1Q1_eff_n, integral_stats['Q1Q1'] = weighted_mean_and_standard_error(Q1Q1_integrand, aux_weights,is_top_form=True, mulweightsby=mulweightsby)
         print("(Q1,Q1) = " + str(Q1Q1) + " ± " + str(Q1Q1_se) + " (eff. n = " + str(Q1Q1_eff_n) + ")")
 
         # Calculate Q2Q2 and its standard error
         Q2Q2_integrand = (-1j/2)*(-1j/2)**2*(-2j)**3*(-1)*tf.einsum('xab,xcd,xe,xf,acf,bde->x',mets,mets,vQ2,hvQ2b,lc_c,lc_c)
-        Q2Q2, Q2Q2_se, Q2Q2_eff_n, integral_stats['Q2Q2'] = weighted_mean_and_standard_error(Q2Q2_integrand, aux_weights,is_top_form=True)
+        Q2Q2, Q2Q2_se, Q2Q2_eff_n, integral_stats['Q2Q2'] = weighted_mean_and_standard_error(Q2Q2_integrand, aux_weights,is_top_form=True, mulweightsby=mulweightsby)
         print("(Q2,Q2) = " + str(Q2Q2) + " ± " + str(Q2Q2_se) + " (eff. n = " + str(Q2Q2_eff_n) + ")")
 
         print("The field mixings:")
 
         # Calculate Q1Q2 and its standard error
         Q1Q2_integrand = (-1j/2)*(-1j/2)**2*(-2j)**3*(-1)*tf.einsum('xab,xcd,xe,xf,acf,bde->x',mets,mets,vQ1,hvQ2b,lc_c,lc_c)
-        Q1Q2, Q1Q2_se, Q1Q2_eff_n, integral_stats['Q1Q2'] = weighted_mean_and_standard_error(Q1Q2_integrand, aux_weights,is_top_form=True)
+        Q1Q2, Q1Q2_se, Q1Q2_eff_n, integral_stats['Q1Q2'] = weighted_mean_and_standard_error(Q1Q2_integrand, aux_weights,is_top_form=True, mulweightsby=mulweightsby)
         print("(Q1,Q2) = " + str(Q1Q2) + " ± " + str(Q1Q2_se) + " (eff. n = " + str(Q1Q2_eff_n) + ")")
 
         # Calculate Q2Q1 and its standard error
         Q2Q1_integrand = (-1j/2)*(-1j/2)**2*(-2j)**3*(-1)*tf.einsum('xab,xcd,xe,xf,acf,bde->x',mets,mets,vQ2,hvQ1b,lc_c,lc_c)
-        Q2Q1, Q2Q1_se, Q2Q1_eff_n, integral_stats['Q2Q1'] = weighted_mean_and_standard_error(Q2Q1_integrand, aux_weights,is_top_form=True)
+        Q2Q1, Q2Q1_se, Q2Q1_eff_n, integral_stats['Q2Q1'] = weighted_mean_and_standard_error(Q2Q1_integrand, aux_weights,is_top_form=True, mulweightsby=mulweightsby)
         print("(Q2,Q1) = " + str(Q2Q1) + " ± " + str(Q2Q1_se) + " (eff. n = " + str(Q2Q1_eff_n) + ")")
 
         # Calculate U1U2 and its standard error
         U1U2_integrand = (-1j/2)*(-1j/2)**2*(-2j)**3*(-1)*tf.einsum('xab,xcd,xe,xf,acf,bde->x',mets,mets,vU1,hvU2b,lc_c,lc_c)
-        U1U2, U1U2_se, U1U2_eff_n, integral_stats['U1U2'] = weighted_mean_and_standard_error(U1U2_integrand, aux_weights,is_top_form=True)
+        U1U2, U1U2_se, U1U2_eff_n, integral_stats['U1U2'] = weighted_mean_and_standard_error(U1U2_integrand, aux_weights,is_top_form=True, mulweightsby=mulweightsby)
         print("(U1,U2) = " + str(U1U2) + " ± " + str(U1U2_se) + " (eff. n = " + str(U1U2_eff_n) + ")")
 
         # Calculate U2U1 and its standard error
         U2U1_integrand = (-1j/2)*(-1j/2)**2*(-2j)**3*(-1)*tf.einsum('xab,xcd,xe,xf,acf,bde->x',mets,mets,vU2,hvU1b,lc_c,lc_c)
-        U2U1, U2U1_se, U2U1_eff_n, integral_stats['U2U1'] = weighted_mean_and_standard_error(U2U1_integrand, aux_weights,is_top_form=True)
+        U2U1, U2U1_se, U2U1_eff_n, integral_stats['U2U1'] = weighted_mean_and_standard_error(U2U1_integrand, aux_weights,is_top_form=True, mulweightsby=mulweightsby)
         print("(U2,U1) = " + str(U2U1) + " ± " + str(U2U1_se) + " (eff. n = " + str(U2U1_eff_n) + ")")
 
 
@@ -272,46 +351,46 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             integrand_bare_Q3U2_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH-vH_bare,vQ3,vU2)*omega_normalised_to_one
             integrand_bare_Q3U2_vQ3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3-vQ3_bare,vU2)*omega_normalised_to_one
             integrand_bare_Q3U2_vU2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3,vU2-vU2_bare)*omega_normalised_to_one
-            
+
             # Q1U3 combination
             integrand_Q1U3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH,vQ1,vU3)*omega_normalised_to_one
             integrand_bare_Q1U3_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH-vH_bare,vQ1,vU3)*omega_normalised_to_one
             integrand_bare_Q1U3_vQ1 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ1-vQ1_bare,vU3)*omega_normalised_to_one
             integrand_bare_Q1U3_vU3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ1,vU3-vU3_bare)*omega_normalised_to_one
-            
+
             # Q2U3 combination
             integrand_Q2U3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH,vQ2,vU3)*omega_normalised_to_one
             integrand_bare_Q2U3_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH-vH_bare,vQ2,vU3)*omega_normalised_to_one
             integrand_bare_Q2U3_vQ2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ2-vQ2_bare,vU3)*omega_normalised_to_one
             integrand_bare_Q2U3_vU3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ2,vU3-vU3_bare)*omega_normalised_to_one
-            
+
             # Q3U1 combination
             integrand_Q3U1 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vU1)*omega_normalised_to_one
             integrand_bare_Q3U1_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH-vH_bare,vQ3,vU1)*omega_normalised_to_one
             integrand_bare_Q3U1_vQ3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3-vQ3_bare,vU1)*omega_normalised_to_one
             integrand_bare_Q3U1_vU1 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3,vU1-vU1_bare)*omega_normalised_to_one
-            
+
             # Calculate statistics for all integrands
-            int_Q3U2, int_Q3U2_se, int_Q3U2_eff_n, int_Q3U2_stats = weighted_mean_and_standard_error(integrand_Q3U2, aux_weights)
-            int_bare_Q3U2_vH, int_bare_Q3U2_vH_se, int_bare_Q3U2_vH_eff_n, int_bare_Q3U2_vH_stats = weighted_mean_and_standard_error(integrand_bare_Q3U2_vH, aux_weights)
-            int_bare_Q3U2_vQ3, int_bare_Q3U2_vQ3_se, int_bare_Q3U2_vQ3_eff_n, int_bare_Q3U2_vQ3_stats = weighted_mean_and_standard_error(integrand_bare_Q3U2_vQ3, aux_weights)
-            int_bare_Q3U2_vU2, int_bare_Q3U2_vU2_se, int_bare_Q3U2_vU2_eff_n, int_bare_Q3U2_vU2_stats = weighted_mean_and_standard_error(integrand_bare_Q3U2_vU2, aux_weights)
+            int_Q3U2, int_Q3U2_se, int_Q3U2_eff_n, int_Q3U2_stats = weighted_mean_and_standard_error(integrand_Q3U2, aux_weights, mulweightsby=mulweightsby)
+            int_bare_Q3U2_vH, int_bare_Q3U2_vH_se, int_bare_Q3U2_vH_eff_n, int_bare_Q3U2_vH_stats = weighted_mean_and_standard_error(integrand_bare_Q3U2_vH, aux_weights, mulweightsby=mulweightsby)
+            int_bare_Q3U2_vQ3, int_bare_Q3U2_vQ3_se, int_bare_Q3U2_vQ3_eff_n, int_bare_Q3U2_vQ3_stats = weighted_mean_and_standard_error(integrand_bare_Q3U2_vQ3, aux_weights, mulweightsby=mulweightsby)  
+            int_bare_Q3U2_vU2, int_bare_Q3U2_vU2_se, int_bare_Q3U2_vU2_eff_n, int_bare_Q3U2_vU2_stats = weighted_mean_and_standard_error(integrand_bare_Q3U2_vU2, aux_weights, mulweightsby=mulweightsby)
 
-            int_Q1U3, int_Q1U3_se, int_Q1U3_eff_n, int_Q1U3_stats = weighted_mean_and_standard_error(integrand_Q1U3, aux_weights)
-            int_bare_Q1U3_vH, int_bare_Q1U3_vH_se, int_bare_Q1U3_vH_eff_n, int_bare_Q1U3_vH_stats = weighted_mean_and_standard_error(integrand_bare_Q1U3_vH, aux_weights)
-            int_bare_Q1U3_vQ1, int_bare_Q1U3_vQ1_se, int_bare_Q1U3_vQ1_eff_n, int_bare_Q1U3_vQ1_stats = weighted_mean_and_standard_error(integrand_bare_Q1U3_vQ1, aux_weights)
-            int_bare_Q1U3_vU3, int_bare_Q1U3_vU3_se, int_bare_Q1U3_vU3_eff_n, int_bare_Q1U3_vU3_stats = weighted_mean_and_standard_error(integrand_bare_Q1U3_vU3, aux_weights)
+            int_Q1U3, int_Q1U3_se, int_Q1U3_eff_n, int_Q1U3_stats = weighted_mean_and_standard_error(integrand_Q1U3, aux_weights, mulweightsby=mulweightsby)
+            int_bare_Q1U3_vH, int_bare_Q1U3_vH_se, int_bare_Q1U3_vH_eff_n, int_bare_Q1U3_vH_stats = weighted_mean_and_standard_error(integrand_bare_Q1U3_vH, aux_weights, mulweightsby=mulweightsby)
+            int_bare_Q1U3_vQ1, int_bare_Q1U3_vQ1_se, int_bare_Q1U3_vQ1_eff_n, int_bare_Q1U3_vQ1_stats = weighted_mean_and_standard_error(integrand_bare_Q1U3_vQ1, aux_weights, mulweightsby=mulweightsby)
+            int_bare_Q1U3_vU3, int_bare_Q1U3_vU3_se, int_bare_Q1U3_vU3_eff_n, int_bare_Q1U3_vU3_stats = weighted_mean_and_standard_error(integrand_bare_Q1U3_vU3, aux_weights, mulweightsby=mulweightsby)
 
-            int_Q2U3, int_Q2U3_se, int_Q2U3_eff_n, int_Q2U3_stats = weighted_mean_and_standard_error(integrand_Q2U3, aux_weights)
-            int_bare_Q2U3_vH, int_bare_Q2U3_vH_se, int_bare_Q2U3_vH_eff_n, int_bare_Q2U3_vH_stats = weighted_mean_and_standard_error(integrand_bare_Q2U3_vH, aux_weights)
-            int_bare_Q2U3_vQ2, int_bare_Q2U3_vQ2_se, int_bare_Q2U3_vQ2_eff_n, int_bare_Q2U3_vQ2_stats = weighted_mean_and_standard_error(integrand_bare_Q2U3_vQ2, aux_weights)
-            int_bare_Q2U3_vU3, int_bare_Q2U3_vU3_se, int_bare_Q2U3_vU3_eff_n, int_bare_Q2U3_vU3_stats = weighted_mean_and_standard_error(integrand_bare_Q2U3_vU3, aux_weights)
+            int_Q2U3, int_Q2U3_se, int_Q2U3_eff_n, int_Q2U3_stats = weighted_mean_and_standard_error(integrand_Q2U3, aux_weights, mulweightsby=mulweightsby)
+            int_bare_Q2U3_vH, int_bare_Q2U3_vH_se, int_bare_Q2U3_vH_eff_n, int_bare_Q2U3_vH_stats = weighted_mean_and_standard_error(integrand_bare_Q2U3_vH, aux_weights, mulweightsby=mulweightsby)
+            int_bare_Q2U3_vQ2, int_bare_Q2U3_vQ2_se, int_bare_Q2U3_vQ2_eff_n, int_bare_Q2U3_vQ2_stats = weighted_mean_and_standard_error(integrand_bare_Q2U3_vQ2, aux_weights, mulweightsby=mulweightsby)
+            int_bare_Q2U3_vU3, int_bare_Q2U3_vU3_se, int_bare_Q2U3_vU3_eff_n, int_bare_Q2U3_vU3_stats = weighted_mean_and_standard_error(integrand_bare_Q2U3_vU3, aux_weights, mulweightsby=mulweightsby)
 
-            int_Q3U1, int_Q3U1_se, int_Q3U1_eff_n, int_Q3U1_stats = weighted_mean_and_standard_error(integrand_Q3U1, aux_weights)
-            int_bare_Q3U1_vH, int_bare_Q3U1_vH_se, int_bare_Q3U1_vH_eff_n, int_bare_Q3U1_vH_stats = weighted_mean_and_standard_error(integrand_bare_Q3U1_vH, aux_weights)
-            int_bare_Q3U1_vQ3, int_bare_Q3U1_vQ3_se, int_bare_Q3U1_vQ3_eff_n, int_bare_Q3U1_vQ3_stats = weighted_mean_and_standard_error(integrand_bare_Q3U1_vQ3, aux_weights)
-            int_bare_Q3U1_vU1, int_bare_Q3U1_vU1_se, int_bare_Q3U1_vU1_eff_n, int_bare_Q3U1_vU1_stats = weighted_mean_and_standard_error(integrand_bare_Q3U1_vU1, aux_weights)
-            
+            int_Q3U1, int_Q3U1_se, int_Q3U1_eff_n, int_Q3U1_stats = weighted_mean_and_standard_error(integrand_Q3U1, aux_weights, mulweightsby=mulweightsby)
+            int_bare_Q3U1_vH, int_bare_Q3U1_vH_se, int_bare_Q3U1_vH_eff_n, int_bare_Q3U1_vH_stats = weighted_mean_and_standard_error(integrand_bare_Q3U1_vH, aux_weights, mulweightsby=mulweightsby)
+            int_bare_Q3U1_vQ3, int_bare_Q3U1_vQ3_se, int_bare_Q3U1_vQ3_eff_n, int_bare_Q3U1_vQ3_stats = weighted_mean_and_standard_error(integrand_bare_Q3U1_vQ3, aux_weights, mulweightsby=mulweightsby)  
+            int_bare_Q3U1_vU1, int_bare_Q3U1_vU1_se, int_bare_Q3U1_vU1_eff_n, int_bare_Q3U1_vU1_stats = weighted_mean_and_standard_error(integrand_bare_Q3U1_vU1, aux_weights, mulweightsby=mulweightsby)
+
             print("\n Q3U2:")
             print(f"int_Q3U2 = {int_Q3U2:.6e} ± {int_Q3U2_se:.6e} (eff. n = {int_Q3U2_eff_n})")
             print(f"int_bare_Q3U2_vH = {int_bare_Q3U2_vH:.6e} ± {int_bare_Q3U2_vH_se:.6e} (eff. n = {int_bare_Q3U2_vH_eff_n})")
@@ -332,10 +411,10 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             print(f"integrand_bare_Q3U1_vH = {int_bare_Q3U1_vH:.6e} ± {int_bare_Q3U1_vH_se:.6e} (eff. n = {int_bare_Q3U1_vH_eff_n})")
             print(f"integrand_bare_Q3U1_vQ3 = {int_bare_Q3U1_vQ3:.6e} ± {int_bare_Q3U1_vQ3_se:.6e} (eff. n = {int_bare_Q3U1_vQ3_eff_n})")
             print(f"integrand_bare_Q3U1_vU1 = {int_bare_Q3U1_vU1:.6e} ± {int_bare_Q3U1_vU1_se:.6e} (eff. n = {int_bare_Q3U1_vU1_eff_n})")
-            
-            
+
+
             print("--------------------------------\n\n\n\n\n\n\n\n")
-           
+
         # vals = []
        
         # vals = []
@@ -448,8 +527,8 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                 # Apply factor and calculate weighted mean and standard error
                 scaled_integrand = factor * integrand
                 scaled_integrandwoH = factor * integrandwoH
-                m_value, m_se, m_eff_n, m_stats = weighted_mean_and_standard_error(scaled_integrand, aux_weights,is_top_form=True)
-                m_valueewoH, m_sewoH, m_eff_nwoH, m_statswoH = weighted_mean_and_standard_error(scaled_integrandwoH, aux_weights,is_top_form=True)
+                m_value, m_se, m_eff_n, m_stats = weighted_mean_and_standard_error(scaled_integrand, aux_weights,is_top_form=True, mulweightsby=mulweightsby)
+                m_valueewoH, m_sewoH, m_eff_nwoH, m_statswoH = weighted_mean_and_standard_error(scaled_integrandwoH, aux_weights,is_top_form=True, mulweightsby=mulweightsby)
                 m_errors[i, j] = m_se
                 m[i, j] = m_value
                 m_errorswoH[i, j] = m_sewoH
@@ -526,14 +605,14 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             mass_data = {}
             # Add trained or untrained prefix to the logs
             prefix = "trained_" if use_trained else "ref_"
-            
+
             for i in range(len(s)):
                 mass_data[f"{prefix}mass_{i+1}"] = s[i]
                 mass_data[f"{prefix}mass_{i+1}_error"] = singular_value_errors[i]
-            
+
             # Log the data to wandb
             wandb.log(mass_data)
-            
+
             # Also log the full matrix for visualization
             wandb.log({
                 f"{prefix}physical_yukawa_matrix": wandb.Table(
@@ -587,14 +666,14 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     run_id = f"{timestamp}_{unique_id_or_coeff}"  # Add process ID for uniqueness
 
     # Save to unique file in results directory
-    os.makedirs(foldername + '_results', exist_ok=True)
-    npzsavelocation = foldername + '_results/run_' + run_id + '.npz'
+    os.makedirs(os.path.join("data",type_folder,f'{manifold_name}_results'), exist_ok=True)
+    npzsavelocation = os.path.join("data",type_folder,f'{manifold_name}_results/run_' + run_id + '.npz')
     np.savez(npzsavelocation, **results)
 
     # Save masses to CSV
     import csv
-    csv_file = f'{foldername}_results/masses.csv'
-    print("saving csv to " + npzsavelocation)
+    csv_file = os.path.join("data",type_folder,f'{manifold_name}_results/masses.csv')
+    print("saving csv to " + npzsavelocation, "saving npz to " + npzsavelocation)
 
     # Create header if file doesn't exist
     if not os.path.exists(csv_file):

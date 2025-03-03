@@ -94,6 +94,14 @@ if __name__ == '__main__':
     print("Running with double precision?:", double_precision)
     set_double_precision(double_precision)
 
+    if 'savevecs' in sys.argv[1:]:
+        savevecs = True
+    else:
+        savevecs = False
+    if 'loadvecs' in sys.argv[1:]:
+        loadvecs = True
+    else:
+        loadvecs = False
 
 
 
@@ -605,7 +613,7 @@ if __name__ ==  '__main__':
         'config_sigma2': sigma2model_config,
     }
 
-    masses, masserrors = do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = do_extra_stuff_for_integration)
+    masses, masserrors = do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = do_extra_stuff_for_integration, savevecs=savevecs, loadvecs=loadvecs)
 
 print("You ran " + " ".join(sys.argv))
 print("Trained masses:")

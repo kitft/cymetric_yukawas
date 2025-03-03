@@ -758,7 +758,7 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
     #     batch_indices=(1, 4, 5),
     #     batch_size=10000
     # )
-    sourcesForHarmonic = compute_source_for_harmonicForm(
+    sourcesForHarmonic = tf.cast(compute_source_for_harmonicForm(
         point_gen,
         realpoints,
         HYMmetric,
@@ -766,10 +766,10 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
         inv_mets,
         pullbacks,
         batch_size=10000
-    )
+    ), complex_dtype)
 
-    sources_train=tf.cast(sourcesForHarmonic[:t_i],complex_dtype)
-    sources_val=tf.cast(sourcesForHarmonic[t_i:],complex_dtype)
+    sources_train=sourcesForHarmonic[:t_i]
+    sources_val=sourcesForHarmonic[t_i:]
 
    #test_realpoints = realpoints[::7]
     #test_inv_mets = inv_mets[::7]
@@ -788,13 +788,17 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
     #max_diff = tf.reduce_max(difference)
     #print(f"Maximum difference between batched and unbatched computation: {max_diff}")
     #cast integral_weights
-    cy_weights_for_vol_j_real= weights[:,0]*det/(6*omega[:,0])#why, because of the weird expand_dims?
+    cy_weights_for_vol_j_real= tf.cast(weights[:,0]*det/(6*omega[:,0]), real_dtype)#why, because of the weird expand_dims?
     cy_weights_for_vol_j_complex = tf.cast(cy_weights_for_vol_j_real,complex_dtype)
-    integrate_abs_sources=tf.reduce_mean(cy_weights_for_vol_j_real*tf.math.abs(sourcesForHarmonic))
-    integrate_sources=tf.reduce_mean(cy_weights_for_vol_j_complex*sourcesForHarmonic)
+    integrate_sources, source_se, _, _ = weighted_mean_and_standard_error(sourcesForHarmonic, cy_weights_for_vol_j_real, is_top_form=True)
+
+    integrate_abs_sources, abs_source_se, _, _ = weighted_mean_and_standard_error(tf.math.abs(sourcesForHarmonic), cy_weights_for_vol_j_real, is_top_form=True)
     
-    print("integrate absolute value of source: " + str(integrate_abs_sources))
-    print("integrate source: " + str(integrate_sources))
+    print(f"integrate absolute value of source: {np.array(integrate_abs_sources)} ± {np.array(abs_source_se)}")
+    print(f"integrate source: {np.array(integrate_sources)} ± {np.array(source_se)}")
+    # Check if source integral is too large compared to its error
+    if tf.abs(integrate_sources) > tf.constant(10, dtype=real_dtype) * tf.abs(source_se):
+        print(f"WARNING: (absolute value of ) source integral {integrate_sources} exceeds threshold of 10 times error {source_se}")
 
     #print(norm_fac)
     #print(norm_fac)
@@ -829,7 +833,7 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
     # Calculate effective sample size and error
     ess = tf.square(tf.reduce_sum(weightsreal)) / tf.reduce_sum(tf.square(weightsreal))
     error = 1/tf.sqrt(ess)
-    print(f"ESS: {ess}, error: {error}")
+    print(f"ESS (deprecated): {ess}, error: {error}")
     print(f"Data dimensions: Train: {len(X_train)} samples, Val: {len(X_val)} samples")
     
     # Verify all train, val arrays have same length

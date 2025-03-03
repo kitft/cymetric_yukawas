@@ -834,9 +834,11 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,phimode
 
 
    if set_weights_to_zero:
-      print("RETURNING ZERO NETWORK")
+      print("USING ZERO NETWORK")
+      betamodel = betamodelzero
       training_historyBeta=0
       if skip_measures:
+         print("RETURNING ZERO NETWORK")
          return betamodelzero, training_historyBeta, None
    elif set_weights_to_random:
       print("RETURNING RANDOM NETWORK")
@@ -1408,6 +1410,7 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
 
    if set_weights_to_zero:
       training_historyHF=0
+      HFmodel = HFmodelzero
       if skip_measures:
          print("RETURNING ZERO NETWORK")
          return HFmodelzero, training_historyHF, None

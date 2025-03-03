@@ -587,8 +587,41 @@ def propagate_errors_through_normalization_legacy(matrix, matrix_errors):
 if __name__ == "__main__":
     test_error_propagation()
 
+def weighted_mean_std_error(weights, values):
+    """
+    Calculate the standard error of a weighted mean estimator.
+    $$SE(\hat{\mu}_w) = \sqrt{\frac{\sum_i w_i^2 (x_i - \hat{\mu}_w)^2}$$
+
+    Parameters:
+        weights: Tensor of weights for each value
+        values: Tensor of values to calculate weighted mean for
+
+    Returns:
+        standard_error: The standard error of the weighted mean
+    """
+    # Cast to appropriate dtype
+    weights = tf.cast(weights, real_dtype)
+    values = tf.cast(values, real_dtype)
+
+    # Calculate weighted mean
+    weighted_mean = tf.reduce_mean(weights * values)
+
+    # Calculate squared deviations
+    squared_deviations = tf.square(weights*values - weighted_mean)
+
+    # Calculate standard error
+    # Note the weights are squared in the numerator
+    variance_estimator = tf.reduce_mean( squared_deviations) *1/(len(values)-1)
+
+    return tf.sqrt(variance_estimator)
+    # norm_weights = weights/tf.reduce_mean(weights)
+    # weighted_average = tf.reduce_mean(norm_weights*values)
+    # weighted_variance = tf.reduce_mean(weights**2 * (values-weighted_average)**2)
+    # standard_error = tf.sqrt(weighted_variance)
+    # return standard_error
+
 # Function to calculate both weighted mean and standard error in a single call
-def weighted_mean_and_standard_error(values, weights, is_top_form=False):
+def weighted_mean_and_standard_error(values, weights, is_top_form=False, mulweightsby=None):
     """
     Calculate weighted mean and standard error for a set of values with weights.
     Handles complex values by treating real and imaginary parts separately.
@@ -604,6 +637,9 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False):
     """
     # Assert that weights are real
     tf.debugging.assert_all_finite(weights, "Weights must be real values")
+    if mulweightsby is not None:
+        weights=weights*tf.cast(mulweightsby, weights.dtype)
+        values=values*1/tf.cast(mulweightsby, values.dtype)
     
     # Get the weighted mean
     weighted_mean = tf.reduce_mean(tf.cast(weights, values.dtype) * values)
@@ -612,10 +648,13 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False):
    
     # Check if values are complex
     if hasattr(values, 'dtype') and 'complex' in str(values.dtype):
-        weighted_stddev_real = tf.math.reduce_std(tf.math.real(tf.cast(weights, values.dtype) * values))
-        weighted_stddev_imag = tf.math.reduce_std(tf.math.imag(tf.cast(weights, values.dtype) * values))
-        weighted_stddev = complex(weighted_stddev_real, weighted_stddev_imag)
-        stddev_estimator = weighted_stddev*1/np.sqrt(len(values))
+        weighted_stddev_real2 = tf.math.reduce_std(tf.math.real(tf.cast(weights, values.dtype) * values))
+        weighted_stddev_imag2 = tf.math.reduce_std(tf.math.imag(tf.cast(weights, values.dtype) * values))
+        weighted_stddev_real=weighted_mean_std_error(weights, tf.math.real(values))
+        weighted_stddev_imag=weighted_mean_std_error(weights, tf.math.imag(values))
+        print("compare real stddev: ", np.array(weighted_stddev_real), np.array(weighted_stddev_real2))
+        print("compare imag stddev: ", np.array(weighted_stddev_imag), np.array(weighted_stddev_imag2))
+        weighted_stddev = tf.complex(weighted_stddev_real, weighted_stddev_imag)
          # Calculate the effective sample size
 
         n_eff_r = effective_sample_size(weights*tf.cast(tf.math.real(values), real_dtype))
@@ -650,8 +689,9 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False):
             axes=[[1], [0]]
         )
         # Handle tensor elements individually to avoid scalar conversion error
-        cov_matrix_np = cov_matrix.numpy()
-        print(f"----Covariance matrix Re/Im: [{np.format_float_scientific(cov_matrix_np[0,0], precision=2)},{np.format_float_scientific(cov_matrix_np[1,1], precision=2)}], sqrtabs:[{np.format_float_scientific(np.sqrt(np.abs(cov_matrix_np[0,0])), precision=2)},{np.format_float_scientific(np.sqrt(np.abs(cov_matrix_np[1,1])), precision=2)}]")
+        #cov_matrix_np = cov_matrix.numpy()
+        #print(f"----Covariance matrix Re/Im: [[{np.format_float_scientific(cov_matrix_np[0,0], precision=2)},{np.format_float_scientific(cov_matrix_np[0,1], precision=2)}], [{np.format_float_scientific(cov_matrix_np[1,0], precision=2)},{np.format_float_scientific(cov_matrix_np[1,1], precision=2)}]], \
+        #      sqrtabs:[[{np.format_float_scientific(np.sqrt(np.abs(cov_matrix_np[0,0])), precision=2)},{np.format_float_scientific(np.sqrt(np.abs(cov_matrix_np[0,1])), precision=2)}], [{np.format_float_scientific(np.sqrt(np.abs(cov_matrix_np[1,0])), precision=2)},{np.format_float_scientific(np.sqrt(np.abs(cov_matrix_np[1,1])), precision=2)}]]")
         
         # Standard error for imaginary part
         #imag_se = imag_variance / np.sqrt(n_eff_c)
@@ -659,18 +699,18 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False):
         # Return complex standard error
         #complex_std_error = tf.complex(real_se, imag_se)
         neff_complex = complex(n_eff_r, n_eff_c)
-        return np.array(weighted_mean), np.array(stddev_estimator), neff_complex, {'value': np.array(weighted_mean), 'std_error': np.array(stddev_estimator), 'eff_n': neff_complex}
+        return np.array(weighted_mean), np.array(weighted_stddev), neff_complex, {'value': np.array(weighted_mean), 'std_error': np.array(weighted_stddev), 'eff_n': neff_complex}
     else:
         if is_top_form:
             n_eff = effective_sample_size(weights*values)
         else:
             n_eff = effective_sample_size(weights)
-        weighted_stddev = tf.math.reduce_std(weights*values)
-        stddev_estimator = weighted_stddev*1/np.sqrt(len(values))
-
+        weighted_stddev2 =  tf.math.reduce_std(weights*values)*1/np.sqrt(len(values))
+        weighted_stddev = weighted_mean_std_error(weights, values)
+        print("compare real stddev: ", np.array(weighted_stddev), np.array(weighted_stddev2))
         #real_se = tf.math.reduce_std(weights*values) / np.sqrt(n_eff)
             # Return real standard error
-        return np.array(weighted_mean), np.array(stddev_estimator), n_eff, {'value': np.array(weighted_mean), 'std_error': np.array(stddev_estimator), 'eff_n': n_eff}
+        return np.array(weighted_mean), np.array(weighted_stddev), n_eff, {'value': np.array(weighted_mean), 'std_error': np.array(weighted_stddev), 'eff_n': n_eff}
 
 def propagate_errors_to_physical_yukawas(NormH, NormH_errors, NormQ, NormQ_errors, NormU, NormU_errors, m, m_errors):
     """
