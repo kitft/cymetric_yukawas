@@ -46,7 +46,7 @@ except (ValueError, IndexError):
 # Default wandb behavior: disabled for 'integrate', enabled for 'run'
 use_wandb = integrate_or_run == 'run'
 
-if os.path.exists('.wandb_key'):
+if os.path.exists(os.path.join(os.getcwd(), '.wandb_key')):
     # Override default with explicit command line flag
     if 'wandb' in sys.argv[1:]:
         use_wandb = True
@@ -54,7 +54,7 @@ if os.path.exists('.wandb_key'):
         use_wandb = False
         
     if use_wandb:
-        with open('.wandb_key', 'r') as f:
+        with open(os.path.join(os.getcwd(), '.wandb_key'), 'r') as f:
             wandb_key = f.read().strip()
             wandb.login(key=wandb_key)
     else:
