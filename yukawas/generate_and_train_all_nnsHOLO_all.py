@@ -321,8 +321,8 @@ def train_and_save_nn(manifold_name_and_data, phimodel_config=None,use_zero_netw
    print("ratio of final to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valfinal.items()}))
    print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,data["X_val"])
-   print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
+   averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure(phimodel,data["X_val"])
+   print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
    #IMPLEMENT THE FOLLOWING
    #meanfailuretosolveequation,_,_=measure_laplacian_failure(phimodel,data)
    print("\n\n")
@@ -468,8 +468,8 @@ def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=
    print("validation loss for final network: ")
    print(valtrained)
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(phimodel,data["X_val"])
-   print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
+   averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure(phimodel,data["X_val"])
+   print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs), " mean discrepancy: ", mean_t_discrepancy)
    print("\n\n")
    #IMPLEMENT THE FOLLOWING
    #meanfailuretosolveequation,_,_=measure_laplacian_failure(phimodel,data)
@@ -730,8 +730,8 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
    print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,databeta["X_val"])
-   print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
+   averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure(betamodel,databeta["X_val"])
+   print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
 
 
    import time
@@ -884,8 +884,8 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,phimode
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure(betamodel,databeta["X_val"])
-   print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs))
+   averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure(betamodel,databeta["X_val"])
+   print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
    import time
    start=time.time()
    #meanfailuretosolveequation,_,_=HYM_measure_val(betamodel,databeta)
@@ -1244,17 +1244,17 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    #print("perm10")
    #print(perm.print_diff())
    print("-----CHECKS------")
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("average transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs.numpy()))
+   averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
+   print("average section transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
    transition_loss = compute_transition_loss_for_corrected_HF_model(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("transition loss: " + str(tf.reduce_mean(transition_loss).numpy()))
+   print("1-form transition loss: " + str(tf.reduce_mean(transition_loss).numpy()))
    transition_loss_zero = compute_transition_loss_for_corrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2] )
-   print("transition loss for zero network: " + str(tf.reduce_mean(transition_loss_zero).numpy()))
+   print("1-form transition loss for zero network: " + str(tf.reduce_mean(transition_loss_zero).numpy()))
    
    transition_loss_for_uncorrected_HF = compute_transition_loss_for_uncorrected_HF_model(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("transition loss for uncorrected HF: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF).numpy()))
+   print("1-form transition loss for uncorrected HF: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF).numpy()))
    transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()))
+   print("1-form transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()))
 
 
    import time
@@ -1464,8 +1464,18 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
 
 
-   averagediscrepancyinstdevs,_=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"],dataHF["y_val"][:, -2])
-   print("average transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs))
+   averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"],dataHF["y_val"][:, -2])
+   print("average section transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
+   transition_loss = compute_transition_loss_for_corrected_HF_model(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
+   print("1-form transition loss: " + str(tf.reduce_mean(transition_loss).numpy()))
+   transition_loss_zero = compute_transition_loss_for_corrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2] )
+   print("1-form transition loss for zero network: " + str(tf.reduce_mean(transition_loss_zero).numpy()))
+   
+   transition_loss_for_uncorrected_HF = compute_transition_loss_for_uncorrected_HF_model(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
+   print("1-form transition loss for uncorrected HF (should be same as above): " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF).numpy()))
+   transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
+   print("1-form transition loss for uncorrected HF zero network (should be same as above): " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()))
+
    #meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
 
    #meanfailuretosolveequation= batch_process_helper_func(

@@ -412,7 +412,7 @@ def compute_transition_pointwise_measure(functionmodel, points):
         meanoverstddev=tf.reduce_mean(all_t_loss)/stddev
         #print("average value/stddev "+ str(meanoverstddev))
 
-        return meanoverstddev,all_t_loss/stddev
+        return meanoverstddev,all_t_loss/stddev, tf.reduce_mean(all_t_loss)
 
 def compute_sigma_measure(sigma_model, points_real, CY_weights_unnormalised, omegas):
     """"""    
@@ -606,7 +606,7 @@ def compute_transition_pointwise_measure_section(HFmodel, points, weights=None, 
             all_t_loss = all_t_loss * weights
         
         meanoverstddev = tf.reduce_mean(all_t_loss)/stddev
-        return meanoverstddev, all_t_loss/stddev
+        return meanoverstddev, all_t_loss/stddev, tf.reduce_mean(all_t_loss)
 
     
 

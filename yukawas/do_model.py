@@ -259,11 +259,34 @@ if __name__ == '__main__':
     stddev_sigma2=0.5#0.5
     final_layer_scale_sigma=0.01#0.01
     final_layer_scale_sigma2=0.01#0.3#0.000001#0.01
-    
-    skip_measuresPhi=True
-    skip_measuresBeta=True
-    skip_measuresHF=True
-    
+
+    if 'skipall' in sys.argv[1:]:
+        print("Requested to skip all measures")
+        skip_measuresPhi=True
+        skip_measuresBeta=True
+        skip_measuresHF=True
+    elif 'skipnone' in sys.argv[1:]:
+        skip_measuresPhi=False
+        skip_measuresBeta=False
+        skip_measuresHF=False
+        print("Requested to skip none of the measures")
+    elif 'skipphibeta' in sys.argv[1:]:
+        skip_measuresPhi=True
+        skip_measuresBeta=True
+        skip_measuresHF=False
+        print("Requested to skip phi and beta")
+    else:
+        if integrate_or_run == 'run':
+            print("defaulting to skipping phi and beta")
+            skip_measuresPhi=False
+            skip_measuresBeta=False
+            skip_measuresHF=False
+        else:
+            print("defaulting to skipping none")
+            skip_measuresPhi=True
+            skip_measuresBeta=True
+            skip_measuresHF=True
+        #skip_measuresHF
 
 
     return_zero_phi= True
