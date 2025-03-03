@@ -347,28 +347,28 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         if do_extra_stuff:
             print("\n\n\n\n\n\n\n\n Checking topological invariance if one of the forms is pure derivatives!")
             # Check topological invariance with pure derivatives
-            integrand_Q3U2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vU2)*omega_normalised_to_one
-            integrand_bare_Q3U2_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH-vH_bare,vQ3,vU2)*omega_normalised_to_one
-            integrand_bare_Q3U2_vQ3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3-vQ3_bare,vU2)*omega_normalised_to_one
-            integrand_bare_Q3U2_vU2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3,vU2-vU2_bare)*omega_normalised_to_one
+            integrand_Q3U2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3_bare,vU2_bare)*omega_normalised_to_one
+            integrand_bare_Q3U2_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH-vH_bare,vQ3_bare,vU2_bare)*omega_normalised_to_one
+            integrand_bare_Q3U2_vQ3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3-vQ3_bare,vU2_bare)*omega_normalised_to_one
+            integrand_bare_Q3U2_vU2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3_bare,vU2-vU2_bare)*omega_normalised_to_one
 
             # Q1U3 combination
-            integrand_Q1U3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH,vQ1,vU3)*omega_normalised_to_one
-            integrand_bare_Q1U3_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH-vH_bare,vQ1,vU3)*omega_normalised_to_one
-            integrand_bare_Q1U3_vQ1 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ1-vQ1_bare,vU3)*omega_normalised_to_one
-            integrand_bare_Q1U3_vU3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ1,vU3-vU3_bare)*omega_normalised_to_one
+            integrand_Q1U3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ1_bare,vU3_bare)*omega_normalised_to_one
+            integrand_bare_Q1U3_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH-vH_bare,vQ1_bare,vU3_bare)*omega_normalised_to_one
+            integrand_bare_Q1U3_vQ1 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ1-vQ1_bare,vU3_bare)*omega_normalised_to_one
+            integrand_bare_Q1U3_vU3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ1_bare,vU3-vU3_bare)*omega_normalised_to_one
 
             # Q2U3 combination
-            integrand_Q2U3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH,vQ2,vU3)*omega_normalised_to_one
-            integrand_bare_Q2U3_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH-vH_bare,vQ2,vU3)*omega_normalised_to_one
-            integrand_bare_Q2U3_vQ2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ2-vQ2_bare,vU3)*omega_normalised_to_one
-            integrand_bare_Q2U3_vU3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ2,vU3-vU3_bare)*omega_normalised_to_one
+            integrand_Q2U3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ2_bare,vU3_bare)*omega_normalised_to_one
+            integrand_bare_Q2U3_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH-vH_bare,vQ2_bare,vU3_bare)*omega_normalised_to_one
+            integrand_bare_Q2U3_vQ2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ2-vQ2_bare,vU3_bare)*omega_normalised_to_one
+            integrand_bare_Q2U3_vU3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ2_bare,vU3-vU3_bare)*omega_normalised_to_one
 
             # Q3U1 combination
-            integrand_Q3U1 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH,vQ3,vU1)*omega_normalised_to_one
-            integrand_bare_Q3U1_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH-vH_bare,vQ3,vU1)*omega_normalised_to_one
-            integrand_bare_Q3U1_vQ3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3-vQ3_bare,vU1)*omega_normalised_to_one
-            integrand_bare_Q3U1_vU1 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3,vU1-vU1_bare)*omega_normalised_to_one
+            integrand_Q3U1 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3_bare,vU1_bare)*omega_normalised_to_one
+            integrand_bare_Q3U1_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH-vH_bare,vQ3_bare,vU1_bare)*omega_normalised_to_one
+            integrand_bare_Q3U1_vQ3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3-vQ3_bare,vU1_bare)*omega_normalised_to_one
+            integrand_bare_Q3U1_vU1 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3_bare,vU1-vU1_bare)*omega_normalised_to_one
 
             # Calculate statistics for all integrands
             int_Q3U2, int_Q3U2_se, int_Q3U2_eff_n, int_Q3U2_stats = weighted_mean_and_standard_error(integrand_Q3U2, aux_weights, mulweightsby=mulweightsby)

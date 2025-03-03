@@ -44,7 +44,7 @@ except (ValueError, IndexError):
     print(f"Running with job ID: {job_id}")
 
 # Default wandb behavior: disabled for 'integrate', enabled for 'run'
-use_wandb = integrate_or_run == 'run'
+use_wandb = True
 
 if os.path.exists(os.path.join(os.getcwd(), '.wandb_key')):
     # Override default with explicit command line flag
@@ -282,7 +282,7 @@ if __name__ == '__main__':
             skip_measuresBeta=False
             skip_measuresHF=False
         else:
-            print("defaulting to skipping none")
+            print("defaulting to skipping all")
             skip_measuresPhi=True
             skip_measuresBeta=True
             skip_measuresHF=True
@@ -507,7 +507,8 @@ if __name__ ==  '__main__':
                       'sigma2model_config': sigma2model_config,
                       'invoking_command': ' '.join(sys.argv),
                       'nPoints': nPoints,
-                      'n_to_integrate': n_to_integrate})
+                      'n_to_integrate': n_to_integrate,
+                      'tags': [integrate_or_run, modeltype, "nint"+str(n_to_integrate), "npoints"+str(nPoints)]})
     
     
     
