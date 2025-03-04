@@ -261,7 +261,7 @@ def coclosure_check(points,HYMmetric,harmonicform_jbar,sigma,invmetric,pullbacks
     return tf.einsum('xba,xbj,xai,xji->x',invmetric,tf.math.conj(pullbacks),pullbacks,dz_Hnu) #the barred index is first, and the derivative index is second! Same is true, in fact, for the inverse metric
     #return dz_Hnu#tf.einsum('xbj,xai,xji->xab',tf.math.conj(pullbacks),pullbacks,dz_Hnu) #the barred index is first, and the derivative index is second! Same is true, in fact, for the inverse metric
 
-def closure_check(points,harmonicform_jbar,sigma,pullbacks):
+def closure_check(points,harmonicform_jbar,sigma,pullbacks, return_both=False):
     #break
     ncoords = tf.shape(points[0])[-1] // 2 
     pointstensor=points#tf.constant(points)
@@ -293,8 +293,12 @@ def closure_check(points,harmonicform_jbar,sigma,pullbacks):
         # same for iz, now get 0 + 0 + i( 1/2 -(-1/2)) =i 
         # note that the pullbacks can come afterwards, as the holomorphic derivative should just pass straight through the conjugated pullback
     outval = tf.einsum('xbj,xck,xkj->xcb',tf.math.conj(pullbacks),tf.math.conj(pullbacks),dz_Hnu) #the barred index is first, and the derivative index is second! Same is true, in fact, for the inverse metric
-    return outval - tf.einsum('xab->xba',outval)
+    if return_both:
+        return outval - tf.einsum('xab->xba',outval), outval
+    else:
+        return outval - tf.einsum('xab->xba',outval)
     #return dz_Hnu#tf.einsum('xbj,xai,xji->xab',tf.math.conj(pullbacks),pullbacks,dz_Hnu) #the barred index is first, and the derivative index is second! Same is true, in fact, for the inverse metric
+
 
 
 

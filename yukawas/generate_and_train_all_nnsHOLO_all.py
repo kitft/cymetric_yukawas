@@ -1,3 +1,4 @@
+import time
 from cymetric.config import real_dtype, complex_dtype
 from cymetric.models.fubinistudy import FSModel
 import tensorflow as tf
@@ -1412,6 +1413,8 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
       training_historyHF=0
       HFmodel = HFmodelzero
       if skip_measures:
+         averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"],dataHF["y_val"][:, -2])
+         print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
          print("RETURNING ZERO NETWORK")
          return HFmodelzero, training_historyHF, None
       else:
@@ -1419,6 +1422,8 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    elif set_weights_to_random:
       training_historyHF=0
       if skip_measures:
+         averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"],dataHF["y_val"][:, -2])
+         print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
          print("RETURNING RANDOM NETWORK")
          return HFmodel, training_historyHF, None
       else:
@@ -1435,7 +1440,9 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
 
    
    if skip_measures:
-       return HFmodel, training_historyHF, None
+      averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"],dataHF["y_val"][:, -2])
+      print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
+      return HFmodel, training_historyHF, None
 
    HFmodel.compile(custom_metrics=cmetricsHF)
    HFmodelzero.compile(custom_metrics=cmetricsHF)
@@ -1475,7 +1482,6 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    print("1-form transition loss for uncorrected HF (should be same as above): " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF).numpy()))
    transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
    print("1-form transition loss for uncorrected HF zero network (should be same as above): " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()))
-
    #meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
 
    #meanfailuretosolveequation= batch_process_helper_func(
@@ -1484,7 +1490,12 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    #     batch_indices=(0,1,2,3),
    #     batch_size=50
    # )
-   import time
+   start = time.time()
+   print("start time:", time.strftime("%H:%M:%S", time.localtime()))
+   check_vals_again, check_vals_again_2 = closure_check(dataHF["X_val"], HFmodel.functionforbaseharmonicform_jbar, HFmodel, dataHF["val_pullbacks"], return_both = True)
+   print("closure_check on base form again:",tf.reduce_mean(tf.math.abs(check_vals_again)), "took " + str(time.time()-start) + " seconds")
+   print("closure_check on base form (not asym) again:",tf.reduce_mean(tf.math.abs(check_vals_again_2)), "took " + str(time.time()-start) + " seconds")
+   #return HFmodel,training_historyHF, 0 
    start = time.time()
    print("computing mean failure to solve equation", time.strftime("%H:%M:%S", time.localtime()))
    meanfailuretosolveequation,_,_ = HYM_measure_val_with_H(HFmodel,dataHF)

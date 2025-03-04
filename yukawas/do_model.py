@@ -407,6 +407,12 @@ if __name__ == '__main__':
         force_generate_HF=False
         force_generate_HF_2=False
         force_generate_eval=False
+    elif 'loadphibeta' in sys.argv[1:]:
+        force_generate_phi=False
+        force_generate_HYM=False
+        force_generate_HF=True
+        force_generate_HF_2=True
+        force_generate_eval=True
     else:
         force_generate_phi=True
         force_generate_HYM=True

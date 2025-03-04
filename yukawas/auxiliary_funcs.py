@@ -648,8 +648,8 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False, mulweig
    
     # Check if values are complex
     if hasattr(values, 'dtype') and 'complex' in str(values.dtype):
-        weighted_stddev_real2 = tf.math.reduce_std(tf.math.real(tf.cast(weights, values.dtype) * values))
-        weighted_stddev_imag2 = tf.math.reduce_std(tf.math.imag(tf.cast(weights, values.dtype) * values))
+        weighted_stddev_real2 = tf.math.reduce_std(tf.math.real(tf.cast(weights, values.dtype) * values))/np.sqrt(len(values))
+        weighted_stddev_imag2 = tf.math.reduce_std(tf.math.imag(tf.cast(weights, values.dtype) * values))/np.sqrt(len(values))
         weighted_stddev_real=weighted_mean_std_error(weights, tf.math.real(values))
         weighted_stddev_imag=weighted_mean_std_error(weights, tf.math.imag(values))
         print("compare real stddev: ", np.array(weighted_stddev_real), np.array(weighted_stddev_real2))

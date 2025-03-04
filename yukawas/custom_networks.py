@@ -1927,13 +1927,13 @@ class BiholoModelFuncGENERALforSigma2_m13(tf.keras.Model):
             print("using normal network, not scaling or fixing to zero")
 
     def call(self, inputs):
-        inputs = tf.complex(inputs[:, :self.nCoords], inputs[:, self.nCoords:])
+        complex_inputs = tf.complex(inputs[:, :self.nCoords], inputs[:, self.nCoords:])
         #print("ncCoords" +  str(self.nCoords))
         #norm=tf.math.abs(tf.norm(inputs,axis=-1))
-        bihom =self.bihom_func(inputs)
+        bihom =self.bihom_func(complex_inputs)
         #tf.print('inp shape')
         #tf.print(tf.shape(inputs))
-        sectionsbasis=self.get_deg_kphi_and_mons(inputs)
+        sectionsbasis=self.get_deg_kphi_and_mons(complex_inputs)
         inputs= bihom
         inputs2=inputs
         for layer in self.layers_list[:-1]:
