@@ -118,16 +118,16 @@ from auxiliary_funcs import *
 from final_integration import *
 from yukawas.generate_and_train_all_nnsHOLO_all import *
 
+use_default_dir = False if 'local' in sys.argv[1:] else True
 manifold_name = 'TQ'
 import subprocess
-
 # Check if hostname matches comp*/gpu*/hydra* pattern
 try:
     result = subprocess.run(['hostnamectl'], capture_output=True, text=True)
     hostname_output = result.stdout
     first_line = hostname_output.split('\n')[0] if hostname_output else ""
     
-    if any(pattern in first_line for pattern in ["Static hostname: comp", "Static hostname: gpu", "Static hostname: hydra"]):
+    if use_default_dir and any(pattern in first_line for pattern in ["Static hostname: comp", "Static hostname: gpu", "Static hostname: hydra"]):
         data_path = "/mnt/extraspace/kitft/cy_yukawas/data"
     else:
         data_path = "data"

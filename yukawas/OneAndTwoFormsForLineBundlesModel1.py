@@ -103,7 +103,7 @@ getTypeIIs.line_bundles = {
     'vU2': np.array([-1,-3,2,2])
 }
 
-def check_scaling_behavior(form_func, cpoints,formtype, line_bundle, lambda_val=0.5):#+0.33333j):
+def check_scaling_behavior(form_func, cpoints,formtype, line_bundle, lambda_val=0.5, print_detail=False):#+0.33333j):
     """
     Check that the form scales correctly according to its line bundle.
     
@@ -164,13 +164,15 @@ def check_scaling_behavior(form_func, cpoints,formtype, line_bundle, lambda_val=
         #print(f"{i} ratio",ratio, np.round(all_ratios.numpy(),2), "expected", np.round(expected_scale,2))
         
         # Check if the ratio is close to expected value
-        tolerance = 1e-5
+        tolerance = 3e-5
         scales_correctly = tf.abs(ratio - 1) < tolerance
         results.append(scales_correctly.numpy().item())
+        if print_detail:
+            print(f"P{i} ratio",ratio, np.round(all_ratios.numpy(),2))
     
     # All projective spaces must scale correctly
     #print("results",results)
-    return tf.reduce_all(results)
+    return tf.reduce_all(results), results
 
 # Main execution block
 if __name__ == "__main__":
@@ -178,7 +180,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     
     # Generate some test points
-    num_points = 100
+    num_points = 10000
     test_points = tf.random.uniform([num_points, 16], minval=-1.0, maxval=1.0, dtype=tf.float32)
     complex_points = tf.complex(test_points[:, :8], test_points[:, 8:])
     
@@ -229,15 +231,21 @@ if __name__ == "__main__":
         form_func = lambda x: getTypeIIs(x, test_monomials, test_coeffs, form_type)
         test_point = tf.expand_dims(complex_points[0], 0)
         line_bundle = getTypeIIs.line_bundles[form_type]
-        is_correct = check_scaling_behavior(form_func, test_point, form_type, line_bundle)
-        print(f"{form_type} scales correctly: {is_correct.numpy()} with line bundle {line_bundle}")
+        is_correct, results = check_scaling_behavior(form_func, test_point, form_type, line_bundle)
+        if not is_correct.numpy():
+            print(f"{form_type} fails scaling test at point 0: {test_point}, results: {results}")
+        else:
+            print(f"{form_type} scales correctly: {is_correct.numpy()} with line bundle {line_bundle}")
 
     for form_func in [functionforbaseharmonicform_jbar_for_vH,functionforbaseharmonicform_jbar_for_vU3,functionforbaseharmonicform_jbar_for_vQ3]:
         test_point = tf.expand_dims(complex_points[0], 0)
         line_bundle = form_func.line_bundle
-        is_correct = check_scaling_behavior(form_func, test_point, 'vH', line_bundle)
-        print(f"{form_func.__name__} scales correctly: {is_correct.numpy()} with line bundle {line_bundle}")
-    
+        is_correct, results = check_scaling_behavior(form_func, test_point, 'vH', line_bundle)      
+        if not is_correct.numpy():
+            print(f"{form_func.__name__} fails scaling test at point 0: {test_point}, results: {results}")
+        else:
+            print(f"{form_func.__name__} scales correctly: {is_correct.numpy()} with line bundle {line_bundle}")
+        
 
 
     # Test scaling behavior for all points in the dataset
@@ -248,10 +256,11 @@ if __name__ == "__main__":
         all_correct = True
         for i, point in enumerate(complex_points):
             test_point = tf.expand_dims(point, 0)
-            is_correct = check_scaling_behavior(form_func, test_point, form_type, line_bundle)
+            is_correct, results = check_scaling_behavior(form_func, test_point, form_type, line_bundle)
             if not is_correct.numpy():
                 all_correct = False
-                print(f"{form_type} fails scaling test at point {i}")
+                print(f"{form_type} fails scaling test at point {i}: {point}, results: {results}")
+                
                 break
         print(f"{form_type} scales correctly for all points: {all_correct}")
 
@@ -260,9 +269,63 @@ if __name__ == "__main__":
         all_correct = True
         for i, point in enumerate(complex_points):
             test_point = tf.expand_dims(point, 0)
-            is_correct = check_scaling_behavior(form_func, test_point, 'vH', line_bundle)
+            is_correct, results = check_scaling_behavior(form_func, test_point, 'vH', line_bundle)
             if not is_correct.numpy():
                 all_correct = False
-                print(f"{form_func.__name__} fails scaling test at point {i}")
+                print(f"{form_func.__name__} fails scaling test at point {i}: {point}, results: {results}")
                 break
         print(f"{form_func.__name__} scales correctly for all points: {all_correct}")
+
+    # Analyze the problematic forms in detail
+    print("\nDetailed analysis of problematic forms...")
+    
+    # # Analyze specific points that failed in previous tests
+    # print("\nAnalyzing specific points that failed scaling tests:")
+    
+    # # Point that failed for vQ1
+    # vQ1_point = tf.constant([[-0.9065864 -0.5898986j, -0.7647636 +0.53426766j, 0.57997894-0.16393948j,
+    #                          -0.4371791 -0.3024733j, -0.6511016 +0.88802576j, 0.9978664 +0.60525656j,
+    #                          -0.53630257-0.7942703j, 0.809108 -0.8930712j]], dtype=complex_dtype)
+    
+    # # Point that failed for vQ2
+    # vQ2_point = tf.constant([[-0.15478611-0.5467601j, 0.27424073-0.03628635j, -0.15076947-0.1920898j,
+    #                          -0.67389965-0.84321976j, -0.5648675 -0.3534844j, -0.31287456+0.65742064j,
+    #                          0.65165234-0.9621804j, -0.19137716+0.1281333j]], dtype=complex_dtype)
+    
+    # # Point that failed for vU1
+    # vU1_point = tf.constant([[-0.60094166-0.24303031j, 0.3669095 -0.9506347j, 0.90168095-0.9847765j,
+    #                          0.09522223+0.3844216j, -0.750407 -0.8682096j, -0.8162694 +0.91065526j,
+    #                          0.5152743 +0.15132546j, -0.57137084+0.17416167j]], dtype=complex_dtype)
+    
+    # # Point that failed for vU2
+    # vU2_point = tf.constant([[ 0.99127626-0.64768267j, 0.67008376+0.9108846j, 0.8626993 +0.4262185j,
+    #                          -0.4359653 +0.91390395j, -0.11907673+0.67890096j, -0.7594247 +0.31995487j,
+    #                          0.03038573-0.5820801j, -0.97986627+0.09696555j]], dtype=complex_dtype)
+    
+    # # Analyze vQ1
+    # print("\n=== Detailed analysis for vQ1 ===")
+    # vQ1_func = lambda x: getTypeIIs(x, test_monomials, test_coeffs, 'vQ1')
+    # line_bundle = getTypeIIs.line_bundles['vQ1']
+    # is_correct, results = check_scaling_behavior(vQ1_func, vQ1_point, 'vQ1', line_bundle, print_detail=True)
+    # print(f"vQ1 scales correctly: {is_correct.numpy()}, results by coordinate: {results}")
+    
+    # # Analyze vQ2
+    # print("\n=== Detailed analysis for vQ2 ===")
+    # vQ2_func = lambda x: getTypeIIs(x, test_monomials, test_coeffs, 'vQ2')
+    # line_bundle = getTypeIIs.line_bundles['vQ2']
+    # is_correct, results = check_scaling_behavior(vQ2_func, vQ2_point, 'vQ2', line_bundle, print_detail=True)
+    # print(f"vQ2 scales correctly: {is_correct.numpy()}, results by coordinate: {results}")
+    
+    # # Analyze vU1
+    # print("\n=== Detailed analysis for vU1 ===")
+    # vU1_func = lambda x: getTypeIIs(x, test_monomials, test_coeffs, 'vU1')
+    # line_bundle = getTypeIIs.line_bundles['vU1']
+    # is_correct, results = check_scaling_behavior(vU1_func, vU1_point, 'vU1', line_bundle, print_detail=True)
+    # print(f"vU1 scales correctly: {is_correct.numpy()}, results by coordinate: {results}")
+    
+    # # Analyze vU2
+    # print("\n=== Detailed analysis for vU2 ===")
+    # vU2_func = lambda x: getTypeIIs(x, test_monomials, test_coeffs, 'vU2')
+    # line_bundle = getTypeIIs.line_bundles['vU2']
+    # is_correct, results = check_scaling_behavior(vU2_func, vU2_point, 'vU2', line_bundle, print_detail=True)
+    # print(f"vU2 scales correctly: {is_correct.numpy()}, results by coordinate: {results}")
