@@ -136,8 +136,8 @@ except Exception:
     data_path = "data"
 if modeltype == "m13":
     type_folder = integrate_or_run+"model13"
-    get_coefficients_here = get_coefficients_m13# vs get_coefficients_m1
     from yukawas.OneAndTwoFormsForLineBundlesModel13 import *
+    get_coefficients_here = get_coefficients_m13# vs get_coefficients_m1
     linebundleforHYM_LB1=np.array([0,2,-2,0]) 
     linebundleforHYM_LB2=np.array([0,0,1,-3]) 
     linebundleforHYM_LB3=np.array([0,-2,1,3]) 
@@ -179,10 +179,8 @@ if modeltype == "m13":
     kmoduliTQ = np.array([1,(np.sqrt(7)-2)/3,(np.sqrt(7)-2)/3,1])
 elif modeltype == "m1":
     type_folder = integrate_or_run+"model1"
-    get_coefficients_here = get_coefficients_m1
-
-
     from yukawas.OneAndTwoFormsForLineBundlesModel1 import *
+    get_coefficients_here = get_coefficients_m1
 
     linebundleforHYM_LB1=np.array([0,2,-2,0]) 
     linebundleforHYM_LB2=np.array([1,1,0,-2]) 
