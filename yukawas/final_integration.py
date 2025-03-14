@@ -34,7 +34,7 @@ def convert_to_nested_tensor_dict(data):
       return data
 
 def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, savevecs=False, loadvecs=False):
-    (_, kmoduli, _, _, type_folder, unique_id_or_coeff, manifold_name) = manifold_name_and_data
+    (_, kmoduli, _, _, type_folder, unique_id_or_coeff, manifold_name, data_path) = manifold_name_and_data
     points64=tf.concat((dataEval['X_train'], dataEval['X_val']),axis=0)
     ytrain64 = tf.concat((dataEval['y_train'], dataEval['y_val']),axis=0)
     n_p = len(points64)# len(dataEval['X_train'])# len(points64)
@@ -55,7 +55,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     if not loadvecs:
         omega = tf.cast(batch_process_helper_func(pg.holomorphic_volume_form, [pointsComplex], batch_indices=[0], batch_size=100000),complex_dtype)
     else:
-        filename = os.path.join("data",type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{False}.npz")
+        filename = os.path.join(data_path,type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{False}.npz")
         data = np.load(filename)
         omega = tf.cast(data['omega'],complex_dtype)
     # Verify that dataEval['y_train'][:n_p,1] equals |omega|^2
@@ -96,7 +96,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     holomorphic_Yukawas_trained_and_ref=[]
     for use_trained in [True,False]:
         if loadvecs:
-            filename = os.path.join("data",type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{use_trained}.npz")
+            filename = os.path.join(data_path,type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{use_trained}.npz")
             data = np.load(filename, allow_pickle=True)
             data = convert_to_nested_tensor_dict(data)
             vH_bare, vQ3_bare, vU3_bare, vQ1_bare, vQ2_bare, vU1_bare, vU2_bare = data['vH.barevec'], data['vQ3.barevec'], data['vU3.barevec'], data['vQ1.barevec'], data['vQ2.barevec'], data['vU1.barevec'], data['vU2.barevec']
@@ -216,7 +216,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             }
 
             # Create filename with unique identifier
-            filename = os.path.join("data",type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{use_trained}.npz")
+            filename = os.path.join(data_path,type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{use_trained}.npz")
             np.savez(filename, **save_data)
             print(f"(Trained? {use_trained}) vectors saved to {filename}")
 
@@ -661,18 +661,18 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         'Hneffs': Hneffs
     }
 
-# Create unique filename for this run
+    # Create unique filename for this run
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_id = f"{timestamp}_{unique_id_or_coeff}"  # Add process ID for uniqueness
 
     # Save to unique file in results directory
-    os.makedirs(os.path.join("data",type_folder,f'{manifold_name}_results'), exist_ok=True)
-    npzsavelocation = os.path.join("data",type_folder,f'{manifold_name}_results/run_' + run_id + '.npz')
+    os.makedirs(os.path.join(data_path,type_folder,f'{manifold_name}_results'), exist_ok=True)
+    npzsavelocation = os.path.join(data_path,type_folder,f'{manifold_name}_results/run_' + run_id + '.npz')
     np.savez(npzsavelocation, **results)
 
     # Save masses to CSV
     import csv
-    csv_file = os.path.join("data",type_folder,f'{manifold_name}_results/masses.csv')
+    csv_file = os.path.join(data_path,type_folder,f'{manifold_name}_results/masses.csv')
     print("saving csv to " + npzsavelocation, "saving npz to " + npzsavelocation)
 
     # Create header if file doesn't exist
