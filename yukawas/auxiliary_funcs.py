@@ -26,28 +26,6 @@ def delete_all_dicts_except(*except_dict_names):
     gc.collect()
 
 
-def get_coefficients_m13(free_coefficient):
-   x = free_coefficient
-   coefficients=np.array([1, 0, 2, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, \
-0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, \
-0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, \
-0, 0, 0, 1, 0, 2, 0, 0, 0, 2, 0, 1]) +\
-    np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, x, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-      x, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-   return coefficients
-
-
-def get_coefficients_m1(free_coefficient):
-   x = free_coefficient
-   coefficients=np.array([1, 0, 2, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, \
-     0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, x, 0, 0, 0, 0, 0, \
-     0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, \
-     0, 0, 0, 1, 0, 2, 0, 0, 0, 2, 0, 1])
-   return coefficients
-
-
 def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10000, compile_func=False, actually_batch=True, kwargs=None, print_progress=False):
     if kwargs is None:
         kwargs = {}

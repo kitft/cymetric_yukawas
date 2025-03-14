@@ -125,10 +125,10 @@ def create_adam_optimizer_with_decay(initial_learning_rate, nEpochs, final_lr_fa
 
 def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,number_points,force_generate=False,seed_set=0):
    print("\n\n")
-   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path = (manifold_name_and_data)
    pg = PointGenerator(monomials, coefficients, kmoduli, ambient)
    pg._set_seed(seed_set)
-   dirname = "data/"+type_folder + '/'+manifold_name+'_pg_for_eval_with_'+str(unique_id_or_coeff) 
+   dirname = os.path.join(data_path, type_folder, manifold_name+'_pg_for_eval_with_'+str(unique_id_or_coeff)) 
    print("dirname: " + dirname)
    #test if the directory exists, if not, create it
    if force_generate or (not os.path.exists(dirname)):
@@ -158,10 +158,10 @@ def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,numb
 
 
 def generate_points_and_save_using_defaults(manifold_name_and_data,number_points,force_generate=False,seed_set=0):
-   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = manifold_name_and_data
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path =  manifold_name_and_data
    pg = PointGenerator(monomials, coefficients, kmoduli, ambient)
    pg._set_seed(seed_set)
-   dirname = "data/"+type_folder + '/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff) 
+   dirname = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff)) 
    print("dirname: " + dirname)
    #test if the directory exists, if not, create it
    if force_generate or (not os.path.exists(dirname)):
@@ -216,8 +216,8 @@ def train_and_save_nn(manifold_name_and_data, phimodel_config=None,use_zero_netw
    network_function = phimodel_config['network_function']
    activation = phimodel_config['activation']
 
-   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
-   dirname = "data/"+type_folder + '/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path =  (manifold_name_and_data)
+   dirname = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff))
    name = 'phimodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(bSizes[1]) + 's' + str(nlayer) + 'x' +str(nHidden)+'_'+unique_name
    print('dirname: ' + dirname)
    print('name: ' + name)
@@ -337,8 +337,8 @@ def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=
    stddev = phimodel_config['stddev']
    bSizes = phimodel_config['bSizes']
    network_function = phimodel_config['network_function']
-   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
-   dirname = "data/"+ type_folder + '/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path =  (manifold_name_and_data)
+   dirname = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff))
    name = 'phimodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(bSizes[1]) + 's' + str(nlayer) + 'x' +str(nHidden)+'_'+unique_name
    print(dirname)
    print(name)
@@ -481,10 +481,10 @@ def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=
 
 def generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundleforHYM,number_pointsHYM,phimodel,force_generate=False,seed_set=0):
    print("\n\n")
-   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path =  (manifold_name_and_data)
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameHYM = "data/"+ type_folder +'/'+manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+phimodel.unique_name
-   dirnameForMetric = "data/"+ type_folder +'/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff)
+   dirnameHYM = os.path.join(data_path, type_folder, manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+phimodel.unique_name)
+   dirnameForMetric = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff))
    print("dirname for beta: " + dirnameHYM)
 
    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameForMetric, 'basis.pickle'), allow_pickle=True))
@@ -547,10 +547,10 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
    network_function = betamodel_config['network_function']
    activation = betamodel_config['activation']
 
-   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path =  (manifold_name_and_data)
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameHYM = "data/"+ type_folder +'/'+manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+phimodel.unique_name
-   dirnameForMetric = "data/"+ type_folder +'/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff)
+   dirnameHYM = os.path.join(data_path, type_folder, manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+phimodel.unique_name)
+   dirnameForMetric = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff))
 
    #data = np.load(os.path.join(dirname, 'dataset.npz'))
    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameForMetric, 'basis.pickle'), allow_pickle=True))
@@ -763,10 +763,10 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,phimode
    network_function = betamodel_config['network_function']
    activation = betamodel_config['activation']
 
-   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path =  (manifold_name_and_data)
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameHYM = "data/"+ type_folder +'/'+manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+phimodel.unique_name
-   dirnameForMetric = "data/"+ type_folder +'/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff)
+   dirnameHYM = os.path.join(data_path, type_folder, manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+phimodel.unique_name)
+   dirnameForMetric = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff))
    name = 'betamodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(nlayer) + 'x' +str(nHidden)
    print("name of network of line bundle: " + name)
 
@@ -886,7 +886,7 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,phimode
 
 
    averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure(betamodel,databeta["X_val"])
-   print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
+   print("average section transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
    import time
    start=time.time()
    #meanfailuretosolveequation,_,_=HYM_measure_val(betamodel,databeta)
@@ -909,12 +909,12 @@ def generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundlef
    if not all(functionforbaseharmonicform_jbar.line_bundle == linebundleforHYM):
       raise ValueError("Line bundle not set for harmonic form, or not equal: " + str(functionforbaseharmonicform_jbar.line_bundle) + " != " + str(linebundleforHYM))
    print("\n\n")
-   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path =  (manifold_name_and_data)
    nameOfBaseHF=functionforbaseharmonicform_jbar.__name__
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameForMetric = "data/"+ type_folder +'/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff)
-   dirnameHYM = "data/"+ type_folder +'/'+manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+phimodel.unique_name
-   dirnameHarmonic = "data/"+ type_folder +'/'+manifold_name+'_HF_pg'+str(unique_id_or_coeff)+'forLB_'+lbstring+nameOfBaseHF+'_using_'+phimodel.unique_name+'_and_'+betamodel.unique_name
+   dirnameForMetric = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff))
+   dirnameHYM = os.path.join(data_path, type_folder, manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+phimodel.unique_name)
+   dirnameHarmonic = os.path.join(data_path, type_folder, manifold_name+'_HF_pg'+str(unique_id_or_coeff)+'forLB_'+lbstring+nameOfBaseHF+'_using_'+phimodel.unique_name+'_and_'+betamodel.unique_name)
    print("dirname for harmonic form: " + dirnameHarmonic)
 
    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameForMetric, 'basis.pickle'), allow_pickle=True))
@@ -977,37 +977,24 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    network_function = sigmamodel_config['network_function']
    activation = sigmamodel_config['activation']
 
-   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
-   #perm= tracker.SummaryTracker()
-   #print("perm1")
-   #print(perm.print_diff())
-
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path =  (manifold_name_and_data)
    nameOfBaseHF=functionforbaseharmonicform_jbar.__name__
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameForMetric = "data/"+ type_folder +'/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff)
-   dirnameHYM = "data/"+ type_folder +'/'+manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+metric_model.unique_name
-   dirnameHarmonic = "data/"+ type_folder +'/'+manifold_name+'_HF_pg'+str(unique_id_or_coeff)+'forLB_'+lbstring+nameOfBaseHF+'_using_'+metric_model.unique_name + '_and_'+betamodel.unique_name
+   dirnameForMetric = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff))
+   dirnameHYM = os.path.join(data_path, type_folder, manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+metric_model.unique_name)
+   dirnameHarmonic = os.path.join(data_path, type_folder, manifold_name+'_HF_pg'+str(unique_id_or_coeff)+'forLB_'+lbstring+nameOfBaseHF+'_using_'+metric_model.unique_name + '_and_'+betamodel.unique_name)
    name = 'HFmodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+  str(nlayer) + 'x' +str(nHidden)
    print("dirname: " + dirnameHarmonic)
    print("name: " + name)
 
-   #data = np.load(os.path.join(dirname, 'dataset.npz'))
    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameForMetric, 'basis.pickle'), allow_pickle=True))
 
-   #print("perm2")
-   #print(perm.print_diff())
    dataHF = np.load(os.path.join(dirnameHarmonic, 'dataset.npz'))
    dataHF = convert_to_tensor_dict(dataHF)
    dataHF_train=dict(list(dict(dataHF).items())[:len(dict(dataHF))//2])
    dataHF_val_dict=dict(list(dict(dataHF).items())[len(dict(dataHF))//2:])
-   # batch_sizes=[64,10000]
    datacasted=[dataHF['X_val'],dataHF['y_val']]
 
-
-
-
-   #print("perm3")
-   #print(perm.print_diff())
    prefix = nameOfBaseHF.split('_')[-1]
    cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF, prefix = prefix, wandb = True)
 
@@ -1070,11 +1057,9 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
            load_func = BiholoModelFuncGENERALforSigmaWNorm
    else:
       load_func = network_function
-   #if np.sum(np.abs(linebundleforHYM -np.array([0,0,1,-3])))<1e-8:
-   #    k_phi_here = np.array([0,0,0,1])
    k_phi_here = np.array([0,0,0,0])
-   nn_HF = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=k_phi_here,activation=activation,stddev=stddev,use_zero_network=use_zero_network,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
-   nn_HF_zero  = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=k_phi_here,activation=activation,stddev=stddev,use_zero_network=True,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+   nn_HF = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=k_phi_here,activation=activation,stddev=stddev,use_zero_network=use_zero_network,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)
+   nn_HF_zero  = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=k_phi_here,activation=activation,stddev=stddev,use_zero_network=True,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)
   
    print('network arch:',load_func)
    print("activation: ",activation)
@@ -1082,8 +1067,6 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    HFmodelzero = HarmonicFormModel(nn_HF_zero,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)], unique_name=unique_name)
    if load_network:
       print("loading network from weights")
-      #HFmodel.model=tf.keras.layers.TFSMLayer(os.path.join(dirnameHarmonic,name),call_endpoint="serving_default")
-      #init variables
       HFmodel(dataHF_val_dict['X_val'][0:1])
       HFmodel.model.load_weights(os.path.join(dirnameHarmonic, name) + ".weights.h5")
       #HFmodel.model=tf.keras.models.load_model(os.path.join(dirnameHarmonic, name) + ".keras")
@@ -1131,12 +1114,6 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    print(valzero)
    print("validation loss for raw network: ")
    print(valraw)
-
-   #print("perm7")
-   #print(perm.print_diff())
-
-
-
 
    training_historyHF={'transition_loss': [10**(-8)], 'laplacian_loss':[10.**10]}
    i=0
@@ -1289,8 +1266,6 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    wandb.log({prefix + "MeanFailure": meanfailuretosolveequation})
    return HFmodel,training_historyHF,meanfailuretosolveequation
 
-
-
 def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,functionforbaseharmonicform_jbar,sigmamodel_config,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False, unique_name='v'):
    # Extract configuration parameters
    nlayer = sigmamodel_config['depth']
@@ -1305,26 +1280,23 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    network_function = sigmamodel_config['network_function']
    activation = sigmamodel_config['activation']
 
-   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name = (manifold_name_and_data)
+   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path =  (manifold_name_and_data)
    nameOfBaseHF=functionforbaseharmonicform_jbar.__name__
    lbstring = ''.join(str(e) for e in linebundleforHYM)
-   dirnameForMetric = "data/"+ type_folder +'/'+manifold_name+'_pg_with_'+str(unique_id_or_coeff)
-   dirnameHYM = "data/"+ type_folder +'/'+manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+metric_model.unique_name
-   dirnameHarmonic = "data/"+ type_folder +'/'+manifold_name+'_HF_pg'+str(unique_id_or_coeff)+'forLB_'+lbstring+nameOfBaseHF+'_using_'+metric_model.unique_name + '_and_'+betamodel.unique_name
+   dirnameForMetric = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff))
+   dirnameHYM = os.path.join(data_path, type_folder, manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+metric_model.unique_name)
+   dirnameHarmonic = os.path.join(data_path, type_folder, manifold_name+'_HF_pg'+str(unique_id_or_coeff)+'forLB_'+lbstring+nameOfBaseHF+'_using_'+metric_model.unique_name + '_and_'+betamodel.unique_name)
    name = 'HFmodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+  str(nlayer) + 'x' +str(nHidden)
    print("dirname: " + dirnameHarmonic)
    print("name: " + name)
 
-   #data = np.load(os.path.join(dirname, 'dataset.npz'))
    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameForMetric, 'basis.pickle'), allow_pickle=True))
 
    dataHF = np.load(os.path.join(dirnameHarmonic, 'dataset.npz'))
    dataHF = convert_to_tensor_dict(dataHF)
    dataHF_train=dict(list(dict(dataHF).items())[:len(dict(dataHF))//2])
    dataHF_val_dict=dict(list(dict(dataHF).items())[len(dict(dataHF))//2:])
-   # batch_sizes=[64,10000]
    datacasted=[dataHF['X_val'],dataHF['y_val']]
-
 
    prefix = nameOfBaseHF.split('_')[-1]
    cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF, prefix = prefix, wandb = False)
@@ -1400,8 +1372,8 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
 
    print("network arch:",load_func)
    print("activation: ",activation)
-   nn_HF = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activation,stddev=stddev,use_zero_network=False,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
-   nn_HF_zero  = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activation,stddev=stddev,use_zero_network=True,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
+   nn_HF = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activation,stddev=stddev,use_zero_network=False,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)
+   nn_HF_zero  = load_func(shapeofnetwork,BASIS,linebundleindices=linebundleforHYM,nsections=nsections,k_phi=np.array([0,0,0,0]),activation=activation,stddev=stddev,use_zero_network=True,final_layer_scale=final_layer_scale,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ,norm_momentum=norm_momentum)
    
    HFmodel = HarmonicFormModel(nn_HF,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)], unique_name=unique_name)
    HFmodelzero = HarmonicFormModel(nn_HF_zero,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)], unique_name=unique_name)
@@ -1474,14 +1446,14 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"],dataHF["y_val"][:, -2])
    print("average section transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
    transition_loss = compute_transition_loss_for_corrected_HF_model(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("1-form transition loss: " + str(tf.reduce_mean(transition_loss).numpy()))
+   print("1-form transition loss: " + str(tf.reduce_mean(transition_loss).numpy()), tf.reduce_max(transition_loss).numpy())
    transition_loss_zero = compute_transition_loss_for_corrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2] )
-   print("1-form transition loss for zero network: " + str(tf.reduce_mean(transition_loss_zero).numpy()))
+   print("1-form transition loss for zero network: " + str(tf.reduce_mean(transition_loss_zero).numpy()), tf.reduce_max(transition_loss_zero).numpy())
    
    transition_loss_for_uncorrected_HF = compute_transition_loss_for_uncorrected_HF_model(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("1-form transition loss for uncorrected HF (should be same as above): " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF).numpy()))
+   print("1-form transition loss for uncorrected HF (should be same as above): " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF).numpy()), tf.reduce_max(transition_loss_for_uncorrected_HF).numpy())
    transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("1-form transition loss for uncorrected HF zero network (should be same as above): " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()))
+   print("1-form transition loss for uncorrected HF zero network (should be same as above): " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()), tf.reduce_max(transition_loss_for_uncorrected_HF_zero).numpy())
    #meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
 
    #meanfailuretosolveequation= batch_process_helper_func(
@@ -1493,8 +1465,8 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    start = time.time()
    print("start time:", time.strftime("%H:%M:%S", time.localtime()))
    check_vals_again, check_vals_again_2 = closure_check(dataHF["X_val"], HFmodel.functionforbaseharmonicform_jbar, HFmodel, dataHF["val_pullbacks"], return_both = True)
-   print("closure_check on base form again:",tf.reduce_mean(tf.math.abs(check_vals_again)), "took " + str(time.time()-start) + " seconds")
-   print("closure_check on base form (not asym) again:",tf.reduce_mean(tf.math.abs(check_vals_again_2)), "took " + str(time.time()-start) + " seconds")
+   print("closure_check on base form again:",tf.reduce_mean(tf.math.abs(check_vals_again)).numpy().item(), tf.reduce_max(tf.math.abs(check_vals_again)).numpy().item(), "took " + str(time.time()-start) + " seconds")
+   print("closure_check on base form (not asym) again:",tf.reduce_mean(tf.math.abs(check_vals_again_2)).numpy().item(),tf.reduce_max(tf.math.abs(check_vals_again_2)).numpy().item(), "took " + str(time.time()-start) + " seconds")
    #return HFmodel,training_historyHF, 0 
    start = time.time()
    print("computing mean failure to solve equation", time.strftime("%H:%M:%S", time.localtime()))

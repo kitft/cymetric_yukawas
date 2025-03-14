@@ -119,6 +119,21 @@ from final_integration import *
 from yukawas.generate_and_train_all_nnsHOLO_all import *
 
 manifold_name = 'TQ'
+import subprocess
+
+# Check if hostname matches comp*/gpu*/hydra* pattern
+try:
+    result = subprocess.run(['hostnamectl'], capture_output=True, text=True)
+    hostname_output = result.stdout
+    first_line = hostname_output.split('\n')[0] if hostname_output else ""
+    
+    if any(pattern in first_line for pattern in ["Static hostname: comp", "Static hostname: gpu", "Static hostname: hydra"]):
+        data_path = "/mnt/extraspace/kitft/cy_yukawas/data"
+    else:
+        data_path = "data"
+except Exception:
+    # Default to local path if command fails
+    data_path = "data"
 if modeltype == "m13":
     type_folder = integrate_or_run+"model13"
     get_coefficients_here = get_coefficients_m13# vs get_coefficients_m1
@@ -504,7 +519,7 @@ if __name__ ==  '__main__':
 
     unique_id_or_coeff = free_coefficient
     coefficientsTQ = get_coefficients_here(free_coefficient)
-    manifold_name_and_data = (coefficientsTQ, kmoduliTQ, ambientTQ, monomialsTQ, type_folder, unique_id_or_coeff, manifold_name)
+    manifold_name_and_data = (coefficientsTQ, kmoduliTQ, ambientTQ, monomialsTQ, type_folder, unique_id_or_coeff, manifold_name, data_path)
     
     if start_from != 'end':
         wandb.init(project = type_folder,
@@ -618,7 +633,7 @@ if __name__ ==  '__main__':
     
 
     pg,kmoduli=generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,n_to_integrate,seed_set=seed_for_gen,force_generate=force_generate_eval)
-    dataEval=np.load(os.path.join("data",type_folder,f'{manifold_name}_pg_for_eval_with_{unique_id_or_coeff}', 'dataset.npz'))
+    dataEval=np.load(os.path.join(data_path,type_folder,f'{manifold_name}_pg_for_eval_with_{unique_id_or_coeff}', 'dataset.npz'))
 
 
     network_params = {        # Network parameters
