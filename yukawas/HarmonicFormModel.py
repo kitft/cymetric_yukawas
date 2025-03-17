@@ -343,18 +343,24 @@ class HarmonicFormModel(FSModel):
         return self.model(input_tensor, training=training)
 
     @tf.function
-    def corrected_harmonicform(self,input_tensor):
+    def corrected_harmonicform(self,input_tensor, pullbacks_holo = None):
         cpoints=point_vec_to_complex(input_tensor)
         dbarsigma = extder_jbar_for_sigma(input_tensor,self)#note that exter_jbar takes real points, and the thing it differentiates also takes real points
         NuAmbient=self.functionforbaseharmonicform_jbar(cpoints) + dbarsigma
         #self.pullbacks takes real points
-        NuCY=tf.einsum('xbj,xj->xb',tf.math.conj(self.pullbacks(input_tensor)),NuAmbient)
+        if pullbacks_holo is None:
+            pullbacks_holo = self.pullbacks(input_tensor)
+        NuCY=tf.einsum('xbj,xj->xb',tf.math.conj(pullbacks_holo),NuAmbient)
         return NuCY
-    def uncorrected_FS_harmonicform(self,input_tensor):
+
+    @tf.function
+    def uncorrected_FS_harmonicform(self,input_tensor, pullbacks_holo = None):
         cpoints=point_vec_to_complex(input_tensor)
         NuAmbient=self.functionforbaseharmonicform_jbar(cpoints) 
         #self.pullbacks takes real points
-        NuCY=tf.einsum('xbj,xj->xb',tf.math.conj(self.pullbacks(input_tensor)),NuAmbient)
+        if pullbacks_holo is None:
+            pullbacks_holo = self.pullbacks(input_tensor)
+        NuCY=tf.einsum('xbj,xj->xb',tf.math.conj(pullbacks_holo),NuAmbient)
         return NuCY
 
     def compile(self, custom_metrics=None, **kwargs):

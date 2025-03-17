@@ -24,9 +24,7 @@ def delete_all_dicts_except(*except_dict_names):
 
     # Optionally, you can clear memory by calling garbage collector
     gc.collect()
-
-
-def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10000, compile_func=False, actually_batch=True, kwargs=None, print_progress=False):
+def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10000, compile_func=False, actually_batch=True, kwargs=None, print_progress=False, batch_kwargs_keys=None):
     if kwargs is None:
         kwargs = {}
         
@@ -60,8 +58,21 @@ def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10
         for idx in batch_indices:
             batched_args[idx] = args[idx][start_idx:end_idx]
         
+        # Create batched kwargs with only the relevant keys
+        batched_kwargs = {}
+        # Copy only the keys we need to batch
+        if batch_kwargs_keys:
+            for key in batch_kwargs_keys:
+                if key in kwargs:
+                    batched_kwargs[key] = kwargs[key][start_idx:end_idx]
+            # Add remaining keys from original kwargs
+            for key, value in kwargs.items():
+                if key not in batched_kwargs:
+                    batched_kwargs[key] = value
+        else:
+            batched_kwargs = kwargs
         # Call the function with batched and static arguments
-        batch_results = func(*batched_args, **kwargs)
+        batch_results = func(*batched_args, **batched_kwargs)
         results_list.append(batch_results)
         
         # Time tracking and ETA calculation

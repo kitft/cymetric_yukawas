@@ -92,16 +92,6 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     else:
         actually_batch=False
 
-    if not loadvecs:
-        mets_bare = batch_process_helper_func(phimodel.fubini_study_pb, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'ts':tf.cast(kmoduli,complex_dtype)})
-        vH_bare = batch_process_helper_func(HFmodel_vH.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-        vQ3_bare = batch_process_helper_func(HFmodel_vQ3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-        vU3_bare = batch_process_helper_func(HFmodel_vU3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-        vQ1_bare = batch_process_helper_func(HFmodel_vQ1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-        vQ2_bare = batch_process_helper_func(HFmodel_vQ2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-        vU1_bare = batch_process_helper_func(HFmodel_vU1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-        vU2_bare = batch_process_helper_func(HFmodel_vU2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
-
      
         # Compute or load pullbacks
     pullbacks_filename = os.path.join(data_path, type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{str(False)}_pullbacks.npz")
@@ -126,6 +116,18 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         pullbacks = tf.cast(batch_process_helper_func(pg.pullbacks, [pointsComplex], batch_indices=[0], batch_size=100000), complex_dtype)
         np.savez(pullbacks_filename, pullbacks=pullbacks)
         print(f"Saved pullbacks to {pullbacks_filename}")
+    
+
+    if not loadvecs:
+        mets_bare = batch_process_helper_func(phimodel.fubini_study_pb, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'ts':tf.cast(kmoduli,complex_dtype)})
+        vH_bare = batch_process_helper_func(HFmodel_vH.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+        vQ3_bare = batch_process_helper_func(HFmodel_vQ3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+        vU3_bare = batch_process_helper_func(HFmodel_vU3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+        vQ1_bare = batch_process_helper_func(HFmodel_vQ1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+        vQ2_bare = batch_process_helper_func(HFmodel_vQ2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+        vU1_bare = batch_process_helper_func(HFmodel_vU1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+        vU2_bare = batch_process_helper_func(HFmodel_vU2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+
 
     mats=[]
     masses_trained_and_ref=[]
@@ -159,31 +161,31 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                 LB2c=tf.cast(H2, complex_dtype)
                 LB3c=tf.cast(H3, complex_dtype)
                 # Batch process corrected harmonic forms
-                vH = batch_process_helper_func(HFmodel_vH.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
+                vH = batch_process_helper_func(HFmodel_vH.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
                 hvHb = tf.einsum('x,xb->xb', LB1c, tf.math.conj(vH))
                 print('got vH', flush=True)
 
-                vQ3 = batch_process_helper_func(HFmodel_vQ3.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
+                vQ3 = batch_process_helper_func(HFmodel_vQ3.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
                 hvQ3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vQ3))
                 print('got vQ3', flush=True)
 
-                vU3 = batch_process_helper_func(HFmodel_vU3.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
+                vU3 = batch_process_helper_func(HFmodel_vU3.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
                 hvU3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vU3))
                 print('got vU3', flush=True)
 
-                vQ1 = batch_process_helper_func(HFmodel_vQ1.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
+                vQ1 = batch_process_helper_func(HFmodel_vQ1.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
                 hvQ1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ1))
                 print('got vQ1', flush=True)
 
-                vQ2 = batch_process_helper_func(HFmodel_vQ2.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
+                vQ2 = batch_process_helper_func(HFmodel_vQ2.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
                 hvQ2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ2))
                 print('got vQ2', flush=True)
 
-                vU1 = batch_process_helper_func(HFmodel_vU1.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
+                vU1 = batch_process_helper_func(HFmodel_vU1.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
                 hvU1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU1))
                 print('got vU1', flush=True)
 
-                vU2 = batch_process_helper_func(HFmodel_vU2.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True)
+                vU2 = batch_process_helper_func(HFmodel_vU2.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
                 hvU2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU2))
                 print('got vU2', flush=True)
             elif not use_trained:
