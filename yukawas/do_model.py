@@ -306,7 +306,7 @@ if __name__ == '__main__':
     tr_batchsize=64
     #free_coefficient=1.000000004# when the coefficient is 1, ensure that it's 1., not 1 for the sake of the filename
     import sys
-    seed_for_gen=int((int(free_coefficient*100000000000)+free_coefficient*1000000))%4294967294 # modulo largest seed
+    seed_for_gen=int(int((int(free_coefficient*100000000000)+free_coefficient*1000000))+((free_coefficient*10**(18))%123987123157869))%4294967294 # modulo largest seed
     print("seed for gen", seed_for_gen)
     coefficientsTQ = get_coefficients_here(free_coefficient)
 
