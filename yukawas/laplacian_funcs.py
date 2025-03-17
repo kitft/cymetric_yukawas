@@ -13,7 +13,7 @@ def point_vec_to_complex(p):
     return tf.complex(p[..., :plen], p[..., plen:])
 
 @tf.function
-def laplacian(betamodel,points,pullbacks,invmetrics):
+def laplacian(betamodel,points,pullbacks,invmetrics, training=False):
     r"""Computes the Laplacian of a real function on a complex manifold.
     
     Calculates ∇²φ = g^(ab̄) ∂_a ∂_b̄ φ, where g^(ab̄) is the inverse metric,
@@ -36,7 +36,7 @@ def laplacian(betamodel,points,pullbacks,invmetrics):
             # Need to disable training here, because batch norm
             # and dropout mix the batches, such that batch_jacobian
             # is no longer reliable.
-            phi = betamodel(points,training=False)
+            phi = betamodel(points,training=training)
         d_phi = tape2.gradient(phi, points)# the derivative index is inserted at the (1) index, just after the batch index
     dd_phi = tape1.batch_jacobian(d_phi, points) # the derivative index is inserted at the (1) index again, so now we have the structure xab
     dx_dx_phi, dx_dy_phi, dy_dx_phi, dy_dy_phi = \

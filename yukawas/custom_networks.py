@@ -574,6 +574,193 @@ def monomialsWithMeta(cpoints,indices_to_take_reshaped):
 
     return monomials_tensor
 
+class get_degree_kphiandMmonomials_testing_faster_in_bulk_but_different_order(tf.Module):
+    """
+    Nicer implementaiton of getting the monomials for each block, which can precomppile assembling the list.
+    Unfortunately, it seems to be slower for small loops? Something to investigate. Perhaps we should check if it's slow when diff'ed
+    """
+    def __init__(self, kphi, linebundleindices, indslist):
+        self.kphi = kphi
+        self.linebundleindices = linebundleindices
+        self.indslist = indslist  # (list of indskpModM, list of indsk)
+        self.num_blocks = len(linebundleindices)
+        prim_list = []
+        sec_list = []
+        self.scaling_exponents = []
+        for i in range(self.num_blocks):
+            off = 2 * i  # offset for block i in cpoints
+            indskpModM = indslist[0][i]
+            indsk = indslist[1][i]
+            if linebundleindices[i] >= 0:
+                mons = indskpModM + off
+                monsbar = indsk + off
+                exp = kphi[i]
+            else:
+                mons = indsk + off
+                monsbar = indskpModM + off
+                exp = kphi[i] + tf.math.abs(linebundleindices[i])
+            prim_list.append(mons)
+            sec_list.append(monsbar)
+            self.scaling_exponents.append(exp)
+        # Precompile full index arrays via cartesian product per branch.
+        print("prim_list",prim_list)
+        print("sec_list",sec_list)
+        self.full_primary_indices = self._cartesian_product(prim_list)
+        self.full_secondary_indices = self._cartesian_product(sec_list)
+        print("full_primary_indices",self.full_primary_indices)
+        print("full_secondary_indices",self.full_secondary_indices)
+
+
+    def _cartesian_product(self, list_of_tensors):
+        # list_of_tensors: each a 1D tensor.
+        # Handle empty tensors - if any tensor is empty, treat it as [1] in the cartesian product
+        list_of_tensors = [ t for t in (list_of_tensors) if tf.size(t) != 0]
+        # for i, tensor in enumerate(list_of_tensors):
+        #     if tf.size(tensor) == 0:
+        #         # Replace empty tensor with a tensor containing just 1
+        #         list_of_tensors[i] = tf.constant([121,], dtype=tensor.dtype)
+                
+        # If list is empty, return empty tensor with appropriate shape
+        if not list_of_tensors:
+            return tf.zeros((0, 0), dtype=tf.int32)
+            
+        # Take outer product of all tensors in the list
+        result = list_of_tensors[0]  # Start with first tensor, add dimension
+        for tensor in list_of_tensors[1:]:
+            # For each tensor, take outer product with current result
+            print(result.shape, tensor.shape)
+            result = tf.concat([tf.repeat(result, tf.shape(tensor)[0], axis=0), 
+                               tf.tile(tensor, [tf.shape(result)[0], 1])], axis=1)
+            
+        return result
+
+    @tf.function
+    def __call__(self, cpoints):
+        # print(self.scaling_exponents)
+        # cpoints: [batch, 2*num_blocks]
+        bs = tf.shape(cpoints)[0]
+        # Compute kappa for each block in one shot.
+        pts_blk = tf.reshape(cpoints, [bs, self.num_blocks, 2])
+        kappa = tf.cast(tf.reduce_sum(tf.math.abs(pts_blk)**2, axis=-1), complex_dtype)  # [bs, num_blocks]
+        # Properly broadcast without loops
+        neg_exponents = tf.cast(-1 * tf.convert_to_tensor(self.scaling_exponents), complex_dtype)
+        scales = tf.pow(kappa, tf.reshape(neg_exponents, [1, -1]))
+        # print(scales[0][0])
+        overall_scale = tf.reduce_prod(scales,axis=-1)  # [bs]
+
+        # Full primary monomials in one call.
+        prim_vals = tf.gather(cpoints, self.full_primary_indices, axis=-1)  # [bs, N_prim, num_blocks]
+        prim_mons = tf.reduce_prod(prim_vals, axis=-1)  # [bs, N_prim]
+        # Full secondary monomials.
+        sec_vals = tf.gather(tf.math.conj(cpoints), self.full_secondary_indices, axis=-1)  # [bs, N_sec, num_blocks]
+        sec_mons = tf.reduce_prod(sec_vals, axis=-1)  # [bs, N_sec]
+
+        # Outer product between primary and secondary monomials.
+        full_mons = prim_mons[:, :, None] * sec_mons[:, None, :]
+        full_mons = tf.reshape(full_mons, [bs, -1])
+        return full_mons * tf.cast(tf.expand_dims(overall_scale, axis=-1), full_mons.dtype)
+
+    # def __call__(self, cpoints):
+    #     batch_size = tf.shape(cpoints)[0]
+    #     # Reshape flat input into blocks of 2 coordinates each.
+    #     blocks = tf.reshape(cpoints, [batch_size, self.num_blocks, 2])
+    #     blocks_conj = tf.math.conj(blocks)
+
+    #     # Build concatenated tensors from all blocks.
+    #     primary_list = []
+    #     secondary_list = []
+    #     for i in range(self.num_blocks):
+    #         primary_list.append(blocks[:, i, :])
+    #         secondary_list.append(blocks_conj[:, i, :])
+    #     primary_concat = tf.concat(primary_list, axis=-1)   # shape [batch, 2*num_blocks]
+    #     secondary_concat = tf.concat(secondary_list, axis=-1)
+
+    #     # Adjust precompiled indices by block offset and then concat them.
+    #     offsets = [2 * i for i in range(self.num_blocks)]
+    #     prim_indices = []
+    #     sec_indices = []
+    #     for i in range(self.num_blocks):
+    #         prim_indices.append(self.compiled_primary[i] + offsets[i])
+    #         sec_indices.append(self.compiled_secondary[i] + offsets[i])
+    #     prim_indices_all = tf.concat(prim_indices, axis=0)
+    #     sec_indices_all = tf.concat(sec_indices, axis=0)
+
+    #     # Single monomialsWithMeta call for primary and secondary parts.
+    #     mons_primary_all = monomialsWithMeta(primary_concat, prim_indices_all)
+    #     mons_secondary_all = monomialsWithMeta(secondary_concat, sec_indices_all)
+
+    #     # Split the results back into per-block pieces.
+    #     mons_primary = tf.split(mons_primary_all, self.block_dims, axis=-1)
+    #     mons_secondary = tf.split(mons_secondary_all, self.block_dims, axis=-1)
+
+    #     # Compute normalized outer products per block.
+    #     outs = []
+    #     for i in range(self.num_blocks):
+    #         kappa = tf.cast(tf.reduce_sum(tf.math.abs(blocks[:, i, :]) ** 2, axis=-1), complex_dtype)
+    #         norm = 1 / (kappa ** self.scaling_exponents[i])
+    #         norm = tf.expand_dims(norm, axis=-1)
+    #         out_i = tf.einsum('xi,xj,x->xij', mons_primary[i], mons_secondary[i], norm)
+    #         outs.append(tf.reshape(out_i, [batch_size, -1]))
+
+    #     # Chain outer products over blocks.
+    #     result = outs[0]
+    #     for out in outs[1:]:
+    #         result = tf.einsum('xi,xj->xij', result, out)
+    #         result = tf.reshape(result, [batch_size, -1])
+    #     return result
+
+
+
+def get_degree_kphiandMmonomials_func(kphi,linebundleindices,indslist,cpoints):
+        indskpModM_all,indsk_all=indslist
+        #what is the shape of inds?
+        # result=tf.Array()
+        for i in range(0,len(linebundleindices)):
+            indskpModM=indskpModM_all[i]
+            indsk=indsk_all[i]
+
+            #indskpModM=get_monomial_indices(cpoints[0,0:2],kphi[i]+tf.math.abs(linebundleindices[i]))
+            #indsk=get_monomial_indices(cpoints[0,0:2],kphi[i])#conj is unnecessary here
+
+            kappa_i=tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,2*i:2*i+2])**2,axis=-1),complex_dtype)
+            if linebundleindices[i]>=0:
+                #kappa_i_kphi=kappa_i**kphi[i]
+                #monsbar=monomialsWithMeta(kphi[i],tf.math.conj(cpoints[:,2*i:2*i+2]),indsk)
+                #mons=monomialsWithMeta(kphi[i]+np.abs(linebundleindices[i]),cpoints[:,2*i:2*i+2],indskpModM)
+                mons=monomialsWithMeta(cpoints[:,2*i:2*i+2],indskpModM)
+                monsbar=monomialsWithMeta(tf.math.conj(cpoints[:,2*i:2*i+2]),indsk)
+
+                kappa_i_kphi=kappa_i**kphi[i]
+                outer_prod_of_mons_and_monsbar=tf.einsum('xi,xj,x->xij',mons,monsbar,1/kappa_i_kphi)
+                #tf.print('test',linebundleindices[i],indsk)
+                #tf.print('test',linebundleindices[i],indskpModM)
+                #tf.print(tf.shape(outer_prod_of_mons_and_monsbar))
+                outerresult=tf.reshape(outer_prod_of_mons_and_monsbar,(-1,tf.shape(outer_prod_of_mons_and_monsbar)[-1]*tf.shape(outer_prod_of_mons_and_monsbar)[-2]))
+            elif linebundleindices[i]<0:
+                #mons=monomialsWithMeta(kphi[i],cpoints[:,2*i:2*i+2],indsk)
+                #monsbar=monomialsWithMeta(kphi[i]+np.abs(linebundleindices[i]),tf.math.conj(cpoints[:,2*i:2*i+2]),indskpModM)
+                mons=monomialsWithMeta(cpoints[:,2*i:2*i+2],indsk)
+                monsbar=monomialsWithMeta(tf.math.conj(cpoints[:,2*i:2*i+2]),indskpModM)
+                #print(monsbar)
+                #print(mons)
+                kappa_i_kphiplusmodM=kappa_i**tf.cast((kphi[i]+tf.math.abs(linebundleindices[i])),complex_dtype)
+                outer_prod_of_mons_and_monsbar=tf.einsum('xi,xj,x->xij',mons,monsbar,1/kappa_i_kphiplusmodM)
+                #tf.reshape(outer_prod_of_mons_and_monsbar,(-1,tf.shape(outer_prod_of_mons_and_monsbar)[-1]))
+                #tf.print('test')
+                #tf.print('test',linebundleindices[i],indsk)
+                #tf.print('test',linebundleindices[i],indskpModM)
+                #print(tf.size(outer_prod_of_mons_and_monsbar))
+                #tf.print(tf.shape(outer_prod_of_mons_and_monsbar))
+                outerresult=tf.reshape(outer_prod_of_mons_and_monsbar,(-1,tf.shape(outer_prod_of_mons_and_monsbar)[-1]*tf.shape(outer_prod_of_mons_and_monsbar)[-2]))
+            #take outer product of outerresult and the previous result, for each i
+            if i==0:
+                result=outerresult
+                #result=result.write(0,outerresult)
+            else:
+                result=tf.einsum('xi,xj->xij',result,outerresult)
+                result=tf.reshape(result,(-1,tf.shape(result)[-1]*tf.shape(result)[-2]))
+        return result
+
 
 class get_degree_kphiandMmonomials(tf.Module):
     def __init__(self,kphi,linebundleindices,indslist):
@@ -631,57 +818,7 @@ class get_degree_kphiandMmonomials(tf.Module):
                 result=tf.einsum('xi,xj->xij',result,outerresult)
                 result=tf.reshape(result,(-1,tf.shape(result)[-1]*tf.shape(result)[-2]))
         return result
-
-def get_degree_kphiandMmonomials_func(kphi,linebundleindices,indslist,cpoints):
-        indskpModM_all,indsk_all=indslist
-        #what is the shape of inds?
-        # result=tf.Array()
-        for i in range(0,len(linebundleindices)):
-            indskpModM=indskpModM_all[i]
-            indsk=indsk_all[i]
-
-            #indskpModM=get_monomial_indices(cpoints[0,0:2],kphi[i]+tf.math.abs(linebundleindices[i]))
-            #indsk=get_monomial_indices(cpoints[0,0:2],kphi[i])#conj is unnecessary here
-
-            kappa_i=tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,2*i:2*i+2])**2,axis=-1),complex_dtype)
-            if linebundleindices[i]>=0:
-                #kappa_i_kphi=kappa_i**kphi[i]
-                #monsbar=monomialsWithMeta(kphi[i],tf.math.conj(cpoints[:,2*i:2*i+2]),indsk)
-                #mons=monomialsWithMeta(kphi[i]+np.abs(linebundleindices[i]),cpoints[:,2*i:2*i+2],indskpModM)
-                mons=monomialsWithMeta(cpoints[:,2*i:2*i+2],indskpModM)
-                monsbar=monomialsWithMeta(tf.math.conj(cpoints[:,2*i:2*i+2]),indsk)
-
-                kappa_i_kphi=kappa_i**kphi[i]
-                outer_prod_of_mons_and_monsbar=tf.einsum('xi,xj,x->xij',mons,monsbar,1/kappa_i_kphi)
-                #tf.print('test',linebundleindices[i],indsk)
-                #tf.print('test',linebundleindices[i],indskpModM)
-                #tf.print(tf.shape(outer_prod_of_mons_and_monsbar))
-                outerresult=tf.reshape(outer_prod_of_mons_and_monsbar,(-1,tf.shape(outer_prod_of_mons_and_monsbar)[-1]*tf.shape(outer_prod_of_mons_and_monsbar)[-2]))
-            elif linebundleindices[i]<0:
-                #mons=monomialsWithMeta(kphi[i],cpoints[:,2*i:2*i+2],indsk)
-                #monsbar=monomialsWithMeta(kphi[i]+np.abs(linebundleindices[i]),tf.math.conj(cpoints[:,2*i:2*i+2]),indskpModM)
-                mons=monomialsWithMeta(cpoints[:,2*i:2*i+2],indsk)
-                monsbar=monomialsWithMeta(tf.math.conj(cpoints[:,2*i:2*i+2]),indskpModM)
-                #print(monsbar)
-                #print(mons)
-                kappa_i_kphiplusmodM=kappa_i**tf.cast((kphi[i]+tf.math.abs(linebundleindices[i])),complex_dtype)
-                outer_prod_of_mons_and_monsbar=tf.einsum('xi,xj,x->xij',mons,monsbar,1/kappa_i_kphiplusmodM)
-                #tf.reshape(outer_prod_of_mons_and_monsbar,(-1,tf.shape(outer_prod_of_mons_and_monsbar)[-1]))
-                #tf.print('test')
-                #tf.print('test',linebundleindices[i],indsk)
-                #tf.print('test',linebundleindices[i],indskpModM)
-                #print(tf.size(outer_prod_of_mons_and_monsbar))
-                #tf.print(tf.shape(outer_prod_of_mons_and_monsbar))
-                outerresult=tf.reshape(outer_prod_of_mons_and_monsbar,(-1,tf.shape(outer_prod_of_mons_and_monsbar)[-1]*tf.shape(outer_prod_of_mons_and_monsbar)[-2]))
-            #take outer product of outerresult and the previous result, for each i
-            if i==0:
-                result=outerresult
-                #result=result.write(0,outerresult)
-            else:
-                result=tf.einsum('xi,xj->xij',result,outerresult)
-                result=tf.reshape(result,(-1,tf.shape(result)[-1]*tf.shape(result)[-2]))
-        return result
-
+    
 # def get_degree_kphiandMmonomials(kphi,linebundleindices,cpoints,indslist):
 #     indskpModM_all,indsk_all=indslist
 #     result=tf.Array()
@@ -1920,9 +2057,9 @@ class BiholoModelFuncGENERALforSigma2_m13(tf.keras.Model):
 
         self.fix_to_0p1x = True if layer_sizes[1]<20 else False
         if self.use_zero_network:
-            print("mul by zero")
-        if not self.use_zero_network and self.fix_to_0p1x:
-            print("scaling 0.1 and 1s")
+            print("setting network to zero")
+        elif not self.use_zero_network and self.fix_to_0p1x:
+            print("scaling 0.1 and 1s - fixing to 0.1*sections")
         else:
             print("using normal network, not scaling or fixing to zero")
 

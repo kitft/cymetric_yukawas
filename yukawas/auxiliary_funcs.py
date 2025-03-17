@@ -625,13 +625,13 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False, mulweig
     
    
     # Check if values are complex
-    if hasattr(values, 'dtype') and 'complex' in str(values.dtype):
+    if (tf.is_tensor(values) and tf.dtypes.as_dtype(values.dtype).is_complex) or (isinstance(values, np.ndarray) and np.issubdtype(values.dtype, complex)):
         weighted_stddev_real2 = tf.math.reduce_std(tf.math.real(tf.cast(weights, values.dtype) * values))/np.sqrt(len(values))
         weighted_stddev_imag2 = tf.math.reduce_std(tf.math.imag(tf.cast(weights, values.dtype) * values))/np.sqrt(len(values))
         weighted_stddev_real=weighted_mean_std_error(weights, tf.math.real(values))
         weighted_stddev_imag=weighted_mean_std_error(weights, tf.math.imag(values))
-        print("compare real stddev: ", np.array(weighted_stddev_real), np.array(weighted_stddev_real2))
-        print("compare imag stddev: ", np.array(weighted_stddev_imag), np.array(weighted_stddev_imag2))
+        #print("compare real stddev: ", np.array(weighted_stddev_real), np.array(weighted_stddev_real2))
+        #print("compare imag stddev: ", np.array(weighted_stddev_imag), np.array(weighted_stddev_imag2))
         weighted_stddev = tf.complex(weighted_stddev_real, weighted_stddev_imag)
          # Calculate the effective sample size
 
@@ -685,7 +685,7 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False, mulweig
             n_eff = effective_sample_size(weights)
         weighted_stddev2 =  tf.math.reduce_std(weights*values)*1/np.sqrt(len(values))
         weighted_stddev = weighted_mean_std_error(weights, values)
-        print("compare real stddev: ", np.array(weighted_stddev), np.array(weighted_stddev2))
+        #print("compare real stddev: ", np.array(weighted_stddev), np.array(weighted_stddev2))
         #real_se = tf.math.reduce_std(weights*values) / np.sqrt(n_eff)
             # Return real standard error
         return np.array(weighted_mean), np.array(weighted_stddev), n_eff, {'value': np.array(weighted_mean), 'std_error': np.array(weighted_stddev), 'eff_n': n_eff}
@@ -967,7 +967,6 @@ This file provides a simple test case to validate the error propagation approach
 """
 
 import numpy as np
-from auxiliary_funcs import propagate_errors_to_physical_yukawas, test_yukawa_error_propagation_monte_carlo
 
 def run_simple_test():
     """

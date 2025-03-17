@@ -720,8 +720,8 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     
     abs_slope_integrand = (1/6) * (2/np.pi) * tf.math.abs(sourcesCY)
     abs_slope_mean, abs_slope_se, _, _ = weighted_mean_and_standard_error(abs_slope_integrand, weightsreal, is_top_form=True)
-    integratedabsolutesource = tf.math.real(abs_slope_mean) * kappaover6
-    print("  vs. integrated slope but with absolute val: " + str(integratedabsolutesource.numpy().item()))
+    integratedabsolutesource = np.real(abs_slope_mean) * kappaover6
+    print("  vs. integrated slope but with absolute val: " + str(integratedabsolutesource) + " ± " + str(np.real(abs_slope_se)*kappaover6))
     
     # Calculate FS metrics
     sourceFS = tf.cast(-tf.einsum('xba,xab->x', FSmetricinv, F_forsource_pb), real_dtype)

@@ -9,21 +9,26 @@ from laplacian_funcs import *
 import gc
 import uuid
 from datetime import datetime
+from cymetric.models.tfhelper import prepare_tf_basis, train_model
 import wandb
 
 
 def convert_to_nested_tensor_dict(data):
-   if isinstance(data, dict):
+   if isinstance(data, dict) or hasattr(data, 'items'):
       result = {}
       for key, value in data.items():
          if isinstance(value, np.ndarray):
-            if value.dtype in [np.complex64, np.complex128]:
-               result[key] = tf.convert_to_tensor(value, dtype=complex_dtype)
-            elif value.dtype in [np.float32, np.float64]:
-               result[key] = tf.convert_to_tensor(value, dtype=real_dtype)
-            elif value.dtype == np.int32:
-               result[key] = tf.convert_to_tensor(value, dtype=value.dtype)
+            if value.dtype in [np.complex64, np.complex128] or 'complex' in str(value.dtype):
+                print(f'converting {key} to complex')
+                result[key] = tf.convert_to_tensor(value, dtype=complex_dtype)
+            elif value.dtype in [ np.float32, np.float64,float] or 'float' in str(value.dtype):
+                print(f'converting {key} to real')
+                result[key] = tf.convert_to_tensor(value, dtype=real_dtype)
+            elif value.dtype == np.int32 or 'int' in str(value.dtype):
+                print(f'converting {key} to int')
+                result[key] = tf.convert_to_tensor(value, dtype=value.dtype)
             else:
+               print(f"Unknown dtype for conversion: {value.dtype}, {key}")
                result[key] = value  # Keep original if not a handled dtype
          elif isinstance(value, dict):
             result[key] = convert_to_nested_tensor_dict(value)
@@ -33,7 +38,12 @@ def convert_to_nested_tensor_dict(data):
    else:
       return data
 
-def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, savevecs=False, loadvecs=False):
+def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, run_args=None, dirnameEval=None):
+    savevecs = ("savevecs" in run_args or "save_vecs" in run_args)
+    loadvecs = ("loadvecs" in run_args or "load_vecs" in run_args)
+    loadpullbacks = False# not ("no_pullbacks" in run_args or "nopullbacks" in run_args)# default tru
+    loadextra = False# ("loadextra" in run_args or "load_extra" in run_args) and not ("no_extra" in run_args or "noextra" in run_args)
+
     (_, kmoduli, _, _, type_folder, unique_id_or_coeff, manifold_name, data_path) = manifold_name_and_data
     points64=tf.concat((dataEval['X_train'], dataEval['X_val']),axis=0)
     ytrain64 = tf.concat((dataEval['y_train'], dataEval['y_val']),axis=0)
@@ -56,6 +66,8 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         omega = tf.cast(batch_process_helper_func(pg.holomorphic_volume_form, [pointsComplex], batch_indices=[0], batch_size=100000),complex_dtype)
     else:
         filename = os.path.join(data_path,type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{False}.npz")
+        if not os.path.exists(filename):
+            raise FileNotFoundError(f"File {filename} not found.")
         data = np.load(filename)
         omega = tf.cast(data['omega'],complex_dtype)
     # Verify that dataEval['y_train'][:n_p,1] equals |omega|^2
@@ -89,6 +101,31 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         vQ2_bare = batch_process_helper_func(HFmodel_vQ2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
         vU1_bare = batch_process_helper_func(HFmodel_vU1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
         vU2_bare = batch_process_helper_func(HFmodel_vU2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch)
+
+     
+        # Compute or load pullbacks
+    pullbacks_filename = os.path.join(data_path, type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{str(False)}_pullbacks.npz")
+    if loadpullbacks:
+        try:
+            dataextra = np.load(pullbacks_filename, allow_pickle=True)
+            dataextra = convert_to_nested_tensor_dict(dataextra)
+            pullbacks = dataextra['pullbacks']
+            if len(pullbacks)!=len(pointsComplex):
+                raise ValueError("Pullbacks have the wrong length")
+            print("Loaded pullbacks from saved file")
+        except FileNotFoundError:
+            print("File not found. Computing pullbacks...")
+            #raise Exception("Pullbacks file not found.")
+            pullbacks = tf.cast(batch_process_helper_func(pg.pullbacks, [pointsComplex], batch_indices=[0], batch_size=100000), complex_dtype)
+            
+        # Save pullbacks to file
+        np.savez(pullbacks_filename, pullbacks=pullbacks)
+        print(f"Saved pullbacks to {pullbacks_filename}")
+    else:
+        # Compute pullbacks if not loading from file
+        pullbacks = tf.cast(batch_process_helper_func(pg.pullbacks, [pointsComplex], batch_indices=[0], batch_size=100000), complex_dtype)
+        np.savez(pullbacks_filename, pullbacks=pullbacks)
+        print(f"Saved pullbacks to {pullbacks_filename}")
 
     mats=[]
     masses_trained_and_ref=[]
@@ -392,28 +429,127 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             int_bare_Q3U1_vU1, int_bare_Q3U1_vU1_se, int_bare_Q3U1_vU1_eff_n, int_bare_Q3U1_vU1_stats = weighted_mean_and_standard_error(integrand_bare_Q3U1_vU1, aux_weights, mulweightsby=mulweightsby)
 
             print("\n Q3U2:")
-            print(f"int_Q3U2 = {int_Q3U2:.6e} ± {int_Q3U2_se:.6e} (eff. n = {int_Q3U2_eff_n})")
-            print(f"int_bare_Q3U2_vH = {int_bare_Q3U2_vH:.6e} ± {int_bare_Q3U2_vH_se:.6e} (eff. n = {int_bare_Q3U2_vH_eff_n})")
-            print(f"int_bare_Q3U2_vQ3 = {int_bare_Q3U2_vQ3:.6e} ± {int_bare_Q3U2_vQ3_se:.6e} (eff. n = {int_bare_Q3U2_vQ3_eff_n})")
-            print(f"int_bare_Q3U2_vU2 = {int_bare_Q3U2_vU2:.6e} ± {int_bare_Q3U2_vU2_se:.6e} (eff. n = {int_bare_Q3U2_vU2_eff_n})")
+            print(f"int_Q3U2 = {int_Q3U2:.6e} ± {int_Q3U2_se:.6e} (eff. n = {int_Q3U2_eff_n}) ({np.round(np.abs(int_Q3U2)/np.abs(int_Q3U2_se),2)}σ)")
+            print(f"int_bare_Q3U2_vH = {int_bare_Q3U2_vH:.6e} ± {int_bare_Q3U2_vH_se:.6e} (eff. n = {int_bare_Q3U2_vH_eff_n}) ({np.round(np.abs(int_bare_Q3U2_vH)/np.abs(int_bare_Q3U2_vH_se),2)}σ)")
+            print(f"int_bare_Q3U2_vQ3 = {int_bare_Q3U2_vQ3:.6e} ± {int_bare_Q3U2_vQ3_se:.6e} (eff. n = {int_bare_Q3U2_vQ3_eff_n}) ({np.round(np.abs(int_bare_Q3U2_vQ3)/np.abs(int_bare_Q3U2_vQ3_se),2)}σ)")
+            print(f"int_bare_Q3U2_vU2 = {int_bare_Q3U2_vU2:.6e} ± {int_bare_Q3U2_vU2_se:.6e} (eff. n = {int_bare_Q3U2_vU2_eff_n}) ({np.round(np.abs(int_bare_Q3U2_vU2)/np.abs(int_bare_Q3U2_vU2_se),2)}σ)")
             print("\n Q1U3:")
-            print(f"int_Q1U3 = {int_Q1U3:.6e} ± {int_Q1U3_se:.6e} (eff. n = {int_Q1U3_eff_n})")
-            print(f"int_bare_Q1U3_vH = {int_bare_Q1U3_vH:.6e} ± {int_bare_Q1U3_vH_se:.6e} (eff. n = {int_bare_Q1U3_vH_eff_n})")
-            print(f"int_bare_Q1U3_vQ1 = {int_bare_Q1U3_vQ1:.6e} ± {int_bare_Q1U3_vQ1_se:.6e} (eff. n = {int_bare_Q1U3_vQ1_eff_n})")
-            print(f"int_bare_Q1U3_vU3 = {int_bare_Q1U3_vU3:.6e} ± {int_bare_Q1U3_vU3_se:.6e} (eff. n = {int_bare_Q1U3_vU3_eff_n})")
+            print(f"int_Q1U3 = {int_Q1U3:.6e} ± {int_Q1U3_se:.6e} (eff. n = {int_Q1U3_eff_n}) ({np.round(np.abs(int_Q1U3)/np.abs(int_Q1U3_se),2)}σ)")
+            print(f"int_bare_Q1U3_vH = {int_bare_Q1U3_vH:.6e} ± {int_bare_Q1U3_vH_se:.6e} (eff. n = {int_bare_Q1U3_vH_eff_n}) ({np.round(np.abs(int_bare_Q1U3_vH)/np.abs(int_bare_Q1U3_vH_se),2)}σ)")
+            print(f"int_bare_Q1U3_vQ1 = {int_bare_Q1U3_vQ1:.6e} ± {int_bare_Q1U3_vQ1_se:.6e} (eff. n = {int_bare_Q1U3_vQ1_eff_n}) ({np.round(np.abs(int_bare_Q1U3_vQ1)/np.abs(int_bare_Q1U3_vQ1_se),2)}σ)")
+            print(f"int_bare_Q1U3_vU3 = {int_bare_Q1U3_vU3:.6e} ± {int_bare_Q1U3_vU3_se:.6e} (eff. n = {int_bare_Q1U3_vU3_eff_n}) ({np.round(np.abs(int_bare_Q1U3_vU3)/np.abs(int_bare_Q1U3_vU3_se),2)}σ)") 
             print("\n Q2U3:")
-            print(f"int_Q2U3 = {int_Q2U3:.6e} ± {int_Q2U3_se:.6e} (eff. n = {int_Q2U3_eff_n})")
-            print(f"int_bare_Q2U3_vH = {int_bare_Q2U3_vH:.6e} ± {int_bare_Q2U3_vH_se:.6e} (eff. n = {int_bare_Q2U3_vH_eff_n})")
-            print(f"int_bare_Q2U3_vQ2 = {int_bare_Q2U3_vQ2:.6e} ± {int_bare_Q2U3_vQ2_se:.6e} (eff. n = {int_bare_Q2U3_vQ2_eff_n})")
-            print(f"int_bare_Q2U3_vU3 = {int_bare_Q2U3_vU3:.6e} ± {int_bare_Q2U3_vU3_se:.6e} (eff. n = {int_bare_Q2U3_vU3_eff_n})")
+            print(f"int_Q2U3 = {int_Q2U3:.6e} ± {int_Q2U3_se:.6e} (eff. n = {int_Q2U3_eff_n}) ({np.round(np.abs(int_Q2U3)/np.abs(int_Q2U3_se),2)}σ)")
+            print(f"int_bare_Q2U3_vH = {int_bare_Q2U3_vH:.6e} ± {int_bare_Q2U3_vH_se:.6e} (eff. n = {int_bare_Q2U3_vH_eff_n}) ({np.round(np.abs(int_bare_Q2U3_vH)/np.abs(int_bare_Q2U3_vH_se),2)}σ)")
+            print(f"int_bare_Q2U3_vQ2 = {int_bare_Q2U3_vQ2:.6e} ± {int_bare_Q2U3_vQ2_se:.6e} (eff. n = {int_bare_Q2U3_vQ2_eff_n}) ({np.round(np.abs(int_bare_Q2U3_vQ2)/np.abs(int_bare_Q2U3_vQ2_se),2)}σ)")
+            print(f"int_bare_Q2U3_vU3 = {int_bare_Q2U3_vU3:.6e} ± {int_bare_Q2U3_vU3_se:.6e} (eff. n = {int_bare_Q2U3_vU3_eff_n}) ({np.round(np.abs(int_bare_Q2U3_vU3)/np.abs(int_bare_Q2U3_vU3_se),2)}σ)")
             print("\n Q3U1:")
-            print(f"int_Q3U1 = {int_Q3U1:.6e} ± {int_Q3U1_se:.6e} (eff. n = {int_Q3U1_eff_n})")
-            print(f"integrand_bare_Q3U1_vH = {int_bare_Q3U1_vH:.6e} ± {int_bare_Q3U1_vH_se:.6e} (eff. n = {int_bare_Q3U1_vH_eff_n})")
-            print(f"integrand_bare_Q3U1_vQ3 = {int_bare_Q3U1_vQ3:.6e} ± {int_bare_Q3U1_vQ3_se:.6e} (eff. n = {int_bare_Q3U1_vQ3_eff_n})")
-            print(f"integrand_bare_Q3U1_vU1 = {int_bare_Q3U1_vU1:.6e} ± {int_bare_Q3U1_vU1_se:.6e} (eff. n = {int_bare_Q3U1_vU1_eff_n})")
-
+            print(f"int_Q3U1 = {int_Q3U1:.6e} ± {int_Q3U1_se:.6e} (eff. n = {int_Q3U1_eff_n}) ({np.round(np.abs(int_Q3U1)/np.abs(int_Q3U1_se),2)}σ)")
+            print(f"int_bare_Q3U1_vH = {int_bare_Q3U1_vH:.6e} ± {int_bare_Q3U1_vH_se:.6e} (eff. n = {int_bare_Q3U1_vH_eff_n}) ({np.round(np.abs(int_bare_Q3U1_vH)/np.abs(int_bare_Q3U1_vH_se),2)}σ)")
+            print(f"int_bare_Q3U1_vQ3 = {int_bare_Q3U1_vQ3:.6e} ± {int_bare_Q3U1_vQ3_se:.6e} (eff. n = {int_bare_Q3U1_vQ3_eff_n}) ({np.round(np.abs(int_bare_Q3U1_vQ3)/np.abs(int_bare_Q3U1_vQ3_se),2)}σ)")
+            print(f"int_bare_Q3U1_vU1 = {int_bare_Q3U1_vU1:.6e} ± {int_bare_Q3U1_vU1_se:.6e} (eff. n = {int_bare_Q3U1_vU1_eff_n}) ({np.round(np.abs(int_bare_Q3U1_vU1)/np.abs(int_bare_Q3U1_vU1_se),2)}σ)")
 
             print("--------------------------------\n\n\n\n\n\n\n\n")
+            # Calculate laplacians for each model
+            print("\nComputing and integrating laplacians for each model...")
+           
+            # Calculate laplacian for vH model
+            
+            from custom_networks import BiholoModelFuncGENERALforHYMinv3
+            tf.random.set_seed(0)
+            #mock_model = BiholoModelFuncGENERALforHYMinv3([10,2], pg.BASIS,stddev=0.1,use_zero_network=False,use_symmetry_reduced_TQ=False)
+            invmetrics = tf.linalg.inv(mets)
+            laplacians_filename = os.path.join(data_path, type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{use_trained}_laplacians.npz")
+            network_shape = [256,16,16,1]
+            BASIS = prepare_tf_basis(np.load(os.path.join(dirnameEval, 'basis.pickle'), allow_pickle=True))
+            import random
+            seed = 0
+            tf.keras.utils.set_random_seed(seed)# equivalent to np, random, torch all in one
+            mock_model = BiholoModelFuncGENERALforHYMinv3(network_shape, BASIS, stddev=0.1, use_zero_network=False, use_symmetry_reduced_TQ=False)
+            tf.keras.utils.set_random_seed(seed+1)
+            mock_model_2 = BiholoModelFuncGENERALforHYMinv3(network_shape, BASIS, stddev=0.1, use_zero_network=False, use_symmetry_reduced_TQ=False)
+            print('model1: example output',mock_model(real_pts[0:3]))
+            print('model1: scale of first 100 outputs',tf.math.reduce_mean(tf.abs(mock_model(real_pts[0:100]))))
+            print('model2: example output',mock_model_2(real_pts[0:3]))
+            print('model2: scale of first 100 outputs',tf.math.reduce_mean(tf.abs(mock_model_2(real_pts[0:100]))))
+            if loadextra:
+                try:
+                    dataextra = np.load(laplacians_filename, allow_pickle=True)
+                    dataextra = convert_to_nested_tensor_dict(dataextra)
+                    laplacian_mock = dataextra['laplacian_mock']
+                    laplacian_mock_2 = dataextra['laplacian_mock_2']
+                    mock_model_vals = dataextra['mock_model_vals']
+                    mock_model_2_vals = dataextra['mock_model_2_vals']
+                    if not tf.reduce_all(tf.abs(mock_model_vals[0:100] - mock_model(real_pts[0:100])) < 1e-5):
+                        print(f"Loaded incorrectly! Not compatible, {tf.reduce_max(tf.abs(mock_model_vals[0:100] - mock_model(real_pts[0:100])))}")
+                        print(f"types: {type(mock_model_vals)}, {type(mock_model(real_pts))}")
+                        print(f"loaded: { mock_model_vals.dtype}, {mock_model_vals.shape}, {mock_model_vals[0:1]}")
+                        print(f"actual: {mock_model(real_pts).dtype}, {mock_model(real_pts).shape}, {mock_model(real_pts[:1])}")
+                        raise ValueError("Loaded incorrectly! Not compatible.")
+                    print("Loaded laplacians from saved file")
+                except FileNotFoundError:
+                    raise ValueError("Laplacians file not found. Computing laplacians...")
+                    
+            else:
+                print("Computing laplacians as not requested to load.")
+                laplacian_mock = batch_process_helper_func(laplacian, [mock_model, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
+                laplacian_mock_2 = batch_process_helper_func(laplacian, [mock_model_2, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
+                mock_model_vals = mock_model(real_pts)[:,0]
+                mock_model_2_vals = mock_model_2(real_pts)[:,0]
+                
+                # Save laplacians to file
+                np.savez(laplacians_filename, 
+                         laplacian_mock=laplacian_mock.numpy(),
+                         laplacian_mock_2=laplacian_mock_2.numpy(),
+                         mock_model_vals=mock_model_vals.numpy(),
+                         mock_model_2_vals=mock_model_2_vals.numpy())
+                print(f"Saved laplacians to {laplacians_filename}")
+                
+                # laplacian_mock = batch_process_helper_func(laplacian, [mock_model, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
+                # laplacian_mock_2 = batch_process_helper_func(laplacian, [mock_model_2, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
+                # mock_model_vals = mock_model(real_pts)
+                # mock_model_2_vals = mock_model_2(real_pts)
+                # np
+
+            #sectionval_mock = mock_model(real_pts)
+            #sectionval_mock_2 = mock_model_2(real_pts)
+
+            # Calculate absolute values for mock models
+            laplacian_mock_real_abs = tf.abs(tf.math.real(laplacian_mock))
+            laplacian_mock_imag_abs = tf.abs(tf.math.imag(laplacian_mock))
+            
+            laplacian_mock_2_real_abs = tf.abs(tf.math.real(laplacian_mock_2))
+            laplacian_mock_2_imag_abs = tf.abs(tf.math.imag(laplacian_mock_2))
+            
+            # Use g_cy_weights for integration
+            g_cy_weights = aux_weights * tf.math.real(tf.linalg.det(mets))
+
+            vol, se, _, _ = weighted_mean_and_standard_error(g_cy_weights**0, g_cy_weights)
+            print(f"check volume: {vol} +- {se}")
+
+            print(f"Shapes: {mock_model_vals.shape}, {mock_model_2_vals.shape}, {laplacian_mock.shape}, {laplacian_mock_2.shape}")
+
+            # Integrate laplacians
+            integate_mock, integate_mock_se, integate_mock_eff_n, _ = weighted_mean_and_standard_error(mock_model_vals, g_cy_weights)
+            integate_mock_2, integate_mock_2_se, integate_mock_2_eff_n, _ = weighted_mean_and_standard_error(mock_model_2_vals, g_cy_weights)
+            int_lap_mock, int_lap_mock_se, int_lap_mock_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock, g_cy_weights)
+            int_lap_mock_real, int_lap_mock_real_se, int_lap_mock_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_real_abs, g_cy_weights)
+            int_lap_mock_imag, int_lap_mock_imag_se, int_lap_mock_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_imag_abs, g_cy_weights)
+            
+            int_lap_mock_2, int_lap_mock_2_se, int_lap_mock_2_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2, g_cy_weights)
+            int_lap_mock_2_real, int_lap_mock_2_real_se, int_lap_mock_2_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_real_abs, g_cy_weights)
+            int_lap_mock_2_imag, int_lap_mock_2_imag_se, int_lap_mock_2_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_imag_abs, g_cy_weights)
+            
+            # Print integration results
+            print(f"Mock model 1: {integate_mock} ± {integate_mock_se} (n_eff: {integate_mock_eff_n})")
+            print(f"Mock model 1 laplacian: {int_lap_mock} ± {int_lap_mock_se} (n_eff: {int_lap_mock_eff_n})")
+            print(f"Mock model 1 |Re(lap)|: {int_lap_mock_real} ± {int_lap_mock_real_se} (n_eff: {int_lap_mock_real_eff_n})")
+            #print(f"Mock model 1 |Im(lap)|: {int_lap_mock_imag} ± {int_lap_mock_imag_se} (n_eff: {int_lap_mock_imag_eff_n})")
+            
+            print(f"Mock model 2: {integate_mock_2} ± {integate_mock_2_se} (n_eff: {integate_mock_2_eff_n})")
+            print(f"Mock model 2 laplacian: {int_lap_mock_2} ± {int_lap_mock_2_se} (n_eff: {int_lap_mock_2_eff_n})")
+            print(f"Mock model 2 |Re(lap)|: {int_lap_mock_2_real} ± {int_lap_mock_2_real_se} (n_eff: {int_lap_mock_2_real_eff_n})")
+            #print(f"Mock model 2 |Im(lap)|: {int_lap_mock_2_imag} ± {int_lap_mock_2_imag_se} (n_eff: {int_lap_mock_2_imag_eff_n})")
 
         # vals = []
        
@@ -598,6 +734,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         print("masses ± errors")
         for i in range(len(s)):
             print(f"{s[i]:.6e} ± {singular_value_errors[i]:.6e}")
+        print("\n")
 
         # Log masses and their errors to wandb
         if wandb.run is not None:
