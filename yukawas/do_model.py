@@ -535,7 +535,11 @@ if __name__ == '__main__':
     print("betamodel_config: ", betamodel_config)
     print("sigmamodel_config: ", sigmamodel_config)
     print("sigma2model_config: ", sigma2model_config)
-    
+
+    if 'noorbit' in sys.argv[1:]:
+        orbit_P1s = False
+    else:
+        orbit_P1s = True
 
 
 if __name__ == '__main__':
@@ -604,7 +608,7 @@ if __name__ ==  '__main__':
     
     
     
-    generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,force_generate=force_generate_phi,seed_set=seed_for_gen)
+    generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,force_generate=force_generate_phi,seed_set=seed_for_gen,average_selected_t = orbit_P1s)
     if train_phi:
         #phimodel,training_history=train_and_save_nn(manifold_name_and_data,depthPhi,widthPhi,nEpochsPhi,bSizes=[64,tr_batchsize],lRate=lRatePhi) 
         phimodel,training_history, measure_phi=train_and_save_nn(manifold_name_and_data,phimodel_config,use_zero_network=use_zero_network_phi, unique_name=unique_name_phi)
@@ -700,7 +704,7 @@ if __name__ ==  '__main__':
     purge_dicts_and_mem()
     
 
-    pg,kmoduli=generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,n_to_integrate,seed_set=seed_for_gen,force_generate=force_generate_eval)
+    pg,kmoduli=generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,n_to_integrate,seed_set=seed_for_gen,force_generate=force_generate_eval,average_selected_t = orbit_P1s)
     dirnameEval = os.path.join(data_path,type_folder,f'{manifold_name}_pg_for_eval_with_{unique_id_or_coeff}')
     if not os.path.exists(dirnameEval):
         raise FileNotFoundError(f"Directory {dirnameEval} not found.")

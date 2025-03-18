@@ -119,7 +119,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     
 
     if not loadvecs:
-        mets_bare = batch_process_helper_func(phimodel.fubini_study_pb, (real_pts, pullbacks), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'ts':tf.cast(kmoduli,complex_dtype)})
+        mets_bare = batch_process_helper_func(phimodel.fubini_study_pb, (real_pts, pullbacks), batch_indices=(0,1), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'ts':tf.cast(kmoduli,complex_dtype)})
         vH_bare = batch_process_helper_func(HFmodel_vH.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
         vQ3_bare = batch_process_helper_func(HFmodel_vQ3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
         vU3_bare = batch_process_helper_func(HFmodel_vU3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
