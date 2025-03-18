@@ -1033,10 +1033,12 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
 
     # Save masses to CSV
     import csv
-    os.makedirs(os.path.join(result_files_path,type_folder,"masses"), exist_ok=True)
-    csv_file = os.path.join(result_files_path,type_folder,"masses",f'{manifold_name}_results/masses.csv')
+    os.makedirs(os.path.join(result_files_path,type_folder), exist_ok=True)
+    csv_file = os.path.join(result_files_path,type_folder,f'{manifold_name}_masses.csv')
     print("saving csv to " + npzsavelocation, "saving npz to " + npzsavelocation)
 
+    doubleprecision = 'doubleprecision' in run_args or 'double_precision' in run_args
+    orbit = False if ('no_orbit' in run_args or 'noorbit' in run_args )else True
     # Create header if file doesn't exist
     if not os.path.exists(csv_file):
         with open(csv_file, 'w', newline='') as f:
@@ -1045,7 +1047,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                              'learned_mass1_error', 'learned_mass2_error', 'learned_mass3_error',
                              'ref_mass1', 'ref_mass2', 'ref_mass3',
                              'ref_mass1_error', 'ref_mass2_error', 'ref_mass3_error',
-                             'coefficient', 'n_to_integrate', 'run_args'])
+                             'coefficient', 'n_to_integrate', 'run_args','doubleprecision','orbit'])
 
     # Append masses for this run
     with open(csv_file, 'a', newline='') as f:
@@ -1056,7 +1058,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                         list(masses_trained_and_ref[1]) + 
                         list(singular_value_errors) +  # Using same error estimate for both learned and reference
                         [unique_id_or_coeff] + 
-                        [n_p], [run_args])
+                        [n_p], [run_args], [doubleprecision], [orbit])
 
     if do_extra_stuff:    
         pass
