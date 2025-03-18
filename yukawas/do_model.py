@@ -744,11 +744,13 @@ if __name__ ==  '__main__':
         'config_beta': betamodel_config,
         'config_sigma': sigmamodel_config,
         'config_sigma2': sigma2model_config,
+        'orbit': orbit_P1s,
+        'doubleprecision': 'doubleprecision' in sys.argv[1:] or 'double_precision' in sys.argv[1:]
     }
 
     masses, masserrors = do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH,
                                        HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = do_extra_stuff_for_integration,
-                                         run_args=sys.argv, dirnameEval=dirnameEval, result_files_path=result_files_path)
+                                         run_args=sys.argv, dirnameEval=dirnameEval, result_files_path=result_files_path, )
 
 print("\nYou ran " + " ".join(sys.argv))
 print("--------------------------------")
