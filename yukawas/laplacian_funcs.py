@@ -183,7 +183,10 @@ def laplacianWithH(sigmamodel,points,pullbacks,invmetrics,Hfunc,training=False):
         d_phi = tape2.batch_jacobian(phireal, points)
         #print('dphi')
         #tf.print(d_phi)
-        dphiH=tf.einsum('xQa,x->xQa',d_phi,Hfunc(points))#hfunc is real, so can just multiply
+        if Hfunc is not None:
+            dphiH=tf.einsum('xQa,x->xQa',d_phi,Hfunc(points))#hfunc is real, so can just multiply
+        else:
+            dphiH = d_phi
     dd_phi = tape1.batch_jacobian(dphiH, points)
 
     #print('ddphi')

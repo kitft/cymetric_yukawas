@@ -41,7 +41,7 @@ def convert_to_nested_tensor_dict(data):
 def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, run_args=None, dirnameEval=None):
     savevecs = ("savevecs" in run_args or "save_vecs" in run_args)
     loadvecs = ("loadvecs" in run_args or "load_vecs" in run_args)
-    loadpullbacks = False# not ("no_pullbacks" in run_args or "nopullbacks" in run_args)# default tru
+    loadpullbacks = ("loadpullbacks" in run_args or "load_pullbacks" in run_args)# default tru
     loadextra = False# ("loadextra" in run_args or "load_extra" in run_args) and not ("no_extra" in run_args or "noextra" in run_args)
 
     (_, kmoduli, _, _, type_folder, unique_id_or_coeff, manifold_name, data_path) = manifold_name_and_data
@@ -429,27 +429,27 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             int_bare_Q3U1_vH, int_bare_Q3U1_vH_se, int_bare_Q3U1_vH_eff_n, int_bare_Q3U1_vH_stats = weighted_mean_and_standard_error(integrand_bare_Q3U1_vH, aux_weights, mulweightsby=mulweightsby)
             int_bare_Q3U1_vQ3, int_bare_Q3U1_vQ3_se, int_bare_Q3U1_vQ3_eff_n, int_bare_Q3U1_vQ3_stats = weighted_mean_and_standard_error(integrand_bare_Q3U1_vQ3, aux_weights, mulweightsby=mulweightsby)  
             int_bare_Q3U1_vU1, int_bare_Q3U1_vU1_se, int_bare_Q3U1_vU1_eff_n, int_bare_Q3U1_vU1_stats = weighted_mean_and_standard_error(integrand_bare_Q3U1_vU1, aux_weights, mulweightsby=mulweightsby)
-
+            eps = 1e-10
             print("\n Q3U2:")
-            print(f"int_Q3U2 = {int_Q3U2:.6e} ± {int_Q3U2_se:.6e} (eff. n = {int_Q3U2_eff_n}) ({np.round(np.abs(int_Q3U2)/np.abs(int_Q3U2_se),2)}σ)")
-            print(f"int_bare_Q3U2_vH = {int_bare_Q3U2_vH:.6e} ± {int_bare_Q3U2_vH_se:.6e} (eff. n = {int_bare_Q3U2_vH_eff_n}) ({np.round(np.abs(int_bare_Q3U2_vH)/np.abs(int_bare_Q3U2_vH_se),2)}σ)")
-            print(f"int_bare_Q3U2_vQ3 = {int_bare_Q3U2_vQ3:.6e} ± {int_bare_Q3U2_vQ3_se:.6e} (eff. n = {int_bare_Q3U2_vQ3_eff_n}) ({np.round(np.abs(int_bare_Q3U2_vQ3)/np.abs(int_bare_Q3U2_vQ3_se),2)}σ)")
-            print(f"int_bare_Q3U2_vU2 = {int_bare_Q3U2_vU2:.6e} ± {int_bare_Q3U2_vU2_se:.6e} (eff. n = {int_bare_Q3U2_vU2_eff_n}) ({np.round(np.abs(int_bare_Q3U2_vU2)/np.abs(int_bare_Q3U2_vU2_se),2)}σ)")
+            print(f"int_Q3U2 = {int_Q3U2:.6e} ± {int_Q3U2_se:.6e} ({np.round(np.abs(int_Q3U2)/(np.abs(int_Q3U2_se)+eps),2)}σ)")
+            print(f"int_bare_Q3U2_vH = {int_bare_Q3U2_vH:.6e} ± {int_bare_Q3U2_vH_se:.6e} ({np.round(np.abs(int_bare_Q3U2_vH)/(np.abs(int_bare_Q3U2_vH_se)+eps),2)}σ)")
+            print(f"int_bare_Q3U2_vQ3 = {int_bare_Q3U2_vQ3:.6e} ± {int_bare_Q3U2_vQ3_se:.6e} ({np.round(np.abs(int_bare_Q3U2_vQ3)/(np.abs(int_bare_Q3U2_vQ3_se)+eps),2)}σ)")
+            print(f"int_bare_Q3U2_vU2 = {int_bare_Q3U2_vU2:.6e} ± {int_bare_Q3U2_vU2_se:.6e} ({np.round(np.abs(int_bare_Q3U2_vU2)/(np.abs(int_bare_Q3U2_vU2_se)+eps),2)}σ)")
             print("\n Q1U3:")
-            print(f"int_Q1U3 = {int_Q1U3:.6e} ± {int_Q1U3_se:.6e} (eff. n = {int_Q1U3_eff_n}) ({np.round(np.abs(int_Q1U3)/np.abs(int_Q1U3_se),2)}σ)")
-            print(f"int_bare_Q1U3_vH = {int_bare_Q1U3_vH:.6e} ± {int_bare_Q1U3_vH_se:.6e} (eff. n = {int_bare_Q1U3_vH_eff_n}) ({np.round(np.abs(int_bare_Q1U3_vH)/np.abs(int_bare_Q1U3_vH_se),2)}σ)")
-            print(f"int_bare_Q1U3_vQ1 = {int_bare_Q1U3_vQ1:.6e} ± {int_bare_Q1U3_vQ1_se:.6e} (eff. n = {int_bare_Q1U3_vQ1_eff_n}) ({np.round(np.abs(int_bare_Q1U3_vQ1)/np.abs(int_bare_Q1U3_vQ1_se),2)}σ)")
-            print(f"int_bare_Q1U3_vU3 = {int_bare_Q1U3_vU3:.6e} ± {int_bare_Q1U3_vU3_se:.6e} (eff. n = {int_bare_Q1U3_vU3_eff_n}) ({np.round(np.abs(int_bare_Q1U3_vU3)/np.abs(int_bare_Q1U3_vU3_se),2)}σ)") 
+            print(f"int_Q1U3 = {int_Q1U3:.6e} ± {int_Q1U3_se:.6e} ({np.round(np.abs(int_Q1U3)/(np.abs(int_Q1U3_se)+eps),2)}σ)")
+            print(f"int_bare_Q1U3_vH = {int_bare_Q1U3_vH:.6e} ± {int_bare_Q1U3_vH_se:.6e} ({np.round(np.abs(int_bare_Q1U3_vH)/(np.abs(int_bare_Q1U3_vH_se)+eps),2)}σ)")
+            print(f"int_bare_Q1U3_vQ1 = {int_bare_Q1U3_vQ1:.6e} ± {int_bare_Q1U3_vQ1_se:.6e} ({np.round(np.abs(int_bare_Q1U3_vQ1)/(np.abs(int_bare_Q1U3_vQ1_se)+eps),2)}σ)")
+            print(f"int_bare_Q1U3_vU3 = {int_bare_Q1U3_vU3:.6e} ± {int_bare_Q1U3_vU3_se:.6e} ({np.round(np.abs(int_bare_Q1U3_vU3)/(np.abs(int_bare_Q1U3_vU3_se)+eps),2)}σ)") 
             print("\n Q2U3:")
-            print(f"int_Q2U3 = {int_Q2U3:.6e} ± {int_Q2U3_se:.6e} (eff. n = {int_Q2U3_eff_n}) ({np.round(np.abs(int_Q2U3)/np.abs(int_Q2U3_se),2)}σ)")
-            print(f"int_bare_Q2U3_vH = {int_bare_Q2U3_vH:.6e} ± {int_bare_Q2U3_vH_se:.6e} (eff. n = {int_bare_Q2U3_vH_eff_n}) ({np.round(np.abs(int_bare_Q2U3_vH)/np.abs(int_bare_Q2U3_vH_se),2)}σ)")
-            print(f"int_bare_Q2U3_vQ2 = {int_bare_Q2U3_vQ2:.6e} ± {int_bare_Q2U3_vQ2_se:.6e} (eff. n = {int_bare_Q2U3_vQ2_eff_n}) ({np.round(np.abs(int_bare_Q2U3_vQ2)/np.abs(int_bare_Q2U3_vQ2_se),2)}σ)")
-            print(f"int_bare_Q2U3_vU3 = {int_bare_Q2U3_vU3:.6e} ± {int_bare_Q2U3_vU3_se:.6e} (eff. n = {int_bare_Q2U3_vU3_eff_n}) ({np.round(np.abs(int_bare_Q2U3_vU3)/np.abs(int_bare_Q2U3_vU3_se),2)}σ)")
+            print(f"int_Q2U3 = {int_Q2U3:.6e} ± {int_Q2U3_se:.6e} ({np.round(np.abs(int_Q2U3)/(np.abs(int_Q2U3_se)+eps),2)}σ)")
+            print(f"int_bare_Q2U3_vH = {int_bare_Q2U3_vH:.6e} ± {int_bare_Q2U3_vH_se:.6e} ({np.round(np.abs(int_bare_Q2U3_vH)/(np.abs(int_bare_Q2U3_vH_se)+eps),2)}σ)")
+            print(f"int_bare_Q2U3_vQ2 = {int_bare_Q2U3_vQ2:.6e} ± {int_bare_Q2U3_vQ2_se:.6e} ({np.round(np.abs(int_bare_Q2U3_vQ2)/(np.abs(int_bare_Q2U3_vQ2_se)+eps),2)}σ)")
+            print(f"int_bare_Q2U3_vU3 = {int_bare_Q2U3_vU3:.6e} ± {int_bare_Q2U3_vU3_se:.6e} ({np.round(np.abs(int_bare_Q2U3_vU3)/(np.abs(int_bare_Q2U3_vU3_se)+eps),2)}σ)")
             print("\n Q3U1:")
-            print(f"int_Q3U1 = {int_Q3U1:.6e} ± {int_Q3U1_se:.6e} (eff. n = {int_Q3U1_eff_n}) ({np.round(np.abs(int_Q3U1)/np.abs(int_Q3U1_se),2)}σ)")
-            print(f"int_bare_Q3U1_vH = {int_bare_Q3U1_vH:.6e} ± {int_bare_Q3U1_vH_se:.6e} (eff. n = {int_bare_Q3U1_vH_eff_n}) ({np.round(np.abs(int_bare_Q3U1_vH)/np.abs(int_bare_Q3U1_vH_se),2)}σ)")
-            print(f"int_bare_Q3U1_vQ3 = {int_bare_Q3U1_vQ3:.6e} ± {int_bare_Q3U1_vQ3_se:.6e} (eff. n = {int_bare_Q3U1_vQ3_eff_n}) ({np.round(np.abs(int_bare_Q3U1_vQ3)/np.abs(int_bare_Q3U1_vQ3_se),2)}σ)")
-            print(f"int_bare_Q3U1_vU1 = {int_bare_Q3U1_vU1:.6e} ± {int_bare_Q3U1_vU1_se:.6e} (eff. n = {int_bare_Q3U1_vU1_eff_n}) ({np.round(np.abs(int_bare_Q3U1_vU1)/np.abs(int_bare_Q3U1_vU1_se),2)}σ)")
+            print(f"int_Q3U1 = {int_Q3U1:.6e} ± {int_Q3U1_se:.6e} ({np.round(np.abs(int_Q3U1)/(np.abs(int_Q3U1_se)+eps),2)}σ)")
+            print(f"int_bare_Q3U1_vH = {int_bare_Q3U1_vH:.6e} ± {int_bare_Q3U1_vH_se:.6e} ({np.round(np.abs(int_bare_Q3U1_vH)/(np.abs(int_bare_Q3U1_vH_se)+eps),2)}σ)")
+            print(f"int_bare_Q3U1_vQ3 = {int_bare_Q3U1_vQ3:.6e} ± {int_bare_Q3U1_vQ3_se:.6e} ({np.round(np.abs(int_bare_Q3U1_vQ3)/(np.abs(int_bare_Q3U1_vQ3_se)+eps),2)}σ)")
+            print(f"int_bare_Q3U1_vU1 = {int_bare_Q3U1_vU1:.6e} ± {int_bare_Q3U1_vU1_se:.6e} ({np.round(np.abs(int_bare_Q3U1_vU1)/(np.abs(int_bare_Q3U1_vU1_se)+eps),2)}σ)")
 
             print("--------------------------------\n\n\n\n\n\n\n\n")
             # Calculate laplacians for each model
@@ -467,13 +467,76 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             import random
             seed = 0
             tf.keras.utils.set_random_seed(seed)# equivalent to np, random, torch all in one
-            mock_model = BiholoModelFuncGENERALforHYMinv3(network_shape, BASIS, stddev=0.1, use_zero_network=False, use_symmetry_reduced_TQ=False)
+            #mock_model = BiholoModelFuncGENERALforHYMinv3(network_shape, BASIS, stddev=0.1, use_zero_network=False, use_symmetry_reduced_TQ=False)
+            def mock_model(x, **kwargs):
+                cpoints = point_vec_to_complex(x)
+                kappa1 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,0:2])**2, axis=-1),real_dtype)
+                x0,x1 = cpoints[:,0], cpoints[:,1]
+                x0bar,x1bar = tf.math.conj(x0), tf.math.conj(x1)
+
+                return tf.math.abs(x0*x0bar)/kappa1
+            def mock_model_2(x, **kwargs):
+                cpoints = point_vec_to_complex(x)
+                kappa2 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,2:4])**2, axis=-1),real_dtype)
+                y0,y1 = cpoints[:,2], cpoints[:,3]
+                y0bar,y1bar = tf.math.conj(y0), tf.math.conj(y1)
+
+                return tf.math.abs(y0*y0bar)/kappa2
+
+            def mock_model_3(x, **kwargs):
+                cpoints = point_vec_to_complex(x)
+                kappa3 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,4:6])**2, axis=-1),real_dtype)
+                z0,z1 = cpoints[:,4], cpoints[:,5]
+                z0bar,z1bar = tf.math.conj(z0), tf.math.conj(z1)
+
+                return tf.math.abs(z0*z0bar)/kappa3
+            def mock_model_4(x, **kwargs):
+                cpoints = point_vec_to_complex(x)
+                kappa4 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,6:8])**2, axis=-1),real_dtype) 
+                w0,w1 = cpoints[:,6], cpoints[:,7]
+                w0bar,w1bar = tf.math.conj(w0), tf.math.conj(w1)
+
+                return tf.math.abs(w0*w0bar)/kappa4
+
+            def mock_model_complex1(x, **kwargs):
+                cpoints = point_vec_to_complex(x)
+                kappa1 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,0:2])**2, axis=-1),complex_dtype) 
+                x0,x1 = cpoints[:,0], cpoints[:,1]
+                x0bar,x1bar = tf.math.conj(x0), tf.math.conj(x1)
+
+                return x0*x1bar/kappa1
+            def mock_model_complex2(x, **kwargs):
+                cpoints = point_vec_to_complex(x)
+                kappa2 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,2:4])**2, axis=-1),complex_dtype) 
+                y0,y1 = cpoints[:,2], cpoints[:,3]
+                y0bar,y1bar = tf.math.conj(y0), tf.math.conj(y1)
+
+                return y0*y1bar/kappa2
+            def mock_model_complex3(x, **kwargs):
+                cpoints = point_vec_to_complex(x)
+                kappa3 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,4:6])**2, axis=-1),complex_dtype) 
+                z0,z1 = cpoints[:,4], cpoints[:,5]
+                z0bar,z1bar = tf.math.conj(z0), tf.math.conj(z1)        
+
+                return z0*z1bar/kappa3
+            def mock_model_complex4(x, **kwargs):
+                cpoints = point_vec_to_complex(x)
+                kappa4 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,6:8])**2, axis=-1),complex_dtype) 
+                w0,w1 = cpoints[:,6], cpoints[:,7]
+                w0bar,w1bar = tf.math.conj(w0), tf.math.conj(w1)
+
+                return w0*w1bar/kappa4
+
             tf.keras.utils.set_random_seed(seed+1)
-            mock_model_2 = BiholoModelFuncGENERALforHYMinv3(network_shape, BASIS, stddev=0.1, use_zero_network=False, use_symmetry_reduced_TQ=False)
+            #mock_model_2 = BiholoModelFuncGENERALforHYMinv3(network_shape, BASIS, stddev=0.1, use_zero_network=False, use_symmetry_reduced_TQ=False)
             print('model1: example output',mock_model(real_pts[0:3]))
             print('model1: scale of first 100 outputs',tf.math.reduce_mean(tf.abs(mock_model(real_pts[0:100]))))
             print('model2: example output',mock_model_2(real_pts[0:3]))
             print('model2: scale of first 100 outputs',tf.math.reduce_mean(tf.abs(mock_model_2(real_pts[0:100]))))
+            print('model3: example output',mock_model_3(real_pts[0:3]))
+            print('model3: scale of first 100 outputs',tf.math.reduce_mean(tf.abs(mock_model_3(real_pts[0:100]))))
+            print('model4: example output',mock_model_4(real_pts[0:3]))
+            print('model4: scale of first 100 outputs',tf.math.reduce_mean(tf.abs(mock_model_4(real_pts[0:100]))))
             if loadextra:
                 try:
                     dataextra = np.load(laplacians_filename, allow_pickle=True)
@@ -496,15 +559,40 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                 print("Computing laplacians as not requested to load.")
                 laplacian_mock = batch_process_helper_func(laplacian, [mock_model, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
                 laplacian_mock_2 = batch_process_helper_func(laplacian, [mock_model_2, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
-                mock_model_vals = mock_model(real_pts)[:,0]
-                mock_model_2_vals = mock_model_2(real_pts)[:,0]
+                laplacian_mock_3 = batch_process_helper_func(laplacian, [mock_model_3, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
+                laplacian_mock_4 = batch_process_helper_func(laplacian, [mock_model_4, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
+                laplacian_mock_c = batch_process_helper_func(laplacianWithH, [mock_model_complex1, real_pts, pullbacks, invmetrics,None], batch_indices=[1, 2, 3], kwargs={'training': False})
+                laplacian_mock_2_c = batch_process_helper_func(laplacianWithH, [mock_model_complex2, real_pts, pullbacks, invmetrics,None], batch_indices=[1, 2, 3], kwargs={'training': False})
+                laplacian_mock_3_c = batch_process_helper_func(laplacianWithH, [mock_model_complex3, real_pts, pullbacks, invmetrics,None], batch_indices=[1, 2, 3], kwargs={'training': False})
+                laplacian_mock_4_c = batch_process_helper_func(laplacianWithH, [mock_model_complex4, real_pts, pullbacks, invmetrics,None], batch_indices=[1, 2, 3], kwargs={'training': False})
+                mock_model_vals = mock_model(real_pts)
+                mock_model_2_vals = mock_model_2(real_pts)
+                mock_model_3_vals = mock_model_3(real_pts)
+                mock_model_4_vals = mock_model_4(real_pts)
+                mock_model_c_vals = mock_model_complex1(real_pts)
+                mock_model_2_c_vals = mock_model_complex2(real_pts)
+                mock_model_3_c_vals = mock_model_complex3(real_pts)
+                mock_model_4_c_vals = mock_model_complex4(real_pts)
                 
                 # Save laplacians to file
                 np.savez(laplacians_filename, 
                          laplacian_mock=laplacian_mock.numpy(),
                          laplacian_mock_2=laplacian_mock_2.numpy(),
+                         laplacian_mock_3=laplacian_mock_3.numpy(),
+                         laplacian_mock_4=laplacian_mock_4.numpy(),
+                         laplacian_mock_c=laplacian_mock_c.numpy(),
+                         laplacian_mock_2_c=laplacian_mock_2_c.numpy(),
+                         laplacian_mock_3_c=laplacian_mock_3_c.numpy(),
+                         laplacian_mock_4_c=laplacian_mock_4_c.numpy(),
+
                          mock_model_vals=mock_model_vals.numpy(),
-                         mock_model_2_vals=mock_model_2_vals.numpy())
+                         mock_model_2_vals=mock_model_2_vals.numpy(),
+                         mock_model_3_vals=mock_model_3_vals.numpy(),
+                         mock_model_4_vals=mock_model_4_vals.numpy(),
+                         mock_model_c_vals=mock_model_c_vals.numpy(),
+                         mock_model_2_c_vals=mock_model_2_c_vals.numpy(),
+                         mock_model_3_c_vals=mock_model_3_c_vals.numpy(),
+                         mock_model_4_c_vals=mock_model_4_c_vals.numpy())
                 print(f"Saved laplacians to {laplacians_filename}")
                 
                 # laplacian_mock = batch_process_helper_func(laplacian, [mock_model, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
@@ -523,6 +611,24 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             laplacian_mock_2_real_abs = tf.abs(tf.math.real(laplacian_mock_2))
             laplacian_mock_2_imag_abs = tf.abs(tf.math.imag(laplacian_mock_2))
             
+            laplacian_mock_3_real_abs = tf.abs(tf.math.real(laplacian_mock_3))
+            laplacian_mock_3_imag_abs = tf.abs(tf.math.imag(laplacian_mock_3))
+            
+            laplacian_mock_4_real_abs = tf.abs(tf.math.real(laplacian_mock_4))
+            laplacian_mock_4_imag_abs = tf.abs(tf.math.imag(laplacian_mock_4))
+
+            laplacian_mock_c_real_abs = tf.abs(tf.math.real(laplacian_mock_c))
+            laplacian_mock_c_imag_abs = tf.abs(tf.math.imag(laplacian_mock_c))
+            
+            laplacian_mock_2_c_real_abs = tf.abs(tf.math.real(laplacian_mock_2_c))
+            laplacian_mock_2_c_imag_abs = tf.abs(tf.math.imag(laplacian_mock_2_c))
+
+            laplacian_mock_3_c_real_abs = tf.abs(tf.math.real(laplacian_mock_3_c))
+            laplacian_mock_3_c_imag_abs = tf.abs(tf.math.imag(laplacian_mock_3_c))
+
+            laplacian_mock_4_c_real_abs = tf.abs(tf.math.real(laplacian_mock_4_c))
+            laplacian_mock_4_c_imag_abs = tf.abs(tf.math.imag(laplacian_mock_4_c))
+
             # Use g_cy_weights for integration
             g_cy_weights = aux_weights * tf.math.real(tf.linalg.det(mets))
 
@@ -531,9 +637,24 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
 
             print(f"Shapes: {mock_model_vals.shape}, {mock_model_2_vals.shape}, {laplacian_mock.shape}, {laplacian_mock_2.shape}")
 
+            # Ensure mock models are real
+            mock_model_vals_real = tf.math.real(mock_model_vals)
+            mock_model_2_vals_real = tf.math.real(mock_model_2_vals)
+            mock_model_3_vals_real = tf.math.real(mock_model_3_vals)
+            mock_model_4_vals_real = tf.math.real(mock_model_4_vals)
+
             # Integrate laplacians
-            integate_mock, integate_mock_se, integate_mock_eff_n, _ = weighted_mean_and_standard_error(mock_model_vals, g_cy_weights)
-            integate_mock_2, integate_mock_2_se, integate_mock_2_eff_n, _ = weighted_mean_and_standard_error(mock_model_2_vals, g_cy_weights)
+            integate_mock, integate_mock_se, integate_mock_eff_n, _ = weighted_mean_and_standard_error(mock_model_vals_real, g_cy_weights)
+            integate_mock_2, integate_mock_2_se, integate_mock_2_eff_n, _ = weighted_mean_and_standard_error(mock_model_2_vals_real, g_cy_weights)
+            integate_mock_3, integate_mock_3_se, integate_mock_3_eff_n, _ = weighted_mean_and_standard_error(mock_model_3_vals_real, g_cy_weights)
+            integate_mock_4, integate_mock_4_se, integate_mock_4_eff_n, _ = weighted_mean_and_standard_error(mock_model_4_vals_real, g_cy_weights)
+            integate_mock_c, integate_mock_c_se, integate_mock_c_eff_n, _ = weighted_mean_and_standard_error(mock_model_c_vals, g_cy_weights)  
+            integate_mock_2_c, integate_mock_2_c_se, integate_mock_2_c_eff_n, _ = weighted_mean_and_standard_error(mock_model_2_c_vals, g_cy_weights)
+            integate_mock_3_c, integate_mock_3_c_se, integate_mock_3_c_eff_n, _ = weighted_mean_and_standard_error(mock_model_3_c_vals, g_cy_weights)
+            integate_mock_4_c, integate_mock_4_c_se, integate_mock_4_c_eff_n, _ = weighted_mean_and_standard_error(mock_model_4_c_vals, g_cy_weights)
+
+            
+            
             int_lap_mock, int_lap_mock_se, int_lap_mock_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock, g_cy_weights)
             int_lap_mock_real, int_lap_mock_real_se, int_lap_mock_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_real_abs, g_cy_weights)
             int_lap_mock_imag, int_lap_mock_imag_se, int_lap_mock_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_imag_abs, g_cy_weights)
@@ -542,16 +663,88 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             int_lap_mock_2_real, int_lap_mock_2_real_se, int_lap_mock_2_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_real_abs, g_cy_weights)
             int_lap_mock_2_imag, int_lap_mock_2_imag_se, int_lap_mock_2_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_imag_abs, g_cy_weights)
             
-            # Print integration results
-            print(f"Mock model 1: {integate_mock} ± {integate_mock_se} (n_eff: {integate_mock_eff_n})")
-            print(f"Mock model 1 laplacian: {int_lap_mock} ± {int_lap_mock_se} (n_eff: {int_lap_mock_eff_n})")
-            print(f"Mock model 1 |Re(lap)|: {int_lap_mock_real} ± {int_lap_mock_real_se} (n_eff: {int_lap_mock_real_eff_n})")
-            #print(f"Mock model 1 |Im(lap)|: {int_lap_mock_imag} ± {int_lap_mock_imag_se} (n_eff: {int_lap_mock_imag_eff_n})")
+            int_lap_mock_3, int_lap_mock_3_se, int_lap_mock_3_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3, g_cy_weights)
+            int_lap_mock_3_real, int_lap_mock_3_real_se, int_lap_mock_3_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3_real_abs, g_cy_weights)
+            int_lap_mock_3_imag, int_lap_mock_3_imag_se, int_lap_mock_3_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3_imag_abs, g_cy_weights)
             
-            print(f"Mock model 2: {integate_mock_2} ± {integate_mock_2_se} (n_eff: {integate_mock_2_eff_n})")
-            print(f"Mock model 2 laplacian: {int_lap_mock_2} ± {int_lap_mock_2_se} (n_eff: {int_lap_mock_2_eff_n})")
-            print(f"Mock model 2 |Re(lap)|: {int_lap_mock_2_real} ± {int_lap_mock_2_real_se} (n_eff: {int_lap_mock_2_real_eff_n})")
-            #print(f"Mock model 2 |Im(lap)|: {int_lap_mock_2_imag} ± {int_lap_mock_2_imag_se} (n_eff: {int_lap_mock_2_imag_eff_n})")
+            int_lap_mock_4, int_lap_mock_4_se, int_lap_mock_4_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4, g_cy_weights)
+            int_lap_mock_4_real, int_lap_mock_4_real_se, int_lap_mock_4_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4_real_abs, g_cy_weights)
+            int_lap_mock_4_imag, int_lap_mock_4_imag_se, int_lap_mock_4_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4_imag_abs, g_cy_weights)
+
+
+            int_lap_mock_c, int_lap_mock_c_se, int_lap_mock_c_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_c, g_cy_weights)
+            int_lap_mock_c_real, int_lap_mock_c_real_se, int_lap_mock_c_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_c_real_abs, g_cy_weights)
+            int_lap_mock_c_imag, int_lap_mock_c_imag_se, int_lap_mock_c_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_c_imag_abs, g_cy_weights)   
+
+            int_lap_mock_2_c, int_lap_mock_2_c_se, int_lap_mock_2_c_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_c, g_cy_weights)
+            int_lap_mock_2_c_real, int_lap_mock_2_c_real_se, int_lap_mock_2_c_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_c_real_abs, g_cy_weights)
+            int_lap_mock_2_c_imag, int_lap_mock_2_c_imag_se, int_lap_mock_2_c_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_c_imag_abs, g_cy_weights)
+
+            int_lap_mock_3_c, int_lap_mock_3_c_se, int_lap_mock_3_c_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3_c, g_cy_weights)
+            int_lap_mock_3_c_real, int_lap_mock_3_c_real_se, int_lap_mock_3_c_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3_c_real_abs, g_cy_weights)
+            int_lap_mock_3_c_imag, int_lap_mock_3_c_imag_se, int_lap_mock_3_c_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3_c_imag_abs, g_cy_weights)
+
+            int_lap_mock_4_c, int_lap_mock_4_c_se, int_lap_mock_4_c_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4_c, g_cy_weights)
+            int_lap_mock_4_c_real, int_lap_mock_4_c_real_se, int_lap_mock_4_c_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4_c_real_abs, g_cy_weights)
+            int_lap_mock_4_c_imag, int_lap_mock_4_c_imag_se, int_lap_mock_4_c_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4_c_imag_abs, g_cy_weights)
+
+
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            # Print integration results
+            print(f"Mock model 1: {integate_mock} ± {integate_mock_se}")
+            print(f"Mock model 1 laplacian: {int_lap_mock} ± {int_lap_mock_se}")
+            print(f"Mock model 1 |Re(lap)|: {int_lap_mock_real} ± {int_lap_mock_real_se}")
+            #print(f"Mock model 1 |Im(lap)|: {int_lap_mock_imag} ± {int_lap_mock_imag_se}")
+            
+            print(f"Mock model 2: {integate_mock_2} ± {integate_mock_2_se}")
+            print(f"Mock model 2 laplacian: {int_lap_mock_2} ± {int_lap_mock_2_se}")
+            print(f"Mock model 2 |Re(lap)|: {int_lap_mock_2_real} ± {int_lap_mock_2_real_se}")
+            #print(f"Mock model 2 |Im(lap)|: {int_lap_mock_2_imag} ± {int_lap_mock_2_imag_se}")
+            
+            print(f"Mock model 3: {integate_mock_3} ± {integate_mock_3_se}")
+            print(f"Mock model 3 laplacian: {int_lap_mock_3} ± {int_lap_mock_3_se}")
+            print(f"Mock model 3 |Re(lap)|: {int_lap_mock_3_real} ± {int_lap_mock_3_real_se}")
+            #print(f"Mock model 3 |Im(lap)|: {int_lap_mock_3_imag} ± {int_lap_mock_3_imag_se}")
+            
+            print(f"Mock model 4: {integate_mock_4} ± {integate_mock_4_se}")
+            print(f"Mock model 4 laplacian: {int_lap_mock_4} ± {int_lap_mock_4_se}")
+            print(f"Mock model 4 |Re(lap)|: {int_lap_mock_4_real} ± {int_lap_mock_4_real_se}")
+            #print(f"Mock model 4 |Im(lap)|: {int_lap_mock_4_imag} ± {int_lap_mock_4_imag_se}")
+
+            print(f"Mock model c: {integate_mock_c} ± {integate_mock_c_se}")
+            print(f"Mock model c laplacian: {int_lap_mock_c} ± {int_lap_mock_c_se}")
+            print(f"Mock model c |Re(lap)|: {int_lap_mock_c_real} ± {int_lap_mock_c_real_se}")
+            #print(f"Mock model c |Im(lap)|: {int_lap_mock_c_imag} ± {int_lap_mock_c_imag_se}")
+
+            print(f"Mock model 2 c: {integate_mock_2_c} ± {integate_mock_2_c_se}")
+            print(f"Mock model 2 c laplacian: {int_lap_mock_2_c} ± {int_lap_mock_2_c_se}")
+            print(f"Mock model 2 c |Re(lap)|: {int_lap_mock_2_c_real} ± {int_lap_mock_2_c_real_se}")
+            #print(f"Mock model 2 c |Im(lap)|: {int_lap_mock_2_c_imag} ± {int_lap_mock_2_c_imag_se}")
+            
+            print(f"Mock model 3 c: {integate_mock_3_c} ± {integate_mock_3_c_se}")
+            print(f"Mock model 3 c laplacian: {int_lap_mock_3_c} ± {int_lap_mock_3_c_se}")
+            print(f"Mock model 3 c |Re(lap)|: {int_lap_mock_3_c_real} ± {int_lap_mock_3_c_real_se}")
+            #print(f"Mock model 3 c |Im(lap)|: {int_lap_mock_3_c_imag} ± {int_lap_mock_3_c_imag_se}")
+            
+            print(f"Mock model 4 c: {integate_mock_4_c} ± {integate_mock_4_c_se}")
+            print(f"Mock model 4 c laplacian: {int_lap_mock_4_c} ± {int_lap_mock_4_c_se}")
+            print(f"Mock model 4 c |Re(lap)|: {int_lap_mock_4_c_real} ± {int_lap_mock_4_c_real_se}")
+            #print(f"Mock model 4 c |Im(lap)|: {int_lap_mock_4_c_imag} ± {int_lap_mock_4_c_imag_se}")
+            
+            
+            
+            
+            
+            
+
 
         # vals = []
        
@@ -581,10 +774,10 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         ])
         Hneffs = np.array([[HuHu_eff_n]])
 
-        print("Hneffs, Qneffs, Uneffs: ")
-        print(np.round(Hneffs,1))
-        print(np.round(Qneffs,1))
-        print(np.round(Uneffs,1))
+        # print("Hneffs, Qneffs, Uneffs: ")
+        # print(np.round(Hneffs,1))
+        # print(np.round(Qneffs,1))
+        # print(np.round(Uneffs,1))
         # Calculate error matrices
         Hmat_errors = mfieldmatrixfactors*np.array([[integral_stats['HuHu']['std_error']]])
         Qmat_errors = mfieldmatrixfactors*np.array([
@@ -690,8 +883,8 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         print(np.round(m_errorswoH*10**6,1))
 
         
-        print("neffs without H")
-        print(np.round(mwoH_neffs,1))
+        # print("neffs without H")
+        # print(np.round(mwoH_neffs,1))
 
         print('proper calculation*10**6')
         print(np.round(np.array(m)*10**6,1))
@@ -699,8 +892,8 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
          # Print holomorphic Yukawa matrix errors
         print("holomorphic Yukawa errors *10**6 (absolute value)")
         print(np.round(m_errors*10**6,1))
-        print("neffs")
-        print(np.round(m_neffs,1))
+        # print("neffs")
+        # print(np.round(m_neffs,1))
 
 
         # Use the new function to calculate physical Yukawas and their errors
