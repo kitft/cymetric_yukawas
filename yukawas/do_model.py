@@ -541,6 +541,12 @@ if __name__ == '__main__':
 
     if 'noorbit' in sys.argv[1:]:
         orbit_P1s = False
+    elif 'orbitlast' in sys.argv[1:]:
+        orbit_P1s = 3
+    elif 'orbitsecondlast' in sys.argv[1:]:
+        orbit_P1s = 2
+    elif 'orbitthirdlast' in sys.argv[1:]:
+        orbit_P1s = 1
     else:
         orbit_P1s = True
     print(f"Orbiting over P1s")
