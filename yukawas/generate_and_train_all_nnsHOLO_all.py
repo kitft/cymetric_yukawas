@@ -123,7 +123,7 @@ def create_adam_optimizer_with_decay(initial_learning_rate, nEpochs, final_lr_fa
 
     return tf.keras.optimizers.Adam(learning_rate=initial_learning_rate)#lr_schedule)
 
-def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,number_points,force_generate=False,seed_set=0):
+def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,number_points,force_generate=False,seed_set=0,average_selected_t = True):
    print("\n\n")
    coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path = (manifold_name_and_data)
    pg = PointGenerator(monomials, coefficients, kmoduli, ambient)
@@ -133,7 +133,7 @@ def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,numb
    #test if the directory exists, if not, create it
    if force_generate or (not os.path.exists(dirname)):
       print("Generating: forced? " + str(force_generate))
-      kappa = pg.prepare_dataset(number_points, dirname)
+      kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
       pg.prepare_basis(dirname, kappa=kappa)
       print(f"Generated dataset: kappa: {kappa}")
    elif os.path.exists(dirname):
@@ -143,31 +143,35 @@ def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,numb
          if data['X_train'].dtype != 'float64':#real_dtype: if it's a bare cymetric file, it should always be float64
             print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
             print("Regenerating dataset with correct dtype")
-            kappa = pg.prepare_dataset(number_points, dirname)
+            kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
             pg.prepare_basis(dirname, kappa=kappa)
          elif len(data['X_train'])+len(data['X_val']) != number_points:
             length_total = len(data['X_train'])+len(data['X_val'])
             print(f"wrong length {length_total}, want {number_points} - generating anyway")
-            kappa = pg.prepare_dataset(number_points, dirname)
+            kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
             pg.prepare_basis(dirname, kappa=kappa)
       except:
          print("error loading - generating anyway")
-         kappa = pg.prepare_dataset(number_points, dirname)
+         kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
          pg.prepare_basis(dirname, kappa=kappa)
    return pg,kmoduli
 
 
-def generate_points_and_save_using_defaults(manifold_name_and_data,number_points,force_generate=False,seed_set=0):
+def generate_points_and_save_using_defaults(manifold_name_and_data,number_points,force_generate=False,seed_set=0,average_selected_t = True):
    coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path =  manifold_name_and_data
    pg = PointGenerator(monomials, coefficients, kmoduli, ambient)
    pg._set_seed(seed_set)
    dirname = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff)) 
    dirnameForMetric = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff))
    print("dirname: " + dirname)
+   if average_selected_t in [True,False]:
+      print("Using average_selected_t: " + str(average_selected_t))
+   else:
+      print("Using particular selected_t: " + str(average_selected_t))
    #test if the directory exists, if not, create it
    if force_generate or (not os.path.exists(dirname)):
       print("Generating: forced? " + str(force_generate))
-      kappa = pg.prepare_dataset(number_points, dirname)
+      kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
       pg.prepare_basis(dirname, kappa=kappa)
       print(f"Generated dataset: kappa: {kappa}")
    elif os.path.exists(dirname):
@@ -178,16 +182,16 @@ def generate_points_and_save_using_defaults(manifold_name_and_data,number_points
          if data['X_train'].dtype != 'float64':#real_dtype: if it's a bare cymetric file, it should always be float64
             print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
             print("Regenerating dataset with correct dtype")
-            kappa = pg.prepare_dataset(number_points, dirname)
+            kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
             pg.prepare_basis(dirname, kappa=kappa)
          elif len(data['X_train'])+len(data['X_val']) != number_points:
             length_total = len(data['X_train'])+len(data['X_val'])
             print(f"wrong length {length_total}, want {number_points} - generating anyway")
-            kappa = pg.prepare_dataset(number_points, dirname)
+            kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
             pg.prepare_basis(dirname, kappa=kappa)
       except Exception as e:
          print(f"error loading - generating anyway  {e}")
-         kappa = pg.prepare_dataset(number_points, dirname)
+         kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
          pg.prepare_basis(dirname, kappa=kappa)
    
 

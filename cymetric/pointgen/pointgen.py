@@ -64,7 +64,7 @@ class PointGenerator:
         >>> pg.prepare_basis(dir_name)
     """
 
-    def __init__(self, monomials, coefficients, kmoduli, ambient, vol_j_norm=None, verbose=2, backend='multiprocessing'):
+    def __init__(self, monomials, coefficients, kmoduli, ambient, vol_j_norm=None, verbose=2, backend='multiprocessing', use_jax=True):
         r"""The PointGenerator uses the *joblib* module to parallelize 
         computations. 
 
@@ -123,6 +123,10 @@ class PointGenerator:
         # some more internal variables
         self._set_seed(2021)
         self._generate_all_bases()
+        if use_jax:
+            import cymetric.pointgen.pointgen_jax as pointgen_jax
+            self.pointgen_jax = pointgen_jax.JAXPointGenerator(self)
+            
 
     @staticmethod
     def _set_seed(seed):
@@ -137,7 +141,8 @@ class PointGenerator:
         and the pullback tensor.
         """
         self.all_ts = np.eye(len(self.ambient), dtype=int)
-        self.selected_t = self.all_ts[np.argmax(self.ambient)]
+        #self.selected_t = self.all_ts[np.argmax(self.ambient)] # allow to generate any of them!
+        self.selected_t = self.all_ts
         self._generate_root_basis()
         self._generate_dQdz_basis()
         # we disable dzdz derivatives, there is not much difference in 
@@ -158,52 +163,66 @@ class PointGenerator:
         self.root_vars = {}
         self.root_monomials = []
         self.root_factors = []
-        self.tpoly = 0
-        self.root_vars = {}
-        self.root_vars['p'] = sp.var('p0:{}:{}'.format(
-            self.ncoords, np.max(self.selected_t) + 1))
-        self.root_vars['ps'] = sp.Matrix(np.reshape(
-            self.root_vars['p'], (self.ncoords, np.max(self.selected_t) + 1)))
-        self.root_vars['t'] = sp.var('t0:{}'.format(self.nhyper))
-        self.root_vars['ts'] = sp.ones(
-            int(self.ncoords), int(np.max(self.selected_t) + 1))
-        for i in range(len(self.ambient)):
-            for j in range(np.max(self.selected_t) + 1):
-                if j > self.selected_t[i]:
-                    s = np.sum(self.ambient[:i]) + i
-                    e = np.sum(self.ambient[:i + 1]) + i + 1
-                    self.root_vars['ps'][s:e, j] = \
-                        sp.zeros(*np.shape(self.root_vars['ps'][s:e, j]))
-        j = 0
-        for i in range(len(self.ambient)):
-            for k in range(self.selected_t[i]):
-                s = np.sum(self.ambient[:i]) + i
-                e = np.sum(self.ambient[:i + 1]) + i + 1
-                self.root_vars['ts'][s:e, 1 + k] = self.root_vars['t'][j] * sp.ones(*np.shape(self.root_vars['ts'][s:e, 1 + k]))
-                j += 1
-        self.tpoly = self.poly.subs(
-            [(self.x[i], sum(self.root_vars['ps'].row(i) * self.root_vars['ts'].row(i).T))
-             for i in range(self.ncoords)]).as_poly()
-        poly_dict = self.tpoly.as_dict()
-        all_vars = np.array(list(self.root_vars['p']) + list(self.root_vars['t']))
-        root_monomials = np.zeros((len(poly_dict), len(all_vars)), dtype=int)
-        root_factors = np.zeros(len(poly_dict), dtype=np.complex128)
-        mask = np.logical_or.reduce(all_vars == np.array(list(self.tpoly.free_symbols)).reshape(-1, 1))
-        for i, entry in enumerate(poly_dict):
-            antry = np.array(entry)
-            root_monomials[i, mask] = antry
-            root_factors[i] = poly_dict[entry]
-        # sort root_monomials to work with np.root
-        t_mask = self.root_vars['t'] == all_vars
-        t_index = np.where(t_mask)[0][0]
-        # +1 because hypersurface
-        max_degree = int(self.ambient[self.selected_t.astype(bool)]) + 1
-        # +1 for degree zero
-        for j in range(max_degree + 1):
-            good = root_monomials[:, t_index] == max_degree - j
-            tmp_monomials = root_monomials[good]
-            self.root_monomials += [np.delete(tmp_monomials, t_index, axis=1)]
-            self.root_factors += [root_factors[good]]
+        
+        # Initialize lists for each selected_t
+        for _ in range(len(self.selected_t)):
+            self.root_monomials.append([])
+            self.root_factors.append([])
+            
+        for i, sel_t in enumerate(self.selected_t):
+            self.tpoly = 0
+            self.root_vars[i] = {}
+            self.root_vars[i]['p'] = sp.var('p0:{}:{}'.format(
+                self.ncoords, np.max(sel_t) + 1))
+            self.root_vars[i]['ps'] = sp.Matrix(np.reshape(
+                self.root_vars[i]['p'], (self.ncoords, np.max(sel_t) + 1)))
+            self.root_vars[i]['t'] = sp.var('t0:{}'.format(self.nhyper))
+            self.root_vars[i]['ts'] = sp.ones(
+                int(self.ncoords), int(np.max(sel_t) + 1))
+            
+            for j in range(len(self.ambient)):
+                for k in range(np.max(sel_t) + 1):
+                    if k > sel_t[j]:
+                        s = np.sum(self.ambient[:j]) + j
+                        e = np.sum(self.ambient[:j + 1]) + j + 1
+                        self.root_vars[i]['ps'][s:e, k] = \
+                            sp.zeros(*np.shape(self.root_vars[i]['ps'][s:e, k]))
+            
+            j = 0
+            for j_amb in range(len(self.ambient)):
+                for k in range(sel_t[j_amb]):
+                    s = np.sum(self.ambient[:j_amb]) + j_amb
+                    e = np.sum(self.ambient[:j_amb + 1]) + j_amb + 1
+                    self.root_vars[i]['ts'][s:e, 1 + k] = self.root_vars[i]['t'][j] * sp.ones(*np.shape(self.root_vars[i]['ts'][s:e, 1 + k]))
+                    j += 1
+                    
+            self.tpoly = self.poly.subs(
+                [(self.x[idx], sum(self.root_vars[i]['ps'].row(idx) * self.root_vars[i]['ts'].row(idx).T))
+                 for idx in range(self.ncoords)]).as_poly()
+            
+            poly_dict = self.tpoly.as_dict()
+            all_vars = np.array(list(self.root_vars[i]['p']) + list(self.root_vars[i]['t']))
+            root_monomials = np.zeros((len(poly_dict), len(all_vars)), dtype=int)
+            root_factors = np.zeros(len(poly_dict), dtype=np.complex128)
+            mask = np.logical_or.reduce(all_vars == np.array(list(self.tpoly.free_symbols)).reshape(-1, 1))
+            
+            for idx, entry in enumerate(poly_dict):
+                antry = np.array(entry)
+                root_monomials[idx, mask] = antry
+                root_factors[idx] = poly_dict[entry]
+                
+            # sort root_monomials to work with np.root
+            t_mask = self.root_vars[i]['t'] == all_vars
+            t_index = np.where(t_mask)[0][0]
+            # +1 because hypersurface
+            max_degree = int(self.ambient[sel_t.astype(bool)][0]) + 1
+            # +1 for degree zero
+            for j in range(max_degree + 1):
+                good = root_monomials[:, t_index] == max_degree - j
+                tmp_monomials = root_monomials[good]
+                self.root_monomials[i].append(np.delete(tmp_monomials, t_index, axis=1))
+                self.root_factors[i].append(root_factors[good])
+
 
     def _generate_root_basis_Q(self):
         r"""Generates a monomial basis for the 1d poly in t
@@ -211,6 +230,7 @@ class PointGenerator:
 
         NOTE: this one is legacy code.
         """
+        raise ValueError("This function is not used anymore. Also, doesn't have the selected_t_val argument.")
         p = sp.var('p0:{}'.format(self.ncoords))
         q = sp.var('q0:{}'.format(self.ncoords))
         t = sp.var('t')
@@ -840,7 +860,7 @@ class PointGenerator:
         self.BASIS['QB0'] = self.monomials
         self.BASIS['QF0'] = self.coefficients
 
-    def generate_points(self, n_p, nproc=-1, batch_size=5000, use_jax=True, process_parallel=False):
+    def generate_points(self, n_p, nproc=-1, batch_size=5000, use_jax=True, process_parallel=False, selected_t_val=None):
         r"""Generates complex points on the CY.
 
         The points are automatically scaled, such that the largest 
@@ -860,27 +880,26 @@ class PointGenerator:
         """
         if use_jax:
             print("using JAX: solving roots with jnp.roots")
-            import cymetric.pointgen.pointgen_jax as pointgen_jax
             numpy_seed = np.random.get_state()[1][0]# use the same seed as numpy for the jax seed
-            points = pointgen_jax.JAXPointGenerator(self).generate_points_jax(n_p, numpy_seed)
+            points = self.pointgen_jax.generate_points_jax(n_p, numpy_seed, selected_t_val=selected_t_val)
             return points
         else:
-            max_ts = np.max(self.selected_t)
-            max_degree = self.ambient[self.selected_t.astype(bool)] + 1
+            max_ts = np.max(self.selected_t[selected_t_val])
+            max_degree = self.ambient[self.selected_t[selected_t_val].astype(bool)] + 1
             n_p_red = int(n_p / max_degree) + 1
             pn_pnts = np.zeros((n_p_red, self.ncoords, max_ts + 1),
                                dtype=np.complex128)
             for i in range(len(self.ambient)):
-                for k in range(self.selected_t[i] + 1):
+                for k in range(self.selected_t[selected_t_val][i] + 1):
                     s = np.sum(self.ambient[:i]) + i
                     e = np.sum(self.ambient[:i + 1]) + i + 1
                     pn_pnts[:, s:e, k] += self.generate_pn_points(n_p_red, self.ambient[i])
             if not use_jax and process_parallel:
                 points = Parallel(n_jobs=nproc, backend=self.backend, batch_size=batch_size)(
-                    delayed(self._take_roots)(pi) for pi in pn_pnts)
+                    delayed(self._take_roots)(pi, selected_t_val=selected_t_val) for pi in pn_pnts)
             elif not use_jax and not process_parallel:
                 # Sequential processing without parallelization
-                points = [self._take_roots(pi) for pi in pn_pnts]
+                points = [self._take_roots(pi, selected_t_val=selected_t_val) for pi in pn_pnts]
         
             points = np.vstack(points)
             return self._rescale_points(points)
@@ -949,7 +968,7 @@ class PointGenerator:
         # make them complex
         return (points / norm).view(dtype=np.complex128)
 
-    def _point_from_sol(self, p, sol):
+    def _point_from_sol(self, p, sol, selected_t_val=None):
         r"""Generates a point on the CICY.
 
         Args:
@@ -964,7 +983,7 @@ class PointGenerator:
         t = np.ones_like(p)
         j = 0
         for i in range(len(self.ambient)):
-            for k in range(1, self.selected_t[i] + 1):
+            for k in range(1, self.selected_t[selected_t_val][i] + 1):
                 s = np.sum(self.ambient[:i]) + i
                 e = np.sum(self.ambient[:i + 1]) + i + 1
                 t[s:e, k] = sol[j] * np.ones_like(t[s:e, k])
@@ -972,7 +991,7 @@ class PointGenerator:
         point = np.sum(p * t, axis=-1)
         return point
 
-    def _take_roots(self, p):
+    def _take_roots(self, p, selected_t_val=None):
         r"""We generate points on Q by defining a line p*t+q 
         in *one* of the projective ambient spaces and taking all
         the intersections with Q.
@@ -987,10 +1006,10 @@ class PointGenerator:
         """
         all_sums = [
             np.sum(c * np.multiply.reduce(np.power(p.flatten(), m), axis=-1))
-            for m, c in zip(self.root_monomials, self.root_factors)]
+            for m, c in zip(self.root_monomials[selected_t_val], self.root_factors[selected_t_val])]
         roots = np.roots(all_sums)
         # we give [t] to work with more general hypersurfaces.
-        return np.array([self._point_from_sol(p, [t]) for t in roots])
+        return np.array([self._point_from_sol(p, [t], selected_t_val=selected_t_val) for t in roots])
 
     def _take_roots_Q(self, p, q):
         r"""We generate points on Q by taking two points
@@ -1011,7 +1030,7 @@ class PointGenerator:
             for m, c in zip(self.root_monomials_Q, self.root_factors_Q)]
         return np.array([p * t + q for t in np.roots(all_sums)])
 
-    def generate_point_weights(self, n_pw, omega=False, normalize_to_vol_j=False):
+    def generate_point_weights(self, n_pw, omega=False, normalize_to_vol_j=False, selected_t_val=None):
         r"""Generates a numpy dictionary of point weights.
 
         Args:
@@ -1023,13 +1042,16 @@ class PointGenerator:
         Returns:
             np.dict: point weights
         """
+        if selected_t_val is None:
+            print("NOT GIVEN SELECTED T: USING DEFAULT")
+            selected_t_val = np.argmax(self.ambient)
         data_types = [
             ('point', np.complex128, self.ncoords),
             ('weight', np.float64)
         ]
         data_types = data_types + [('omega', np.complex128)] if omega else data_types
         dtype = np.dtype(data_types)
-        points = self.generate_points(n_pw)
+        points = self.generate_points(n_pw, selected_t_val=selected_t_val)
 
         #Throw away points for which the patch is ambiguous, since too many coordiantes are too close to 1
         inv_one_mask = np.isclose(points, complex(1, 0))
@@ -1040,7 +1062,7 @@ class PointGenerator:
 
         n_p = len(points)
         n_p = n_p if n_p < n_pw else n_pw
-        weights = self.point_weight(points, normalize_to_vol_j=normalize_to_vol_j)
+        weights = self.point_weight(points, normalize_to_vol_j=normalize_to_vol_j, selected_t_val=selected_t_val)
         point_weights = np.zeros((n_p), dtype=dtype)
         point_weights['point'], point_weights['weight'] = points[0:n_p], weights[0:n_p]
         if omega:
@@ -1225,7 +1247,7 @@ class PointGenerator:
         dQdz = np.add.reduce(dQdz, axis=-1)
         return dQdz
 
-    def point_weight(self, points, normalize_to_vol_j=False, j_elim=None):
+    def point_weight(self, points, normalize_to_vol_j=False, j_elim=None, selected_t_val=None):
         r"""We compute the weight/mass of each point:
 
         .. math::
@@ -1256,7 +1278,7 @@ class PointGenerator:
         omegas = self.holomorphic_volume_form(points, j_elim=j_elim)
         pbs = self.pullbacks(points, j_elim=j_elim)
         # find the nfold wedge product of omegas
-        all_omegas = self.ambient - self.selected_t
+        all_omegas = self.ambient - self.selected_t[selected_t_val]
         ts = np.zeros((self.nfold, len(all_omegas)))
         j = 0
         for i in range(len(all_omegas)):
@@ -1599,7 +1621,7 @@ class PointGenerator:
         """
         return prepare_basis_pickle(self, dirname, kappa)
 
-    def prepare_dataset(self, n_p, dirname, val_split=0.1, ltails=0, rtails=0):
+    def prepare_dataset(self, n_p, dirname, val_split=0.1, ltails=0, rtails=0,average_selected_t = False):
         r"""Prepares training and validation data.
 
         Args:
@@ -1614,7 +1636,7 @@ class PointGenerator:
         Returns:
             np.float: kappa = vol_k / vol_cy
         """
-        return prepare_dataset(self, n_p, dirname, val_split=val_split, ltails=ltails, rtails=rtails)
+        return prepare_dataset(self, n_p, dirname, val_split=val_split, ltails=ltails, rtails=rtails,average_selected_t = average_selected_t)
 
     def cy_condition(self, points):
         r"""Computes the CY condition at each point.

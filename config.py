@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 # Global dtype variables
 real_dtype = tf.float32

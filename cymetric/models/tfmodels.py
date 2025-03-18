@@ -586,7 +586,7 @@ class MultFSModel(FreeModel):
         """
         super(MultFSModel, self).__init__(*args, **kwargs)
 
-    def call(self, input_tensor, training=True, j_elim=None):
+    def call(self, input_tensor, training=True, j_elim=None,pb=None):
         r"""Prediction of the model.
 
         .. math:: 
@@ -607,7 +607,7 @@ class MultFSModel(FreeModel):
         # nn prediction
         nn_cont = self.to_hermitian(self.model(input_tensor, training=training))
         # fs metric
-        fs_cont = self.fubini_study_pb(input_tensor, j_elim=j_elim)
+        fs_cont = self.fubini_study_pb(input_tensor,pb=pb, j_elim=j_elim)
         # return g_fs ( 1+ g_NN)
         return fs_cont + tf.math.multiply(fs_cont, nn_cont)
 
@@ -733,7 +733,7 @@ class PhiFSModel(FreeModel):
         # automatic in Phi network
         self.learn_kaehler = tf.cast(False, dtype=tf.bool)
 
-    def call(self, input_tensor, training=True, j_elim=None):
+    def call(self, input_tensor, training=True, j_elim=None,pb=None):
         r"""Prediction of the model.
 
         .. math::
@@ -769,11 +769,12 @@ class PhiFSModel(FreeModel):
             0.25*dd_phi[:, self.ncoords:, :self.ncoords], \
             0.25*dd_phi[:, self.ncoords:, self.ncoords:]
         dd_phi = tf.complex(dx_dx_phi + dy_dy_phi, dx_dy_phi - dy_dx_phi)
-        pbs = self.pullbacks(input_tensor, j_elim=j_elim)
-        dd_phi = tf.einsum('xai,xij,xbj->xab', pbs, dd_phi, tf.math.conj(pbs))
+        if pb is None:
+            pb = self.pullbacks(input_tensor, j_elim=j_elim)
+        dd_phi = tf.einsum('xai,xij,xbj->xab', pb, dd_phi, tf.math.conj(pb))
 
         # fs metric
-        fs_cont = self.fubini_study_pb(input_tensor, pb=pbs, j_elim=j_elim)
+        fs_cont = self.fubini_study_pb(input_tensor, pb=pb, j_elim=j_elim)
         # return g_fs + \del\bar\del\phi
         return tf.math.add(fs_cont, dd_phi)
         

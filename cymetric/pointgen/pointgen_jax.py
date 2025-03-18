@@ -8,7 +8,7 @@ import time
 from functools import partial
 
 # Disable JIT compilation
-#jax.config.update("jax_disable_jit", True)
+jax.config.update("jax_disable_jit", True)
 
 
 class JAXPointGenerator:
@@ -17,6 +17,11 @@ class JAXPointGenerator:
     def __init__(self, original_generator):
         # Copy necessary attributes from the original generator
         self.selected_t = original_generator.selected_t
+        if len(self.selected_t) != len(original_generator.ambient):
+            raise ValueError("selected_t must be a list of lists with length matching ambient")
+        if len(self.selected_t[0]) != len(original_generator.ambient):
+            raise ValueError("selected_t must be a list of lists with length matching ambient")
+        
         self.ambient = original_generator.ambient
         self.ncoords = original_generator.ncoords
         self.root_monomials = original_generator.root_monomials
@@ -26,17 +31,29 @@ class JAXPointGenerator:
         self.degrees=original_generator.degrees
         
         # Create JAX-compatible versions of key functions
-        self._take_roots_jax = jax.jit(vmap(self._take_roots_single))
+        self._take_roots_mapped = lambda pt, selected_t_val: self._take_roots_single(pt, selected_t_val=selected_t_val)
+            
+        self._take_roots_jax = [jax.jit(vmap(partial(self._take_roots_mapped, selected_t_val=s))) for s in range(len(self.selected_t))]
     
         # Pre-compute indices for _point_from_sol_jax
-        self.slices = []
-        j = 0
-        for i in range(len(self.ambient)):
-            for k in range(1, self.selected_t[i] + 1):
-                s = jnp.sum(self.ambient[:i]) + i
-                e = jnp.sum(self.ambient[:i + 1]) + i + 1
-                self.slices.append((j, k, s, e))
-                j += 1
+        # Initialize separate empty lists for each selected_t
+        self.slices = [[] for _ in range(len(self.selected_t))]
+        for ele in range(len(self.selected_t)):
+            j = 0
+            for i in range(len(self.ambient)):
+                for k in range(1,self.selected_t[ele][i] + 1):
+                    s = jnp.sum(self.ambient[:i]) + i
+                    e = jnp.sum(self.ambient[:i + 1]) + i + 1
+                    self.slices[ele].append((j, k, s, e))
+                    j += 1
+        # for s in self.slices:
+        #     print(s)
+        # print(len(self.root_monomials[0]),len(self.root_factors[0]))
+        # print(len(self.root_monomials),len(self.root_factors))
+        # print(self.root_monomials[0])
+        # print(self.root_factors[0])
+        # print(self.root_monomials)
+        # print(self.root_factors)
 
     def generate_pn_points_jax(self, n_p, n, key):
         r"""JAX version: Generates points on the sphere :math:`S^{2n+1}`.
@@ -66,7 +83,7 @@ class JAXPointGenerator:
         
         return points_complex, key
 
-    def generate_points_orig_pn_pnts(self, n_p, numpy_seed):
+    def generate_points_orig_pn_pnts(self, n_p, numpy_seed, selected_t_val=None):
         r"""Generates complex points on the CY.
 
         The points are automatically scaled, such that the largest 
@@ -85,13 +102,13 @@ class JAXPointGenerator:
             ndarray[(n_p, ncoords), np.complex128]: rescaled points
         """
         key = jax.random.PRNGKey(numpy_seed) # use the same seed as numpy for the jax seed
-        max_ts = np.max(self.selected_t)
-        max_degree = self.ambient[self.selected_t.astype(bool)][0] + 1
+        max_ts = np.max(self.selected_t[selected_t_val])
+        max_degree = self.ambient[self.selected_t[selected_t_val].astype(bool)][0] + 1# 0 to get the .item()
         n_p_red = int(n_p / max_degree) + 1
         pn_pnts = np.zeros((n_p_red, self.ncoords, max_ts + 1),
                            dtype=np.complex128)
         for i in range(len(self.ambient)):
-            for k in range(self.selected_t[i] + 1):
+            for k in range(self.selected_t[selected_t_val][i] + 1):
                 s = np.sum(self.ambient[:i]) + i
                 e = np.sum(self.ambient[:i + 1]) + i + 1
                 pn_pnts_slice, key = self.generate_pn_points_jax(n_p_red, self.ambient[i], key)
@@ -136,42 +153,46 @@ class JAXPointGenerator:
             points_rescaled = points_rescaled.at[:, s:e].set(update)
             
         return points_rescaled
-    def _take_roots_single(self, p):
+
+    def _take_roots_single(self, p, selected_t_val):
         """JAX version of _take_roots for a single point"""
         # Compute polynomial coefficients
         all_sums = [
             jnp.sum(c * jnp.multiply.reduce(jnp.power(p.flatten(), m), axis=-1))
-            for m, c in zip(self.root_monomials, self.root_factors)]
+            for m, c in zip(self.root_monomials[selected_t_val], self.root_factors[selected_t_val])]
         
         # Convert to array for roots function
         coeffs = jnp.array(all_sums)
         
         # Find roots and create points
         roots = jnp.roots(coeffs, strip_zeros=False)
-        points = vmap(lambda t: self._point_from_sol_jax(p, [t]))(roots)
+        # Convert JAX array to numpy for debugging
+        points = vmap(lambda t: self._point_from_sol_jax(p, [t],selected_t_val = selected_t_val))(roots)
         return points
 
     
-    def _point_from_sol_jax(self, p, sol):
+    def _point_from_sol_jax(self, p, sol, selected_t_val=None):
         """JAX version of _point_from_sol"""
         t = jnp.ones_like(p)
-        for j, k, s, e in self.slices:
+        for j, k, s, e in self.slices[selected_t_val]:
             t = t.at[s:e, k].set(sol[j])
         point = jnp.sum(p * t, axis=-1)
         return point
     
-    def generate_points_jax(self, n_p, numpy_seed, pn_pnts=None):
+    def generate_points_jax(self, n_p, numpy_seed, pn_pnts=None, selected_t_val=None):
         """JAX-optimized point generation"""
         # max_ts = jnp.max(self.selected_t)
         # max_degree = self.ambient[self.selected_t.astype(bool)][0] + 1
         # n_p_red = int(n_p / max_degree) + 1
         
         # Create points
+        if selected_t_val is None:
+            raise ValueError("selected_t_val must be provided")
         if pn_pnts is None:
-            pn_pnts = self.generate_points_orig_pn_pnts(n_p, numpy_seed)
+            pn_pnts = self.generate_points_orig_pn_pnts(n_p, numpy_seed, selected_t_val=selected_t_val)
         else:
             pn_pnts = jnp.array(pn_pnts)
-        points = self._take_roots_jax(pn_pnts)
+        points = self._take_roots_jax[selected_t_val](pn_pnts)
         points = jnp.vstack(points)
         rescaled_points = self._rescale_points(points)
         # Ensure we have generated at least n_p points

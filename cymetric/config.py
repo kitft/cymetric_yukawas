@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 # Global dtype variables
 real_dtype = tf.float32
@@ -16,6 +17,12 @@ def set_double_precision(use_double):
     # Optional: Set TensorFlow's default float type as well
     tf.keras.backend.set_floatx('float64' if use_double else 'float32')
     tf.keras.mixed_precision.set_global_policy('float64' if use_double else 'float32')
+    global_policy = tf.keras.mixed_precision.global_policy()
+    floatx = tf.keras.backend.floatx()
+    if use_double:
+        print(f"successfully set double precision? {'64'in global_policy.name and '64'in floatx }: {global_policy.name} and {floatx}")    
+    else:
+        print(f"successfully set single precision? {'32'in global_policy.name and '32'in floatx }: {global_policy.name} and {floatx}")    
 
 def convert_to_tensor_dict(data):
    return {

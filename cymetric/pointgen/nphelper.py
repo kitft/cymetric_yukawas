@@ -10,6 +10,7 @@ from cymetric.config import real_dtype, complex_dtype
 import cProfile
 import pstats
 
+import math
 
 
 def get_levicivita_tensor(dim):
@@ -76,7 +77,7 @@ def generate_monomials(n, deg):
             for j in generate_monomials(n - 1, deg - i):
                 yield (i,) + j
 
-def _prepare_dataset_batched(point_gen, batch_n_p, ltails, rtails):
+def _prepare_dataset_batched(point_gen, batch_n_p, ltails, rtails, selected_t_val = None):
     r"""Prepares a batch of data from point_gen without splitting or normalizing.
 
     Returns:
@@ -85,12 +86,13 @@ def _prepare_dataset_batched(point_gen, batch_n_p, ltails, rtails):
     new_np = int(round(batch_n_p/(1-ltails-rtails)))
     import time
     start_time = time.time()
-    pwo = point_gen.generate_point_weights(new_np, omega=True)
+    pwo = point_gen.generate_point_weights(new_np, omega=True, selected_t_val=selected_t_val)
     print("generate_point_weights took", time.time() - start_time, "seconds")
     start_time = time.time()
     if len(pwo) < new_np:
-        new_np = int((new_np-len(pwo))/len(pwo)*new_np + 100)
-        pwo2 = point_gen.generate_point_weights(new_np, omega=True)
+        print(f"Generating more points as only recieved {len(pwo)} after asking for {new_np}")
+        new_np = int((new_np-len(pwo))/(len(pwo))*new_np + 100)
+        pwo2 = point_gen.generate_point_weights(new_np, omega=True, selected_t_val=selected_t_val)
         pwo = np.concatenate([pwo, pwo2], axis=0)
     new_np = len(pwo)
     sorted_weights = np.sort(pwo['weight'])
@@ -105,7 +107,7 @@ def _prepare_dataset_batched(point_gen, batch_n_p, ltails, rtails):
     return points, weights, omega, pullbacks
 
 
-def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltails=0, rtails=0, normalize_to_vol_j=True):
+def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltails=0, rtails=0, normalize_to_vol_j=True,average_selected_t = False):
     r"""Prepares training and validation data from point_gen in batches.
 
     Note:
@@ -130,13 +132,25 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
     """
     # Set USE_PROFILER=1 in environment to enable
     use_profiler = os.environ.get('USE_PROFILER', '0') == '1'
-
+    number_ambients = len(point_gen.ambient)
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     if n_batches is None and n_p > 300000:
         n_batches = n_p // 300000 if n_p // 300000 > 0 else 1
     elif n_batches is None:
         n_batches = 1
+    if average_selected_t==True:
+        # Ensure n_batches is divisible by number_ambients
+        if n_batches % number_ambients != 0:
+            n_batches = n_batches * number_ambients // math.gcd(n_batches, number_ambients)
+        fixed_selected_t_val = None
+    elif isinstance(average_selected_t, int) and 0 <= average_selected_t < number_ambients:
+        fixed_selected_t_val = average_selected_t
+    elif average_selected_t==False:
+        fixed_selected_t_val = np.argmax(point_gen.ambient)
+    else:
+        raise ValueError("average_selected_t must be a boolean or an integer between 0 and number_ambients-1, inclusive.")
+        
     if n_batches > 1:
         print(f'Generating {n_p} points using {n_batches} batches')
     base = n_p // n_batches
@@ -144,7 +158,11 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
     all_points, all_weights, all_omega, all_pullbacks = [], [], [], []
     
     for i in range(n_batches):
-        print(f'Generating {base + (1 if i < rem else 0)} points using {i}th batch')
+        selected_t_val = (i % number_ambients) if (average_selected_t==True) else fixed_selected_t_val
+        if n_batches > 1:
+            print(f'Generating {base + (1 if i < rem else 0)} points on {i}th batch with solving for P1 ={selected_t_val} of ({(number_ambients)})')
+        else:
+            print(f'Generating {n_p} points with solving for P1 ={selected_t_val} of ({(number_ambients)}). No batching.')
         batch_n = base + (1 if i < rem else 0)
         
         if i == 0 and use_profiler:
@@ -152,7 +170,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
             profiler = cProfile.Profile()
             profiler.enable()
             pts, w, om, pb = _prepare_dataset_batched(
-                point_gen, batch_n, ltails, rtails)
+                point_gen, batch_n, ltails, rtails, selected_t_val=selected_t_val)
             profiler.disable()
             
             # Print sorted results
@@ -162,7 +180,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
             print("--------------------------------PROFILED--------------------------------")
         else:
             pts, w, om, pb = _prepare_dataset_batched(
-                point_gen, batch_n, ltails, rtails)
+                point_gen, batch_n, ltails, rtails, selected_t_val=selected_t_val)
         all_points.append(pts)
         all_weights.append(w)
         all_omega.append(om)
