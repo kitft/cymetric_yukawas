@@ -101,6 +101,7 @@ class JAXPointGenerator:
         Returns:
             ndarray[(n_p, ncoords), np.complex128]: rescaled points
         """
+        print(f"selected pn: {selected_t_val}")
         key = jax.random.PRNGKey(numpy_seed) # use the same seed as numpy for the jax seed
         max_ts = np.max(self.selected_t[selected_t_val])
         max_degree = self.ambient[self.selected_t[selected_t_val].astype(bool)][0] + 1# 0 to get the .item()
@@ -156,6 +157,7 @@ class JAXPointGenerator:
 
     def _take_roots_single(self, p, selected_t_val):
         """JAX version of _take_roots for a single point"""
+        print(f"selected_t_val: {selected_t_val}")
         # Compute polynomial coefficients
         all_sums = [
             jnp.sum(c * jnp.multiply.reduce(jnp.power(p.flatten(), m), axis=-1))

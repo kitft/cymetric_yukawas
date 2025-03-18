@@ -610,7 +610,7 @@ def weighted_mean_std_error(weights, values):
     # return standard_error
 
 # Function to calculate both weighted mean and standard error in a single call
-def weighted_mean_and_standard_error(values, weights, is_top_form=False, mulweightsby=None):
+def weighted_mean_and_standard_error(values, weights, is_top_form=False, mulweightsby=None, return_z_score=False):
     """
     Calculate weighted mean and standard error for a set of values with weights.
     Handles complex values by treating real and imaginary parts separately.
@@ -688,7 +688,7 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False, mulweig
         # Return complex standard error
         #complex_std_error = tf.complex(real_se, imag_se)
         neff_complex = complex(n_eff_r, n_eff_c)
-        return np.array(weighted_mean), np.array(weighted_stddev), neff_complex, {'value': np.array(weighted_mean), 'std_error': np.array(weighted_stddev), 'eff_n': neff_complex}
+        return np.array(weighted_mean), np.array(weighted_stddev), neff_complex, {'value': np.array(weighted_mean), 'std_error': np.array(weighted_stddev), 'eff_n': neff_complex, 'z_score': np.abs(np.array(weighted_mean))/(np.abs(np.array(weighted_stddev))+1e-10)}
     else:
         if is_top_form:
             n_eff = effective_sample_size(weights*values)
@@ -699,7 +699,7 @@ def weighted_mean_and_standard_error(values, weights, is_top_form=False, mulweig
         #print("compare real stddev: ", np.array(weighted_stddev), np.array(weighted_stddev2))
         #real_se = tf.math.reduce_std(weights*values) / np.sqrt(n_eff)
             # Return real standard error
-        return np.array(weighted_mean), np.array(weighted_stddev), n_eff, {'value': np.array(weighted_mean), 'std_error': np.array(weighted_stddev), 'eff_n': n_eff}
+        return np.array(weighted_mean), np.array(weighted_stddev), n_eff, {'value': np.array(weighted_mean), 'std_error': np.array(weighted_stddev), 'eff_n': n_eff, 'z_score': np.abs(np.array(weighted_mean))/(np.abs(np.array(weighted_stddev))+1e-10)}
 
 def propagate_errors_to_physical_yukawas(NormH, NormH_errors, NormQ, NormQ_errors, NormU, NormU_errors, m, m_errors):
     """

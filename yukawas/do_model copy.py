@@ -149,6 +149,7 @@ try:
 except Exception:
     # Default to local path if command fails
     data_path = "data"
+print("Saving all files to data path: ",data_path)
 if modeltype == "m13":
     type_folder = integrate_or_run+"model13"
     from yukawas.OneAndTwoFormsForLineBundlesModel13 import *

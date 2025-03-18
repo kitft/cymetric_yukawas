@@ -58,7 +58,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     print("\n do analysis: \n\n\n")
 
     #Vol_from_dijk_J=pg.get_volume_from_intersections(kmoduli)
-   # Vol_reference_dijk_with_k_is_1=pg.get_volume_from_intersections(np.ones_like(kmoduli)) 
+    #Vol_reference_dijk_with_k_is_1=pg.get_volume_from_intersections(np.ones_like(kmoduli)) 
     #volCY_from_Om=tf.reduce_mean(dataEval['y_train'][:n_p,0])
     print("Compute holomorphic Yukawas")
     #consider omega normalisation
@@ -133,6 +133,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     masses_trained_and_ref=[]
     use_trained = False
     holomorphic_Yukawas_trained_and_ref=[]
+    topological_data=[]
     for use_trained in [True,False]:
         if loadvecs:
             filename = os.path.join(data_path,type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{use_trained}.npz")
@@ -429,27 +430,54 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             int_bare_Q3U1_vH, int_bare_Q3U1_vH_se, int_bare_Q3U1_vH_eff_n, int_bare_Q3U1_vH_stats = weighted_mean_and_standard_error(integrand_bare_Q3U1_vH, aux_weights, mulweightsby=mulweightsby)
             int_bare_Q3U1_vQ3, int_bare_Q3U1_vQ3_se, int_bare_Q3U1_vQ3_eff_n, int_bare_Q3U1_vQ3_stats = weighted_mean_and_standard_error(integrand_bare_Q3U1_vQ3, aux_weights, mulweightsby=mulweightsby)  
             int_bare_Q3U1_vU1, int_bare_Q3U1_vU1_se, int_bare_Q3U1_vU1_eff_n, int_bare_Q3U1_vU1_stats = weighted_mean_and_standard_error(integrand_bare_Q3U1_vU1, aux_weights, mulweightsby=mulweightsby)
-            eps = 1e-10
             print("\n Q3U2:")
-            print(f"int_Q3U2 = {int_Q3U2:.6e} ± {int_Q3U2_se:.6e} ({np.round(np.abs(int_Q3U2)/(np.abs(int_Q3U2_se)+eps),2)}σ)")
-            print(f"int_bare_Q3U2_vH = {int_bare_Q3U2_vH:.6e} ± {int_bare_Q3U2_vH_se:.6e} ({np.round(np.abs(int_bare_Q3U2_vH)/(np.abs(int_bare_Q3U2_vH_se)+eps),2)}σ)")
-            print(f"int_bare_Q3U2_vQ3 = {int_bare_Q3U2_vQ3:.6e} ± {int_bare_Q3U2_vQ3_se:.6e} ({np.round(np.abs(int_bare_Q3U2_vQ3)/(np.abs(int_bare_Q3U2_vQ3_se)+eps),2)}σ)")
-            print(f"int_bare_Q3U2_vU2 = {int_bare_Q3U2_vU2:.6e} ± {int_bare_Q3U2_vU2_se:.6e} ({np.round(np.abs(int_bare_Q3U2_vU2)/(np.abs(int_bare_Q3U2_vU2_se)+eps),2)}σ)")
+            print(f"int_Q3U2 = {int_Q3U2:.6e} ± {int_Q3U2_se:.6e} ({np.round(int_Q3U2_stats['z_score'],2)}σ)")
+            print(f"int_bare_Q3U2_vH = {int_bare_Q3U2_vH:.6e} ± {int_bare_Q3U2_vH_se:.6e} ({np.round(int_bare_Q3U2_vH_stats['z_score'],2)}σ)")
+            print(f"int_bare_Q3U2_vQ3 = {int_bare_Q3U2_vQ3:.6e} ± {int_bare_Q3U2_vQ3_se:.6e} ({np.round(int_bare_Q3U2_vQ3_stats['z_score'],2)}σ)")
+            print(f"int_bare_Q3U2_vU2 = {int_bare_Q3U2_vU2:.6e} ± {int_bare_Q3U2_vU2_se:.6e} ({np.round(int_bare_Q3U2_vU2_stats['z_score'],2)}σ)")
             print("\n Q1U3:")
-            print(f"int_Q1U3 = {int_Q1U3:.6e} ± {int_Q1U3_se:.6e} ({np.round(np.abs(int_Q1U3)/(np.abs(int_Q1U3_se)+eps),2)}σ)")
-            print(f"int_bare_Q1U3_vH = {int_bare_Q1U3_vH:.6e} ± {int_bare_Q1U3_vH_se:.6e} ({np.round(np.abs(int_bare_Q1U3_vH)/(np.abs(int_bare_Q1U3_vH_se)+eps),2)}σ)")
-            print(f"int_bare_Q1U3_vQ1 = {int_bare_Q1U3_vQ1:.6e} ± {int_bare_Q1U3_vQ1_se:.6e} ({np.round(np.abs(int_bare_Q1U3_vQ1)/(np.abs(int_bare_Q1U3_vQ1_se)+eps),2)}σ)")
-            print(f"int_bare_Q1U3_vU3 = {int_bare_Q1U3_vU3:.6e} ± {int_bare_Q1U3_vU3_se:.6e} ({np.round(np.abs(int_bare_Q1U3_vU3)/(np.abs(int_bare_Q1U3_vU3_se)+eps),2)}σ)") 
+            print(f"int_Q1U3 = {int_Q1U3:.6e} ± {int_Q1U3_se:.6e} ({np.round(int_Q1U3_stats['z_score'],2)}σ)")
+            print(f"int_bare_Q1U3_vH = {int_bare_Q1U3_vH:.6e} ± {int_bare_Q1U3_vH_se:.6e} ({np.round(int_bare_Q1U3_vH_stats['z_score'],2)}σ)")
+            print(f"int_bare_Q1U3_vQ1 = {int_bare_Q1U3_vQ1:.6e} ± {int_bare_Q1U3_vQ1_se:.6e} ({np.round(int_bare_Q1U3_vQ1_stats['z_score'],2)}σ)")
+            print(f"int_bare_Q1U3_vU3 = {int_bare_Q1U3_vU3:.6e} ± {int_bare_Q1U3_vU3_se:.6e} ({np.round(int_bare_Q1U3_vU3_stats['z_score'],2)}σ)") 
             print("\n Q2U3:")
-            print(f"int_Q2U3 = {int_Q2U3:.6e} ± {int_Q2U3_se:.6e} ({np.round(np.abs(int_Q2U3)/(np.abs(int_Q2U3_se)+eps),2)}σ)")
-            print(f"int_bare_Q2U3_vH = {int_bare_Q2U3_vH:.6e} ± {int_bare_Q2U3_vH_se:.6e} ({np.round(np.abs(int_bare_Q2U3_vH)/(np.abs(int_bare_Q2U3_vH_se)+eps),2)}σ)")
-            print(f"int_bare_Q2U3_vQ2 = {int_bare_Q2U3_vQ2:.6e} ± {int_bare_Q2U3_vQ2_se:.6e} ({np.round(np.abs(int_bare_Q2U3_vQ2)/(np.abs(int_bare_Q2U3_vQ2_se)+eps),2)}σ)")
-            print(f"int_bare_Q2U3_vU3 = {int_bare_Q2U3_vU3:.6e} ± {int_bare_Q2U3_vU3_se:.6e} ({np.round(np.abs(int_bare_Q2U3_vU3)/(np.abs(int_bare_Q2U3_vU3_se)+eps),2)}σ)")
+            print(f"int_Q2U3 = {int_Q2U3:.6e} ± {int_Q2U3_se:.6e} ({np.round(int_Q2U3_stats['z_score'],2)}σ)")
+            print(f"int_bare_Q2U3_vH = {int_bare_Q2U3_vH:.6e} ± {int_bare_Q2U3_vH_se:.6e} ({np.round(int_bare_Q2U3_vH_stats['z_score'],2)}σ)")
+            print(f"int_bare_Q2U3_vQ2 = {int_bare_Q2U3_vQ2:.6e} ± {int_bare_Q2U3_vQ2_se:.6e} ({np.round(int_bare_Q2U3_vQ2_stats['z_score'],2)}σ)")
+            print(f"int_bare_Q2U3_vU3 = {int_bare_Q2U3_vU3:.6e} ± {int_bare_Q2U3_vU3_se:.6e} ({np.round(int_bare_Q2U3_vU3_stats['z_score'],2)}σ)")
             print("\n Q3U1:")
-            print(f"int_Q3U1 = {int_Q3U1:.6e} ± {int_Q3U1_se:.6e} ({np.round(np.abs(int_Q3U1)/(np.abs(int_Q3U1_se)+eps),2)}σ)")
-            print(f"int_bare_Q3U1_vH = {int_bare_Q3U1_vH:.6e} ± {int_bare_Q3U1_vH_se:.6e} ({np.round(np.abs(int_bare_Q3U1_vH)/(np.abs(int_bare_Q3U1_vH_se)+eps),2)}σ)")
-            print(f"int_bare_Q3U1_vQ3 = {int_bare_Q3U1_vQ3:.6e} ± {int_bare_Q3U1_vQ3_se:.6e} ({np.round(np.abs(int_bare_Q3U1_vQ3)/(np.abs(int_bare_Q3U1_vQ3_se)+eps),2)}σ)")
-            print(f"int_bare_Q3U1_vU1 = {int_bare_Q3U1_vU1:.6e} ± {int_bare_Q3U1_vU1_se:.6e} ({np.round(np.abs(int_bare_Q3U1_vU1)/(np.abs(int_bare_Q3U1_vU1_se)+eps),2)}σ)")
+            print(f"int_Q3U1 = {int_Q3U1:.6e} ± {int_Q3U1_se:.6e} ({np.round(int_Q3U1_stats['z_score'],2)}σ)")
+            print(f"int_bare_Q3U1_vH = {int_bare_Q3U1_vH:.6e} ± {int_bare_Q3U1_vH_se:.6e} ({np.round(int_bare_Q3U1_vH_stats['z_score'],2)}σ)")
+            print(f"int_bare_Q3U1_vQ3 = {int_bare_Q3U1_vQ3:.6e} ± {int_bare_Q3U1_vQ3_se:.6e} ({np.round(int_bare_Q3U1_vQ3_stats['z_score'],2)}σ)")
+            print(f"int_bare_Q3U1_vU1 = {int_bare_Q3U1_vU1:.6e} ± {int_bare_Q3U1_vU1_se:.6e} ({np.round(int_bare_Q3U1_vU1_stats['z_score'],2)}σ)")
+            topological_data_toadd = {
+                "Q3U2": {
+                    "actual": [int_Q3U2, int_Q3U2_se, int_Q3U2_stats['z_score']],
+                    "vHsection": [int_bare_Q3U2_vH, int_bare_Q3U2_vH_se, int_bare_Q3U2_vH_stats['z_score']],
+                    "Q3section": [int_bare_Q3U2_vQ3, int_bare_Q3U2_vQ3_se, int_bare_Q3U2_vQ3_stats['z_score']],
+                    "U2section": [int_bare_Q3U2_vU2, int_bare_Q3U2_vU2_se, int_bare_Q3U2_vU2_stats['z_score']]
+                },
+                "Q1U3": {
+                    "actual": [int_Q1U3, int_Q1U3_se, int_Q1U3_stats['z_score']],
+                    "vHsection": [int_bare_Q1U3_vH, int_bare_Q1U3_vH_se, int_bare_Q1U3_vH_stats['z_score']],
+                    "Q1section": [int_bare_Q1U3_vQ1, int_bare_Q1U3_vQ1_se, int_bare_Q1U3_vQ1_stats['z_score']],
+                    "U3section": [int_bare_Q1U3_vU3, int_bare_Q1U3_vU3_se, int_bare_Q1U3_vU3_stats['z_score']]
+                },
+                "Q2U3": {
+                    "actual": [int_Q2U3, int_Q2U3_se, int_Q2U3_stats['z_score']],
+                    "vHsection": [int_bare_Q2U3_vH, int_bare_Q2U3_vH_se, int_bare_Q2U3_vH_stats['z_score']],
+                    "Q2section": [int_bare_Q2U3_vQ2, int_bare_Q2U3_vQ2_se, int_bare_Q2U3_vQ2_stats['z_score']],
+                    "U3section": [int_bare_Q2U3_vU3, int_bare_Q2U3_vU3_se, int_bare_Q2U3_vU3_stats['z_score']]
+                },
+                "Q3U1": {
+                    "actual": [int_Q3U1, int_Q3U1_se, int_Q3U1_stats['z_score']],
+                    "vHsection": [int_bare_Q3U1_vH, int_bare_Q3U1_vH_se, int_bare_Q3U1_vH_stats['z_score']],
+                    "Q3section": [int_bare_Q3U1_vQ3, int_bare_Q3U1_vQ3_se, int_bare_Q3U1_vQ3_stats['z_score']],
+                    "U1section": [int_bare_Q3U1_vU1, int_bare_Q3U1_vU1_se, int_bare_Q3U1_vU1_stats['z_score']]
+                }
+            }
+            topological_data.append(topological_data_toadd)
+            
 
             print("--------------------------------\n\n\n\n\n\n\n\n")
             # Calculate laplacians for each model
@@ -990,12 +1018,13 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         'mwoH_neffs': mwoH_neffs,
         'Qneffs': Qneffs,
         'Uneffs': Uneffs,
-        'Hneffs': Hneffs
+        'Hneffs': Hneffs,
+        'topological_data': topological_data
     }
 
     # Create unique filename for this run
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    run_id = f"{timestamp}_{unique_id_or_coeff}"  # Add process ID for uniqueness
+    run_id = f"{timestamp}_{unique_id_or_coeff}"  
 
     # Save to unique file in results directory
     os.makedirs(os.path.join(data_path,type_folder,f'{manifold_name}_results'), exist_ok=True)
@@ -1004,7 +1033,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
 
     # Save masses to CSV
     import csv
-    csv_file = os.path.join(data_path,type_folder,f'{manifold_name}_results/masses.csv')
+    csv_file = os.path.join(data_path,type_folder,"masses",f'{manifold_name}_results/masses.csv')
     print("saving csv to " + npzsavelocation, "saving npz to " + npzsavelocation)
 
     # Create header if file doesn't exist
@@ -1015,7 +1044,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                              'learned_mass1_error', 'learned_mass2_error', 'learned_mass3_error',
                              'ref_mass1', 'ref_mass2', 'ref_mass3',
                              'ref_mass1_error', 'ref_mass2_error', 'ref_mass3_error',
-                             'coefficient', 'n_to_integrate'])
+                             'coefficient', 'n_to_integrate', 'run_args'])
 
     # Append masses for this run
     with open(csv_file, 'a', newline='') as f:
@@ -1026,7 +1055,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                         list(masses_trained_and_ref[1]) + 
                         list(singular_value_errors) +  # Using same error estimate for both learned and reference
                         [unique_id_or_coeff] + 
-                        [n_p])
+                        [n_p], [run_args])
 
     if do_extra_stuff:    
         pass

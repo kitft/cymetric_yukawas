@@ -540,6 +540,7 @@ if __name__ == '__main__':
         orbit_P1s = False
     else:
         orbit_P1s = True
+    print(f"Orbiting over P1s")
 
 
 if __name__ == '__main__':

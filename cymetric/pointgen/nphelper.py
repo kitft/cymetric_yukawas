@@ -107,7 +107,7 @@ def _prepare_dataset_batched(point_gen, batch_n_p, ltails, rtails, selected_t_va
     return points, weights, omega, pullbacks
 
 
-def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltails=0, rtails=0, normalize_to_vol_j=True,average_selected_t = False):
+def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltails=0, rtails=0, normalize_to_vol_j=True,average_selected_t = False, shuffle_points = True):
     r"""Prepares training and validation data from point_gen in batches.
 
     Note:
@@ -186,10 +186,42 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
         all_omega.append(om)
         all_pullbacks.append(pb)
     # Concatenate all batches
+    if shuffle_points:
+        print("Shuffling points")
+        # Process batches in groups of 4
+        for i in range(0, len(all_points), 4):
+            end_idx = min(i + 4, len(all_points))
+            # Concatenate this group of batches
+            group_points = np.concatenate(all_points[i:end_idx], axis=0)
+            group_weights = np.concatenate(all_weights[i:end_idx], axis=0)
+            group_omega = np.concatenate(all_omega[i:end_idx], axis=0)
+            group_pullbacks = np.concatenate(all_pullbacks[i:end_idx], axis=0)
+            
+            # Shuffle the concatenated data
+            indices = np.random.permutation(len(group_points))
+            group_points = group_points[indices]
+            group_weights = group_weights[indices]
+            group_omega = group_omega[indices]
+            group_pullbacks = group_pullbacks[indices]
+            
+            # Replace the original batches with equal-sized chunks of the shuffled data
+            start_idx = 0
+            for j in range(i, end_idx):
+                batch_size = len(all_points[j])
+                all_points[j] = group_points[start_idx:start_idx + batch_size]
+                all_weights[j] = group_weights[start_idx:start_idx + batch_size]
+                all_omega[j] = group_omega[start_idx:start_idx + batch_size]
+                all_pullbacks[j] = group_pullbacks[start_idx:start_idx + batch_size]
+                start_idx += batch_size
+    else:
+        if average_selected_t==True:
+            raise ValueError("Shuffling points must be done when average_selected_t is True")
+    
     all_points = np.concatenate(all_points, axis=0)
     all_weights = np.concatenate(all_weights, axis=0)
     all_omega = np.concatenate(all_omega, axis=0)
     all_pullbacks = np.concatenate(all_pullbacks, axis=0)
+
     # Normalize weights if requested (after all batches are combined)
     if normalize_to_vol_j:
         print("normalizing to vol_j")

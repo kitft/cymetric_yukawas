@@ -879,7 +879,7 @@ class PointGenerator:
             ndarray[(n_p, ncoords), np.complex128]: rescaled points
         """
         if use_jax:
-            print("using JAX: solving roots with jnp.roots")
+            print(f"using JAX: solving roots with jnp.roots on P1: {selected_t_val}")
             numpy_seed = np.random.get_state()[1][0]# use the same seed as numpy for the jax seed
             points = self.pointgen_jax.generate_points_jax(n_p, numpy_seed, selected_t_val=selected_t_val)
             return points
