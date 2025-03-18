@@ -39,7 +39,7 @@ def convert_to_nested_tensor_dict(data):
       return data
 
 def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, run_args=None, dirnameEval=None):
-    savevecs = ("savevecs" in run_args or "save_vecs" in run_args)
+    savevecs = not ("nosavevecs" in run_args or "no_save_vecs" in run_args or "no_savevecs" in run_args or "nosave_vecs" in run_args) 
     loadvecs = ("loadvecs" in run_args or "load_vecs" in run_args)
     loadpullbacks = ("loadpullbacks" in run_args or "load_pullbacks" in run_args)# default tru
     loadextra = False# ("loadextra" in run_args or "load_extra" in run_args) and not ("no_extra" in run_args or "noextra" in run_args)
