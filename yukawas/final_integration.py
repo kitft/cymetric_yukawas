@@ -38,7 +38,7 @@ def convert_to_nested_tensor_dict(data):
    else:
       return data
 
-def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, run_args=None, dirnameEval=None):
+def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, run_args=None, dirnameEval=None, result_files_path=None):
     savevecs = not ("nosavevecs" in run_args or "no_save_vecs" in run_args or "no_savevecs" in run_args or "nosave_vecs" in run_args) 
     loadvecs = ("loadvecs" in run_args or "load_vecs" in run_args)
     loadpullbacks = ("loadpullbacks" in run_args or "load_pullbacks" in run_args)# default tru
@@ -1027,13 +1027,14 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     run_id = f"{timestamp}_{unique_id_or_coeff}"  
 
     # Save to unique file in results directory
-    os.makedirs(os.path.join(data_path,type_folder,f'{manifold_name}_results'), exist_ok=True)
-    npzsavelocation = os.path.join(data_path,type_folder,f'{manifold_name}_results/run_' + run_id + '.npz')
+    os.makedirs(os.path.join(result_files_path,f'{manifold_name}_results'), exist_ok=True)
+    npzsavelocation = os.path.join(result_files_path,f'{manifold_name}_results/run_' + run_id + '.npz')
     np.savez(npzsavelocation, **results)
 
     # Save masses to CSV
     import csv
-    csv_file = os.path.join(data_path,type_folder,"masses",f'{manifold_name}_results/masses.csv')
+    os.makedirs(os.path.join(result_files_path,type_folder,"masses"), exist_ok=True)
+    csv_file = os.path.join(result_files_path,type_folder,"masses",f'{manifold_name}_results/masses.csv')
     print("saving csv to " + npzsavelocation, "saving npz to " + npzsavelocation)
 
     # Create header if file doesn't exist

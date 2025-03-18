@@ -135,7 +135,10 @@ try:
 except Exception:
     # Default to local path if command fails
     data_path = "data"
+
+result_files_path = "results"
 print("Saving all files to data path: ",data_path)
+print("Saving results to : ",result_files_path)
 if modeltype == "m13":
     type_folder = integrate_or_run+"model13"
     from yukawas.OneAndTwoFormsForLineBundlesModel13 import *
@@ -739,7 +742,7 @@ if __name__ ==  '__main__':
 
     masses, masserrors = do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH,
                                        HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = do_extra_stuff_for_integration,
-                                         run_args=sys.argv, dirnameEval=dirnameEval)
+                                         run_args=sys.argv, dirnameEval=dirnameEval, result_files_path=result_files_path)
 
 print("\nYou ran " + " ".join(sys.argv))
 print("--------------------------------")
