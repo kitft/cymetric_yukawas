@@ -630,7 +630,12 @@ if __name__ ==  '__main__':
                       'invoking_command': ' '.join(sys.argv),
                       'nPoints': nPoints,
                       'n_to_integrate': n_to_integrate,
-                      'tags': [integrate_or_run, modeltype, "nint"+str(n_to_integrate), "npoints"+str(nPoints)]})
+                      'doubleprecision': doubleprecision,
+                      'sampling_orbit_type': orbit_P1s,
+                      'data_path' : data_path,
+                      'manifold_name' : manifold_name,
+                      'type_folder' : type_folder,
+                      'tags': [integrate_or_run, modeltype, "nint"+str(n_to_integrate), "npoints"+str(nPoints), addtofilename]})
     
     
     
@@ -760,6 +765,10 @@ if __name__ ==  '__main__':
         'config_beta': betamodel_config,
         'config_sigma': sigmamodel_config,
         'config_sigma2': sigma2model_config,
+        'coefficientsTQ': coefficientsTQ,
+        'kmoduliTQ': kmoduliTQ,
+        'ambientTQ': ambientTQ,
+        'monomialsTQ': monomialsTQ,
         'orbit': orbit_P1s,
         'doubleprecision': 'doubleprecision' in sys.argv[1:] or 'double_precision' in sys.argv[1:]
     }
