@@ -621,7 +621,7 @@ if __name__ ==  '__main__':
     #if start_from != 'end':
     if n_to_integrate > 500_000:
         wandb.init(project = type_folder,
-            name = f'{modeltype}_fc_{unique_id_or_coeff}_{n_to_integrate}_{job_id}',
+            name = f'{modeltype}_fc_{unique_id_or_coeff}_{addtofilename}_{job_id}',
             config = {'unique_id_or_coeff': unique_id_or_coeff,
                       'phimodel_config': phimodel_config,
                       'betamodel_config': betamodel_config,
