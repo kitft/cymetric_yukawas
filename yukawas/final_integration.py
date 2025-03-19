@@ -38,11 +38,15 @@ def convert_to_nested_tensor_dict(data):
    else:
       return data
 
-def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, run_args=None, dirnameEval=None, result_files_path=None):
-    savevecs = not ("nosavevecs" in run_args or "no_save_vecs" in run_args or "no_savevecs" in run_args or "nosave_vecs" in run_args) 
+def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3,
+                  HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, run_args=None, dirnameEval=None, result_files_path=None, addtofilename=None):
+    #savevecs = not ("nosavevecs" in run_args or "no_save_vecs" in run_args or "no_savevecs" in run_args or "nosave_vecs" in run_args) 
+    savevecs =("savevecs" in run_args or "save_vecs" in run_args) 
     loadvecs = ("loadvecs" in run_args or "load_vecs" in run_args)
-    loadpullbacks = ("loadpullbacks" in run_args or "load_pullbacks" in run_args)# default tru
-    loadextra = False# ("loadextra" in run_args or "load_extra" in run_args) and not ("no_extra" in run_args or "noextra" in run_args)
+    loadpullbacks = ("loadpullbacks" in run_args or "load_pullbacks" in run_args)# default true
+    savepullbacks =  ("savepullbacks" in run_args or "save_pullbacks" in run_args)# default false
+    loadextra = False#("loadextra" in run_args or "load_extra" in run_args) and not ("no_extra" in run_args or "noextra" in run_args)
+    saveextra = ("saveextra" in run_args or "save_extra" in run_args)
 
     (_, kmoduli, _, _, type_folder, unique_id_or_coeff, manifold_name, data_path) = manifold_name_and_data
     points64=tf.concat((dataEval['X_train'], dataEval['X_val']),axis=0)
@@ -114,8 +118,9 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     else:
         # Compute pullbacks if not loading from file
         pullbacks = tf.cast(batch_process_helper_func(pg.pullbacks, [pointsComplex], batch_indices=[0], batch_size=100000), complex_dtype)
-        np.savez(pullbacks_filename, pullbacks=pullbacks)
-        print(f"Saved pullbacks to {pullbacks_filename}")
+        if savepullbacks:
+            np.savez(pullbacks_filename, pullbacks=pullbacks)
+            print(f"Saved pullbacks to {pullbacks_filename}")
     
 
     if not loadvecs:
@@ -133,6 +138,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     masses_trained_and_ref=[]
     use_trained = False
     holomorphic_Yukawas_trained_and_ref=[]
+    holomorphic_Yukawas_trained_and_ref_errors=[]
     topological_data=[]
     for use_trained in [True,False]:
         if loadvecs:
@@ -603,7 +609,8 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                 mock_model_4_c_vals = mock_model_complex4(real_pts)
                 
                 # Save laplacians to file
-                np.savez(laplacians_filename, 
+                if saveextra:
+                    np.savez(laplacians_filename, 
                          laplacian_mock=laplacian_mock.numpy(),
                          laplacian_mock_2=laplacian_mock_2.numpy(),
                          laplacian_mock_3=laplacian_mock_3.numpy(),
@@ -905,6 +912,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                 integral_stats['m_statswoH'][matrix_key] = m_statswoH
 
         holomorphic_Yukawas_trained_and_ref.append(m)
+        holomorphic_Yukawas_trained_and_ref_errors.append(m_errors)
         print("without H * 10**6")
         print(np.round(np.array(mwoH)*10**6,1))
         print("holomorphic Yukawa errors *10**6 (absolute value)")
@@ -972,14 +980,61 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
 
             # Log the data to wandb
             wandb.log(mass_data)
-
-            # Also log the full matrix for visualization
+            # Create tables for physical yukawa matrices (trained and reference)
+            physical_yukawa_data = []
+            
+            for i in range(3):
+                for j in range(3):
+                    # Add trained values
+                    physical_yukawa_data.append([
+                        i, j, "trained", 
+                        np.real(physical_yukawas[0,i,j]),
+                        np.imag(physical_yukawas[0,i,j]), 
+                        np.abs(physical_yukawas_errors[i,j])
+                    ])
+                    
+                    # Add reference values
+                    physical_yukawa_data.append([
+                        i, j, "reference", 
+                        np.real(physical_yukawas[1,i,j]),
+                        np.imag(physical_yukawas[1,i,j]), 
+                        np.abs(physical_yukawas_errors[i,j])
+                    ])
+            
+            # Log physical yukawa matrix
             wandb.log({
-                f"{prefix}physical_yukawa_matrix": wandb.Table(
-                    data=[[i, j, np.abs(physical_yukawas[i,j]), np.abs(physical_yukawas_errors[i,j])] 
-                          for i in range(physical_yukawas.shape[0]) 
-                          for j in range(physical_yukawas.shape[1])],
-                    columns=["row", "col", "magnitude", "error"]
+                "physical_yukawa_matrix": wandb.Table(
+                    data=physical_yukawa_data,
+                    columns=["row", "col", "type", "real_value", "imag_value", "abs_error"]
+                )
+            })
+            
+            # Create table for holomorphic yukawa matrices (trained and reference)
+            holomorphic_yukawa_data = []
+            
+            for i in range(3):
+                for j in range(3):
+                    # Add trained values
+                    holomorphic_yukawa_data.append([
+                        i, j, "trained", 
+                        np.real(holomorphic_Yukawas_trained_and_ref[0,i,j]),
+                        np.imag(holomorphic_Yukawas_trained_and_ref[0,i,j]), 
+                        np.abs(holomorphic_Yukawas_trained_and_ref_errors[i,j])
+                    ])
+                    
+                    # Add reference values
+                    holomorphic_yukawa_data.append([
+                        i, j, "reference", 
+                        np.real(holomorphic_Yukawas_trained_and_ref[1,i,j]),
+                        np.imag(holomorphic_Yukawas_trained_and_ref[1,i,j]), 
+                        np.abs(holomorphic_Yukawas_trained_and_ref_errors[i,j])
+                    ])
+            
+            # Log holomorphic yukawa matrix
+            wandb.log({
+                "holomorphic_yukawa_matrix": wandb.Table(
+                    data=holomorphic_yukawa_data,
+                    columns=["row", "col", "type", "real_value", "imag_value", "abs_error"]
                 )
             })
 
@@ -990,6 +1045,22 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     # Save training results to CSV files
 
 
+    trained_holo13 = holomorphic_Yukawas_trained_and_ref[0][0,2]
+    trained_holo23 = holomorphic_Yukawas_trained_and_ref[0][1,2]
+    trained_holo31 = holomorphic_Yukawas_trained_and_ref[0][2,0]
+    trained_holo32 = holomorphic_Yukawas_trained_and_ref[0][2,1]
+    ref_holo13 = holomorphic_Yukawas_trained_and_ref[1][0,2]
+    ref_holo23 = holomorphic_Yukawas_trained_and_ref[1][1,2]
+    ref_holo31 = holomorphic_Yukawas_trained_and_ref[1][2,0]
+    ref_holo32 = holomorphic_Yukawas_trained_and_ref[1][2,1]
+    trained_holo13_score= np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][0,2])/np.abs(trained_holo13)
+    trained_holo23_score= np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][1,2])/np.abs(trained_holo23)    
+    trained_holo31_score = np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,0])/np.abs(trained_holo31)
+    trained_holo32_score = np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,1])/np.abs(trained_holo32)
+    ref_holo13_score = np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][0,2])/np.abs(ref_holo13)
+    ref_holo23_score = np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][1,2])/np.abs(ref_holo23)   
+    ref_holo31_score = np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][2,0])/np.abs(ref_holo31)
+    ref_holo32_score = np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][2,1])/np.abs(ref_holo32)
     
     # # Calculate average real and imaginary accuracy metrics
     # avg_rel_real_error = np.mean(np.abs(np.real(physical_yukawas_errors)) / np.abs(physical_yukawas))
@@ -1027,18 +1098,20 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     run_id = f"{timestamp}_{unique_id_or_coeff}"  
 
     # Save to unique file in results directory
-    os.makedirs(os.path.join(result_files_path,f'{type_folder}_results'), exist_ok=True)
-    npzsavelocation = os.path.join(result_files_path,f'{type_folder}_results/run_' + run_id + '.npz')
+    os.makedirs(os.path.join(result_files_path,f'{manifold_name}_{type_folder}_results_{addtofilename}'), exist_ok=True)
+    npzsavelocation = os.path.join(result_files_path,f'{manifold_name}_{type_folder}_results_{addtofilename}/run_' + run_id + '.npz')
     np.savez(npzsavelocation, **results)
+    print("saving npz of run to " + npzsavelocation)
 
     # Save masses to CSV
     import csv
-    os.makedirs(os.path.join(result_files_path,type_folder), exist_ok=True)
-    csv_file = os.path.join(result_files_path,type_folder,f'{manifold_name}_masses.csv')
+    os.makedirs(os.path.join(result_files_path,'masses'), exist_ok=True)
+    csv_file = os.path.join(result_files_path,'masses',f'{manifold_name}_{type_folder}_masses_{addtofilename}.csv')
     print("saving csv to " + npzsavelocation, "saving npz to " + npzsavelocation)
 
     doubleprecision = network_params['doubleprecision']
     orbit = network_params['orbit']
+    
     
     # Create header if file doesn't exist
     if not os.path.exists(csv_file):
@@ -1048,7 +1121,8 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                              'learned_mass1_error', 'learned_mass2_error', 'learned_mass3_error',
                              'ref_mass1', 'ref_mass2', 'ref_mass3',
                              'ref_mass1_error', 'ref_mass2_error', 'ref_mass3_error',
-                             'coefficient', 'n_to_integrate', 'run_args','doubleprecision','orbit'])
+                             'coefficient', 'n_to_integrate', 'run_args','doubleprecision','orbit','t_holo13','t_holo23','t_holo31','t_holo21','r_holo13','r_holo23','r_holo31','r_holo21',
+                             't_holo13_score','t_holo23_score','t_holo31_score','t_holo21_score','r_holo13_score','r_holo23_score','r_holo31_score','r_holo21_score'])
 
     # Append masses for this run
     with open(csv_file, 'a', newline='') as f:
@@ -1059,7 +1133,8 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                         list(masses_trained_and_ref[1]) + 
                         list(singular_value_errors) +  # Using same error estimate for both learned and reference
                         [unique_id_or_coeff] + 
-                        [n_p]+ [run_args]+ [doubleprecision]+ [orbit])
+                        [n_p]+ [run_args]+ [doubleprecision]+ [orbit]+[trained_holo13,trained_holo23,trained_holo31,trained_holo32] + [ref_holo13,ref_holo23,ref_holo31,ref_holo32] +
+                        [trained_holo13_score,trained_holo23_score,trained_holo31_score,trained_holo32_score] + [ref_holo13_score,ref_holo23_score,ref_holo31_score,ref_holo32_score])
 
     if do_extra_stuff:    
         pass

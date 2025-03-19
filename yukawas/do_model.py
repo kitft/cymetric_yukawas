@@ -137,6 +137,17 @@ except Exception:
     data_path = "data"
 
 result_files_path = "results"
+# Set addtofilename based on command line arguments
+
+# Check for any other name{whatever} pattern
+addtofilename = ""
+for arg in sys.argv[1:]:
+    if arg.startswith('name'):
+        addtofilename = arg[4:]  # Extract whatever comes after 'name'
+        break
+
+print("Adding to final filename: ",addtofilename)
+
 print("Saving all files to data path: ",data_path)
 print("Saving results to : ",result_files_path)
 if modeltype == "m13":
@@ -605,7 +616,8 @@ if __name__ ==  '__main__':
     coefficientsTQ = get_coefficients_here(free_coefficient)
     manifold_name_and_data = (coefficientsTQ, kmoduliTQ, ambientTQ, monomialsTQ, type_folder, unique_id_or_coeff, manifold_name, data_path)
     
-    if start_from != 'end':
+    #if start_from != 'end':
+    if n_to_integrate > 500_000:
         wandb.init(project = type_folder,
             name = f'{modeltype}_fc_{unique_id_or_coeff}_{n_to_integrate}_{job_id}',
             config = {'unique_id_or_coeff': unique_id_or_coeff,
