@@ -10,3 +10,4 @@ wolframclient
 psutil
 jax
 wandb
+dotenv

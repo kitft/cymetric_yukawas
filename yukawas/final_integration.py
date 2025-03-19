@@ -139,7 +139,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     use_trained = False
     holomorphic_Yukawas_trained_and_ref=[]
     holomorphic_Yukawas_trained_and_ref_errors=[]
-    topological_data=[]
+    topological_data={}
     for use_trained in [True,False]:
         if loadvecs:
             filename = os.path.join(data_path,type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{use_trained}.npz")
@@ -461,95 +461,91 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             if wandb.run is not None:
                 # Split complex values into real and imaginary parts for wandb logging
                 # Use absolute value for error terms
+                if use_trained:
+                    prefix = "trained"
+                else:
+                    prefix = "bare"
                 wandb.log({
-                    "int_Q3U2_real": float(np.real(int_Q3U2)),
-                    "int_Q3U2_imag": float(np.imag(int_Q3U2)),
-                    "int_Q3U2_se": float(np.abs(int_Q3U2_se)),
-                    "int_Q3U2_z_score": float(int_Q3U2_stats['z_score']),
+                    f"int_Q3U2_real_{prefix}": float(np.real(int_Q3U2)),
+                    f"int_Q3U2_imag_{prefix}": float(np.imag(int_Q3U2)),
+                    f"int_Q3U2_se_{prefix}": float(np.abs(int_Q3U2_se)),
+                    f"int_Q3U2_z_score_{prefix}": float(int_Q3U2_stats['z_score']),
                     
-                    "int_bare_Q3U2_vH_real": float(np.real(int_bare_Q3U2_vH)),
-                    "int_bare_Q3U2_vH_imag": float(np.imag(int_bare_Q3U2_vH)),
-                    "int_bare_Q3U2_vH_se": float(np.abs(int_bare_Q3U2_vH_se)),
-                    "int_bare_Q3U2_vH_z_score": float(int_bare_Q3U2_vH_stats['z_score']),
+                    f"int_bare_Q3U2_vH_real_{prefix}": float(np.real(int_bare_Q3U2_vH)),
+                    f"int_bare_Q3U2_vH_imag_{prefix}": float(np.imag(int_bare_Q3U2_vH)),
+                    f"int_bare_Q3U2_vH_se_{prefix}": float(np.abs(int_bare_Q3U2_vH_se)),
+                    f"int_bare_Q3U2_vH_z_score_{prefix}": float(int_bare_Q3U2_vH_stats['z_score']),
                     
-                    "int_bare_Q3U2_vQ3_real": float(np.real(int_bare_Q3U2_vQ3)),
-                    "int_bare_Q3U2_vQ3_imag": float(np.imag(int_bare_Q3U2_vQ3)),
-                    "int_bare_Q3U2_vQ3_se": float(np.abs(int_bare_Q3U2_vQ3_se)),
-                    "int_bare_Q3U2_vQ3_z_score": float(int_bare_Q3U2_vQ3_stats['z_score']),
+                    f"int_bare_Q3U2_vQ3_real_{prefix}": float(np.real(int_bare_Q3U2_vQ3)),
+                    f"int_bare_Q3U2_vQ3_imag_{prefix}": float(np.imag(int_bare_Q3U2_vQ3)),
+                    f"int_bare_Q3U2_vQ3_se_{prefix}": float(np.abs(int_bare_Q3U2_vQ3_se)),
+                    f"int_bare_Q3U2_vQ3_z_score_{prefix}": float(int_bare_Q3U2_vQ3_stats['z_score']),
                     
-                    "int_bare_Q3U2_vU2_real": float(np.real(int_bare_Q3U2_vU2)),
-                    "int_bare_Q3U2_vU2_imag": float(np.imag(int_bare_Q3U2_vU2)),
-                    "int_bare_Q3U2_vU2_se": float(np.abs(int_bare_Q3U2_vU2_se)),
-                    "int_bare_Q3U2_vU2_z_score": float(int_bare_Q3U2_vU2_stats['z_score']),
+                    f"int_bare_Q3U2_vU2_real_{prefix}": float(np.real(int_bare_Q3U2_vU2)),
+                    f"int_bare_Q3U2_vU2_imag_{prefix}": float(np.imag(int_bare_Q3U2_vU2)),
+                    f"int_bare_Q3U2_vU2_se_{prefix}": float(np.abs(int_bare_Q3U2_vU2_se)),
+                    f"int_bare_Q3U2_vU2_z_score_{prefix}": float(int_bare_Q3U2_vU2_stats['z_score']),
                     
-                    "int_Q1U3_real": float(np.real(int_Q1U3)),
-                    "int_Q1U3_imag": float(np.imag(int_Q1U3)),
-                    "int_Q1U3_se": float(np.abs(int_Q1U3_se)),
-                    "int_Q1U3_z_score": float(int_Q1U3_stats['z_score']),
+                    f"int_Q1U3_real_{prefix}": float(np.real(int_Q1U3)),
+                    f"int_Q1U3_imag_{prefix}": float(np.imag(int_Q1U3)),
+                    f"int_Q1U3_se_{prefix}": float(np.abs(int_Q1U3_se)),
+                    f"int_Q1U3_z_score_{prefix}": float(int_Q1U3_stats['z_score']),
                     
-                    "int_bare_Q1U3_vH_real": float(np.real(int_bare_Q1U3_vH)),
-                    "int_bare_Q1U3_vH_imag": float(np.imag(int_bare_Q1U3_vH)),
-                    "int_bare_Q1U3_vH_se": float(np.abs(int_bare_Q1U3_vH_se)),
-                    "int_bare_Q1U3_vH_z_score": float(int_bare_Q1U3_vH_stats['z_score']),
+                    f"int_bare_Q1U3_vH_real_{prefix}": float(np.real(int_bare_Q1U3_vH)),
+                    f"int_bare_Q1U3_vH_imag_{prefix}": float(np.imag(int_bare_Q1U3_vH)),
+                    f"int_bare_Q1U3_vH_se_{prefix}": float(np.abs(int_bare_Q1U3_vH_se)),
+                    f"int_bare_Q1U3_vH_z_score_{prefix}": float(int_bare_Q1U3_vH_stats['z_score']),
                     
-                    "int_bare_Q1U3_vQ1_real": float(np.real(int_bare_Q1U3_vQ1)),
-                    "int_bare_Q1U3_vQ1_imag": float(np.imag(int_bare_Q1U3_vQ1)),
-                    "int_bare_Q1U3_vQ1_se": float(np.abs(int_bare_Q1U3_vQ1_se)),
-                    "int_bare_Q1U3_vQ1_z_score": float(int_bare_Q1U3_vQ1_stats['z_score']),
+                    f"int_bare_Q1U3_vQ1_real_{prefix}": float(np.real(int_bare_Q1U3_vQ1)),
+                    f"int_bare_Q1U3_vQ1_imag_{prefix}": float(np.imag(int_bare_Q1U3_vQ1)),
+                    f"int_bare_Q1U3_vQ1_se_{prefix}": float(np.abs(int_bare_Q1U3_vQ1_se)),
+                    f"int_bare_Q1U3_vQ1_z_score_{prefix}": float(int_bare_Q1U3_vQ1_stats['z_score']),
                     
-                    "int_bare_Q1U3_vU3_real": float(np.real(int_bare_Q1U3_vU3)),
-                    "int_bare_Q1U3_vU3_imag": float(np.imag(int_bare_Q1U3_vU3)),
-                    "int_bare_Q1U3_vU3_se": float(np.abs(int_bare_Q1U3_vU3_se)),
-                    "int_bare_Q1U3_vU3_z_score": float(int_bare_Q1U3_vU3_stats['z_score']),
+                    f"int_bare_Q1U3_vU3_real_{prefix}": float(np.real(int_bare_Q1U3_vU3)),
+                    f"int_bare_Q1U3_vU3_imag_{prefix}": float(np.imag(int_bare_Q1U3_vU3)),
+                    f"int_bare_Q1U3_vU3_se_{prefix}": float(np.abs(int_bare_Q1U3_vU3_se)),
+                    f"int_bare_Q1U3_vU3_z_score_{prefix}": float(int_bare_Q1U3_vU3_stats['z_score']),
                     
-                    "int_Q2U3_real": float(np.real(int_Q2U3)),
-                    "int_Q2U3_imag": float(np.imag(int_Q2U3)),
-                    "int_Q2U3_se": float(np.abs(int_Q2U3_se)),
-                    "int_Q2U3_z_score": float(int_Q2U3_stats['z_score']),
+                    f"int_Q2U3_real_{prefix}": float(np.real(int_Q2U3)),
+                    f"int_Q2U3_imag_{prefix}": float(np.imag(int_Q2U3)),
+                    f"int_Q2U3_se_{prefix}": float(np.abs(int_Q2U3_se)),
+                    f"int_Q2U3_z_score_{prefix}": float(int_Q2U3_stats['z_score']),
                     
-                    "int_bare_Q2U3_vH_real": float(np.real(int_bare_Q2U3_vH)),
-                    "int_bare_Q2U3_vH_imag": float(np.imag(int_bare_Q2U3_vH)),
-                    "int_bare_Q2U3_vH_se": float(np.abs(int_bare_Q2U3_vH_se)),
-                    "int_bare_Q2U3_vH_z_score": float(int_bare_Q2U3_vH_stats['z_score']),
+                    f"int_bare_Q2U3_vH_real_{prefix}": float(np.real(int_bare_Q2U3_vH)),
+                    f"int_bare_Q2U3_vH_imag_{prefix}": float(np.imag(int_bare_Q2U3_vH)),
+                    f"int_bare_Q2U3_vH_se_{prefix}": float(np.abs(int_bare_Q2U3_vH_se)),
+                    f"int_bare_Q2U3_vH_z_score_{prefix}": float(int_bare_Q2U3_vH_stats['z_score']),
                     
-                    "int_bare_Q2U3_vQ2_real": float(np.real(int_bare_Q2U3_vQ2)),
-                    "int_bare_Q2U3_vQ2_imag": float(np.imag(int_bare_Q2U3_vQ2)),
-                    "int_bare_Q2U3_vQ2_se": float(np.abs(int_bare_Q2U3_vQ2_se)),
-                    "int_bare_Q2U3_vQ2_z_score": float(int_bare_Q2U3_vQ2_stats['z_score']),
+                    f"int_bare_Q2U3_vQ2_real_{prefix}": float(np.real(int_bare_Q2U3_vQ2)),
+                    f"int_bare_Q2U3_vQ2_imag_{prefix}": float(np.imag(int_bare_Q2U3_vQ2)),
+                    f"int_bare_Q2U3_vQ2_se_{prefix}": float(np.abs(int_bare_Q2U3_vQ2_se)),
+                    f"int_bare_Q2U3_vQ2_z_score_{prefix}": float(int_bare_Q2U3_vQ2_stats['z_score']),
                     
-                    "int_bare_Q2U3_vU3_real": float(np.real(int_bare_Q2U3_vU3)),
-                    "int_bare_Q2U3_vU3_imag": float(np.imag(int_bare_Q2U3_vU3)),
-                    "int_bare_Q2U3_vU3_se": float(np.abs(int_bare_Q2U3_vU3_se)),
-                    "int_bare_Q2U3_vU3_z_score": float(int_bare_Q2U3_vU3_stats['z_score']),
+                    f"int_bare_Q2U3_vU3_real_{prefix}": float(np.real(int_bare_Q2U3_vU3)),
+                    f"int_bare_Q2U3_vU3_imag_{prefix}": float(np.imag(int_bare_Q2U3_vU3)),
+                    f"int_bare_Q2U3_vU3_se_{prefix}": float(np.abs(int_bare_Q2U3_vU3_se)),
+                    f"int_bare_Q2U3_vU3_z_score_{prefix}": float(int_bare_Q2U3_vU3_stats['z_score']),
                     
-                    "int_Q3U1_real": float(np.real(int_Q3U1)),
-                    "int_Q3U1_imag": float(np.imag(int_Q3U1)),
-                    "int_Q3U1_se": float(np.abs(int_Q3U1_se)),
-                    "int_Q3U1_z_score": float(int_Q3U1_stats['z_score']),
+                    f"int_Q3U1_real_{prefix}": float(np.real(int_Q3U1)),
+                    f"int_Q3U1_imag_{prefix}": float(np.imag(int_Q3U1)),
+                    f"int_Q3U1_se_{prefix}": float(np.abs(int_Q3U1_se)),
+                    f"int_Q3U1_z_score_{prefix}": float(int_Q3U1_stats['z_score']),
                     
-                    "int_bare_Q3U1_vH_real": float(np.real(int_bare_Q3U1_vH)),
-                    "int_bare_Q3U1_vH_imag": float(np.imag(int_bare_Q3U1_vH)),
-                    "int_bare_Q3U1_vH_se": float(np.abs(int_bare_Q3U1_vH_se)),
-                    "int_bare_Q3U1_vH_z_score": float(int_bare_Q3U1_vH_stats['z_score']),
+                    f"int_bare_Q3U1_vH_real_{prefix}": float(np.real(int_bare_Q3U1_vH)),
+                    f"int_bare_Q3U1_vH_imag_{prefix}": float(np.imag(int_bare_Q3U1_vH)),
+                    f"int_bare_Q3U1_vH_se_{prefix}": float(np.abs(int_bare_Q3U1_vH_se)),
+                    f"int_bare_Q3U1_vH_z_score_{prefix}": float(int_bare_Q3U1_vH_stats['z_score']),
                     
-                    "int_bare_Q3U1_vQ3_real": float(np.real(int_bare_Q3U1_vQ3)),
-                    "int_bare_Q3U1_vQ3_imag": float(np.imag(int_bare_Q3U1_vQ3)),
-                    "int_bare_Q3U1_vQ3_se": float(np.abs(int_bare_Q3U1_vQ3_se)),
-                    "int_bare_Q3U1_vQ3_z_score": float(int_bare_Q3U1_vQ3_stats['z_score']),
+                    f"int_bare_Q3U1_vQ3_real_{prefix}": float(np.real(int_bare_Q3U1_vQ3)),
+                    f"int_bare_Q3U1_vQ3_imag_{prefix}": float(np.imag(int_bare_Q3U1_vQ3)),
+                    f"int_bare_Q3U1_vQ3_se_{prefix}": float(np.abs(int_bare_Q3U1_vQ3_se)),
+                    f"int_bare_Q3U1_vQ3_z_score_{prefix}": float(int_bare_Q3U1_vQ3_stats['z_score']),
                     
-                    "int_bare_Q3U1_vU1_real": float(np.real(int_bare_Q3U1_vU1)),
-                    "int_bare_Q3U1_vU1_imag": float(np.imag(int_bare_Q3U1_vU1)),
-                    "int_bare_Q3U1_vU1_se": float(np.abs(int_bare_Q3U1_vU1_se)),
-                    "int_bare_Q3U1_vU1_z_score": float(int_bare_Q3U1_vU1_stats['z_score'])
+                    f"int_bare_Q3U1_vU1_real_{prefix}": float(np.real(int_bare_Q3U1_vU1)),
+                    f"int_bare_Q3U1_vU1_imag_{prefix}": float(np.imag(int_bare_Q3U1_vU1)),
+                    f"int_bare_Q3U1_vU1_se_{prefix}": float(np.abs(int_bare_Q3U1_vU1_se)),
+                    f"int_bare_Q3U1_vU1_z_score_{prefix}": float(int_bare_Q3U1_vU1_stats['z_score'])
                 })
-            topological_data_toadd = {
-                "Q3U2": {
-                    "actual": [int_Q3U2, int_Q3U2_se, int_Q3U2_stats['z_score']],
-                    "vHsection": [int_bare_Q3U2_vH, int_bare_Q3U2_vH_se, int_bare_Q3U2_vH_stats['z_score']],
-                    "Q3section": [int_bare_Q3U2_vQ3, int_bare_Q3U2_vQ3_se, int_bare_Q3U2_vQ3_stats['z_score']],
-                    "U2section": [int_bare_Q3U2_vU2, int_bare_Q3U2_vU2_se, int_bare_Q3U2_vU2_stats['z_score']]
-                },
-                "Q1U3": {
                     "actual": [int_Q1U3, int_Q1U3_se, int_Q1U3_stats['z_score']],
                     "vHsection": [int_bare_Q1U3_vH, int_bare_Q1U3_vH_se, int_bare_Q1U3_vH_stats['z_score']],
                     "Q1section": [int_bare_Q1U3_vQ1, int_bare_Q1U3_vQ1_se, int_bare_Q1U3_vQ1_stats['z_score']],
@@ -567,8 +563,8 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                     "Q3section": [int_bare_Q3U1_vQ3, int_bare_Q3U1_vQ3_se, int_bare_Q3U1_vQ3_stats['z_score']],
                     "U1section": [int_bare_Q3U1_vU1, int_bare_Q3U1_vU1_se, int_bare_Q3U1_vU1_stats['z_score']]
                 }
-            }
-            topological_data.append(topological_data_toadd)
+            
+            topological_data[prefix] = topological_data_toadd
             
 
             print("--------------------------------\n\n\n\n\n\n\n\n")

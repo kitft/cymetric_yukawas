@@ -127,6 +127,17 @@ try:
     if 'harvard' in resulthostname.stdout:
         print("We're on the harvard cluster")
         data_path = "data"
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+            import os
+            if not os.getenv("WANDB_API_KEY"):
+                raise ValueError("WANDB_API_KEY not found in .env file")
+            wandb.login()
+        except FileNotFoundError:
+            raise FileNotFoundError("No .env file found. Please create one with your WANDB_API_KEY.")
+        except ImportError:
+            raise ImportError("python-dotenv package not installed. Please install it with 'pip install python-dotenv'")
     else:
         result = subprocess.run(['hostnamectl'], capture_output=True, text=True)
         hostname_output = result.stdout
