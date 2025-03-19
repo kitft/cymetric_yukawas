@@ -619,7 +619,7 @@ if __name__ ==  '__main__':
     manifold_name_and_data = (coefficientsTQ, kmoduliTQ, ambientTQ, monomialsTQ, type_folder, unique_id_or_coeff, manifold_name, data_path)
     
     #if start_from != 'end':
-    if n_to_integrate > 500_000:
+    if n_to_integrate > 500_000 or 'wandb' in sys.argv[1:]:
         wandb.init(project = type_folder,
             name = f'{modeltype}_fc_{unique_id_or_coeff}_{addtofilename}_{job_id}',
             config = {'unique_id_or_coeff': unique_id_or_coeff,
@@ -630,7 +630,7 @@ if __name__ ==  '__main__':
                       'invoking_command': ' '.join(sys.argv),
                       'nPoints': nPoints,
                       'n_to_integrate': n_to_integrate,
-                      'doubleprecision': doubleprecision,
+                      'doubleprecision': double_precision,
                       'sampling_orbit_type': orbit_P1s,
                       'data_path' : data_path,
                       'manifold_name' : manifold_name,
@@ -770,7 +770,13 @@ if __name__ ==  '__main__':
         'ambientTQ': ambientTQ,
         'monomialsTQ': monomialsTQ,
         'orbit': orbit_P1s,
-        'doubleprecision': 'doubleprecision' in sys.argv[1:] or 'double_precision' in sys.argv[1:]
+        'doubleprecision': double_precision,
+        'integrate_or_run': integrate_or_run,
+        'modeltype': modeltype,
+        'nPoints': nPoints,
+        'n_to_integrate': n_to_integrate,
+        'addtofilename': addtofilename,
+        'job_id': job_id
     }
 
     masses, masserrors = do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH,
