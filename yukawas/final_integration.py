@@ -546,26 +546,26 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                     f"int_bare_Q3U1_vU1_se_{prefix}": float(np.abs(int_bare_Q3U1_vU1_se)),
                     f"int_bare_Q3U1_vU1_z_score_{prefix}": float(int_bare_Q3U1_vU1_stats['z_score'])
                 })
-                topological_data_toadd = {
-                    "Q1U3": {
-                    "actual": [int_Q1U3, int_Q1U3_se, int_Q1U3_stats['z_score']],
-                    "vHsection": [int_bare_Q1U3_vH, int_bare_Q1U3_vH_se, int_bare_Q1U3_vH_stats['z_score']],
-                    "Q1section": [int_bare_Q1U3_vQ1, int_bare_Q1U3_vQ1_se, int_bare_Q1U3_vQ1_stats['z_score']],
-                    "U3section": [int_bare_Q1U3_vU3, int_bare_Q1U3_vU3_se, int_bare_Q1U3_vU3_stats['z_score']]
-                },
-                "Q2U3": {
-                    "actual": [int_Q2U3, int_Q2U3_se, int_Q2U3_stats['z_score']],
-                    "vHsection": [int_bare_Q2U3_vH, int_bare_Q2U3_vH_se, int_bare_Q2U3_vH_stats['z_score']],
-                    "Q2section": [int_bare_Q2U3_vQ2, int_bare_Q2U3_vQ2_se, int_bare_Q2U3_vQ2_stats['z_score']],
-                    "U3section": [int_bare_Q2U3_vU3, int_bare_Q2U3_vU3_se, int_bare_Q2U3_vU3_stats['z_score']]
-                },
-                "Q3U1": {
-                    "actual": [int_Q3U1, int_Q3U1_se, int_Q3U1_stats['z_score']],
-                    "vHsection": [int_bare_Q3U1_vH, int_bare_Q3U1_vH_se, int_bare_Q3U1_vH_stats['z_score']],
-                    "Q3section": [int_bare_Q3U1_vQ3, int_bare_Q3U1_vQ3_se, int_bare_Q3U1_vQ3_stats['z_score']],
-                    "U1section": [int_bare_Q3U1_vU1, int_bare_Q3U1_vU1_se, int_bare_Q3U1_vU1_stats['z_score']]
-                }
-                }
+            topological_data_toadd = {
+                "Q1U3": {
+                "actual": [int_Q1U3, int_Q1U3_se, int_Q1U3_stats['z_score']],
+                "vHsection": [int_bare_Q1U3_vH, int_bare_Q1U3_vH_se, int_bare_Q1U3_vH_stats['z_score']],
+                "Q1section": [int_bare_Q1U3_vQ1, int_bare_Q1U3_vQ1_se, int_bare_Q1U3_vQ1_stats['z_score']],
+                "U3section": [int_bare_Q1U3_vU3, int_bare_Q1U3_vU3_se, int_bare_Q1U3_vU3_stats['z_score']]
+            },
+            "Q2U3": {
+                "actual": [int_Q2U3, int_Q2U3_se, int_Q2U3_stats['z_score']],
+                "vHsection": [int_bare_Q2U3_vH, int_bare_Q2U3_vH_se, int_bare_Q2U3_vH_stats['z_score']],
+                "Q2section": [int_bare_Q2U3_vQ2, int_bare_Q2U3_vQ2_se, int_bare_Q2U3_vQ2_stats['z_score']],
+                "U3section": [int_bare_Q2U3_vU3, int_bare_Q2U3_vU3_se, int_bare_Q2U3_vU3_stats['z_score']]
+            },
+            "Q3U1": {
+                "actual": [int_Q3U1, int_Q3U1_se, int_Q3U1_stats['z_score']],
+                "vHsection": [int_bare_Q3U1_vH, int_bare_Q3U1_vH_se, int_bare_Q3U1_vH_stats['z_score']],
+                "Q3section": [int_bare_Q3U1_vQ3, int_bare_Q3U1_vQ3_se, int_bare_Q3U1_vQ3_stats['z_score']],
+                "U1section": [int_bare_Q3U1_vU1, int_bare_Q3U1_vU1_se, int_bare_Q3U1_vU1_stats['z_score']]
+            }
+            }
             
             topological_data[prefix] = topological_data_toadd
             
