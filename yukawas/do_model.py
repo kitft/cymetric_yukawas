@@ -125,6 +125,7 @@ import subprocess
 try:
     resulthostname = subprocess.run(['hostname'], capture_output=True, text=True)
     if 'harvard' in resulthostname.stdout:
+        print("We're on the harvard cluster")
         data_path = "/mnt/extraspace/kitft/cy_yukawas/data"
     else:
         result = subprocess.run(['hostnamectl'], capture_output=True, text=True)
@@ -135,7 +136,6 @@ try:
             data_path = "/mnt/extraspace/kitft/cy_yukawas/data"
         else:
             data_path = "data"
-    
 except Exception:
     # Default to local path if command fails
     data_path = "data"

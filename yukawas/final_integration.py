@@ -456,6 +456,63 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             print(f"int_bare_Q3U1_vH = {int_bare_Q3U1_vH:.6e} ± {int_bare_Q3U1_vH_se:.6e} ({np.round(int_bare_Q3U1_vH_stats['z_score'],2)}σ)")
             print(f"int_bare_Q3U1_vQ3 = {int_bare_Q3U1_vQ3:.6e} ± {int_bare_Q3U1_vQ3_se:.6e} ({np.round(int_bare_Q3U1_vQ3_stats['z_score'],2)}σ)")
             print(f"int_bare_Q3U1_vU1 = {int_bare_Q3U1_vU1:.6e} ± {int_bare_Q3U1_vU1_se:.6e} ({np.round(int_bare_Q3U1_vU1_stats['z_score'],2)}σ)")
+            
+            # Log all means and standard errors to wandb
+            if wandb.run is not None:
+                wandb.log({
+                    "int_Q3U2": int_Q3U2,
+                    "int_Q3U2_se": int_Q3U2_se,
+                    "int_Q3U2_z_score": int_Q3U2_stats['z_score'],
+                    "int_bare_Q3U2_vH": int_bare_Q3U2_vH,
+                    "int_bare_Q3U2_vH_se": int_bare_Q3U2_vH_se,
+                    "int_bare_Q3U2_vH_z_score": int_bare_Q3U2_vH_stats['z_score'],
+                    "int_bare_Q3U2_vQ3": int_bare_Q3U2_vQ3,
+                    "int_bare_Q3U2_vQ3_se": int_bare_Q3U2_vQ3_se,
+                    "int_bare_Q3U2_vQ3_z_score": int_bare_Q3U2_vQ3_stats['z_score'],
+                    "int_bare_Q3U2_vU2": int_bare_Q3U2_vU2,
+                    "int_bare_Q3U2_vU2_se": int_bare_Q3U2_vU2_se,
+                    "int_bare_Q3U2_vU2_z_score": int_bare_Q3U2_vU2_stats['z_score'],
+                    
+                    "int_Q1U3": int_Q1U3,
+                    "int_Q1U3_se": int_Q1U3_se,
+                    "int_Q1U3_z_score": int_Q1U3_stats['z_score'],
+                    "int_bare_Q1U3_vH": int_bare_Q1U3_vH,
+                    "int_bare_Q1U3_vH_se": int_bare_Q1U3_vH_se,
+                    "int_bare_Q1U3_vH_z_score": int_bare_Q1U3_vH_stats['z_score'],
+                    "int_bare_Q1U3_vQ1": int_bare_Q1U3_vQ1,
+                    "int_bare_Q1U3_vQ1_se": int_bare_Q1U3_vQ1_se,
+                    "int_bare_Q1U3_vQ1_z_score": int_bare_Q1U3_vQ1_stats['z_score'],
+                    "int_bare_Q1U3_vU3": int_bare_Q1U3_vU3,
+                    "int_bare_Q1U3_vU3_se": int_bare_Q1U3_vU3_se,
+                    "int_bare_Q1U3_vU3_z_score": int_bare_Q1U3_vU3_stats['z_score'],
+                    
+                    "int_Q2U3": int_Q2U3,
+                    "int_Q2U3_se": int_Q2U3_se,
+                    "int_Q2U3_z_score": int_Q2U3_stats['z_score'],
+                    "int_bare_Q2U3_vH": int_bare_Q2U3_vH,
+                    "int_bare_Q2U3_vH_se": int_bare_Q2U3_vH_se,
+                    "int_bare_Q2U3_vH_z_score": int_bare_Q2U3_vH_stats['z_score'],
+                    "int_bare_Q2U3_vQ2": int_bare_Q2U3_vQ2,
+                    "int_bare_Q2U3_vQ2_se": int_bare_Q2U3_vQ2_se,
+                    "int_bare_Q2U3_vQ2_z_score": int_bare_Q2U3_vQ2_stats['z_score'],
+                    "int_bare_Q2U3_vU3": int_bare_Q2U3_vU3,
+                    "int_bare_Q2U3_vU3_se": int_bare_Q2U3_vU3_se,
+                    "int_bare_Q2U3_vU3_z_score": int_bare_Q2U3_vU3_stats['z_score'],
+                    
+                    "int_Q3U1": int_Q3U1,
+                    "int_Q3U1_se": int_Q3U1_se,
+                    "int_Q3U1_z_score": int_Q3U1_stats['z_score'],
+                    "int_bare_Q3U1_vH": int_bare_Q3U1_vH,
+                    "int_bare_Q3U1_vH_se": int_bare_Q3U1_vH_se,
+                    "int_bare_Q3U1_vH_z_score": int_bare_Q3U1_vH_stats['z_score'],
+                    "int_bare_Q3U1_vQ3": int_bare_Q3U1_vQ3,
+                    "int_bare_Q3U1_vQ3_se": int_bare_Q3U1_vQ3_se,
+                    "int_bare_Q3U1_vQ3_z_score": int_bare_Q3U1_vQ3_stats['z_score'],
+                    "int_bare_Q3U1_vU1": int_bare_Q3U1_vU1,
+                    "int_bare_Q3U1_vU1_se": int_bare_Q3U1_vU1_se,
+                    "int_bare_Q3U1_vU1_z_score": int_bare_Q3U1_vU1_stats['z_score']
+                })
+                
             topological_data_toadd = {
                 "Q3U2": {
                     "actual": [int_Q3U2, int_Q3U2_se, int_Q3U2_stats['z_score']],
@@ -982,55 +1039,42 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             wandb.log(mass_data)
             # Create tables for physical yukawa matrices (trained and reference)
             physical_yukawa_data = []
-            
+            # Log individual physical yukawa matrix elements instead of as a table
+            log_data = {}
             for i in range(3):
                 for j in range(3):
-                    # Add trained/ref values
-                    physical_yukawa_data.append([
-                        i, j, prefix[:-1], 
-                        np.real(physical_yukawas[i,j]),
-                        np.imag(physical_yukawas[i,j]), 
-                        np.abs(physical_yukawas_errors[i,j])
-                    ])
-                    
-                    # # Add reference values
-                    # physical_yukawa_data.append([
-                    #     i, j, prefix, 
-                    #     np.real(physical_yukawas[1][i,j]),
-                    #     np.imag(physical_yukawas[1][i,j]), 
-                    #     np.abs(physical_yukawas_errors[1][i,j])
-                    # ])
+                    # Add trained/ref values with specific keys for each component
+                    log_data[f"{prefix[:-1]}_physical_yukawa_matrix_{i}{j}_real"] = np.real(physical_yukawas[i,j])
+                    log_data[f"{prefix[:-1]}_physical_yukawa_matrix_{i}{j}_imag"] = np.imag(physical_yukawas[i,j])
+                    log_data[f"{prefix[:-1]}_physical_yukawa_matrix_{i}{j}_error"] = np.abs(physical_yukawas_errors[i,j])
             
-            # Log physical yukawa matrix
-            wandb.log({
-                "physical_yukawa_matrix": wandb.Table(
-                    data=physical_yukawa_data,
-                    columns=["row", "col", "type", "real_value", "imag_value", "abs_error"]
-                )
-            })
+            # Log all the data at once
+            wandb.log(log_data)
             
             # Create table for holomorphic yukawa matrices (trained and reference)
             holomorphic_yukawa_data = []
             
+            # Log individual holomorphic yukawa matrix elements
+            holo_log_data = {}
             for i in range(3):
                 for j in range(3):
-                    # Add trained values
+                    # Add trained/ref values with specific keys for each component
+                    holo_log_data[f"{prefix[:-1]}_holomorphic_yukawa_matrix_{i}{j}_real"] = np.real(holomorphic_Yukawas_trained_and_ref[-1][i,j])
+                    holo_log_data[f"{prefix[:-1]}_holomorphic_yukawa_matrix_{i}{j}_imag"] = np.imag(holomorphic_Yukawas_trained_and_ref[-1][i,j])
+                    holo_log_data[f"{prefix[:-1]}_holomorphic_yukawa_matrix_{i}{j}_error"] = np.abs(holomorphic_Yukawas_trained_and_ref_errors[-1][i,j])
+                    
+                    # Also add to table format for visualization
                     holomorphic_yukawa_data.append([
                         i, j, prefix[:-1], 
                         np.real(holomorphic_Yukawas_trained_and_ref[-1][i,j]),
                         np.imag(holomorphic_Yukawas_trained_and_ref[-1][i,j]), 
                         np.abs(holomorphic_Yukawas_trained_and_ref_errors[-1][i,j])
                     ])
-                    
-                    # Add reference values
-                    # holomorphic_yukawa_data.append([
-                    #     i, j, "reference", 
-                    #     np.real(holomorphic_Yukawas_trained_and_ref[1][i,j]),
-                    #     np.imag(holomorphic_Yukawas_trained_and_ref[1][i,j]), 
-                    #     np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][i,j])
-                    # ])
             
-            # Log holomorphic yukawa matrix
+            # Log holomorphic yukawa data
+            wandb.log(holo_log_data)
+            
+            # Log holomorphic yukawa matrix as table
             wandb.log({
                 "holomorphic_yukawa_matrix": wandb.Table(
                     data=holomorphic_yukawa_data,
