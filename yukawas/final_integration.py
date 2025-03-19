@@ -1053,14 +1053,14 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     ref_holo23 = holomorphic_Yukawas_trained_and_ref[1][1,2]
     ref_holo31 = holomorphic_Yukawas_trained_and_ref[1][2,0]
     ref_holo32 = holomorphic_Yukawas_trained_and_ref[1][2,1]
-    trained_holo13_score= np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][0,2])/np.abs(trained_holo13)
-    trained_holo23_score= np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][1,2])/np.abs(trained_holo23)    
-    trained_holo31_score = np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,0])/np.abs(trained_holo31)
-    trained_holo32_score = np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,1])/np.abs(trained_holo32)
-    ref_holo13_score = np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][0,2])/np.abs(ref_holo13)
-    ref_holo23_score = np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][1,2])/np.abs(ref_holo23)   
-    ref_holo31_score = np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][2,0])/np.abs(ref_holo31)
-    ref_holo32_score = np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][2,1])/np.abs(ref_holo32)
+    trained_holo13_score= np.abs(trained_holo13)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][0,2])/np.abs(trained_holo13)
+    trained_holo23_score=np.abs(trained_holo23)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][1,2])/np.abs(trained_holo23)    
+    trained_holo31_score = np.abs(trained_holo31)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,0])/np.abs(trained_holo31)
+    trained_holo32_score = np.abs(trained_holo32)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,1])/np.abs(trained_holo32)
+    ref_holo13_score = np.abs(ref_holo13)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][0,2])/np.abs(ref_holo13)
+    ref_holo23_score = np.abs(ref_holo23)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][1,2])/np.abs(ref_holo23)   
+    ref_holo31_score = np.abs(ref_holo31)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][2,0])/np.abs(ref_holo31)
+    ref_holo32_score = np.abs(ref_holo32)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][2,1])/np.abs(ref_holo32)
     
     # # Calculate average real and imaginary accuracy metrics
     # avg_rel_real_error = np.mean(np.abs(np.real(physical_yukawas_errors)) / np.abs(physical_yukawas))
