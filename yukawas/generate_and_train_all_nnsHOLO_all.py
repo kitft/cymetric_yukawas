@@ -164,8 +164,8 @@ def generate_points_and_save_using_defaults(manifold_name_and_data,number_points
    dirname = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff)) 
    dirnameForMetric = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff))
    print("dirname: " + dirname)
-   if average_selected_t in [True,False]:
-      print("Using average_selected_t: " + str(average_selected_t))
+   if average_selected_t in [True,False] and not isinstance(average_selected_t, int):
+      print("Using orbit over average_selected_t: " + str(average_selected_t))
    else:
       print("Using particular selected_t: " + str(average_selected_t))
    #test if the directory exists, if not, create it
