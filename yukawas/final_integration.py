@@ -985,21 +985,21 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             
             for i in range(3):
                 for j in range(3):
-                    # Add trained values
+                    # Add trained/ref values
                     physical_yukawa_data.append([
-                        i, j, "trained", 
-                        np.real(physical_yukawas[0][i,j]),
-                        np.imag(physical_yukawas[0][i,j]), 
-                        np.abs(physical_yukawas_errors[0][i,j])
+                        i, j, prefix[:-1], 
+                        np.real(physical_yukawas[i,j]),
+                        np.imag(physical_yukawas[i,j]), 
+                        np.abs(physical_yukawas_errors[i,j])
                     ])
                     
-                    # Add reference values
-                    physical_yukawa_data.append([
-                        i, j, "reference", 
-                        np.real(physical_yukawas[1][i,j]),
-                        np.imag(physical_yukawas[1][i,j]), 
-                        np.abs(physical_yukawas_errors[1][i,j])
-                    ])
+                    # # Add reference values
+                    # physical_yukawa_data.append([
+                    #     i, j, prefix, 
+                    #     np.real(physical_yukawas[1][i,j]),
+                    #     np.imag(physical_yukawas[1][i,j]), 
+                    #     np.abs(physical_yukawas_errors[1][i,j])
+                    # ])
             
             # Log physical yukawa matrix
             wandb.log({
@@ -1016,19 +1016,19 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                 for j in range(3):
                     # Add trained values
                     holomorphic_yukawa_data.append([
-                        i, j, "trained", 
-                        np.real(holomorphic_Yukawas_trained_and_ref[0][i,j]),
-                        np.imag(holomorphic_Yukawas_trained_and_ref[0][i,j]), 
-                        np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][i,j])
+                        i, j, prefix[:-1], 
+                        np.real(holomorphic_Yukawas_trained_and_ref[-1][i,j]),
+                        np.imag(holomorphic_Yukawas_trained_and_ref[-1][i,j]), 
+                        np.abs(holomorphic_Yukawas_trained_and_ref_errors[-1][i,j])
                     ])
                     
                     # Add reference values
-                    holomorphic_yukawa_data.append([
-                        i, j, "reference", 
-                        np.real(holomorphic_Yukawas_trained_and_ref[1][i,j]),
-                        np.imag(holomorphic_Yukawas_trained_and_ref[1][i,j]), 
-                        np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][i,j])
-                    ])
+                    # holomorphic_yukawa_data.append([
+                    #     i, j, "reference", 
+                    #     np.real(holomorphic_Yukawas_trained_and_ref[1][i,j]),
+                    #     np.imag(holomorphic_Yukawas_trained_and_ref[1][i,j]), 
+                    #     np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][i,j])
+                    # ])
             
             # Log holomorphic yukawa matrix
             wandb.log({
