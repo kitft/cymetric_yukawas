@@ -123,14 +123,18 @@ manifold_name = 'TQ'
 import subprocess
 # Check if hostname matches comp*/gpu*/hydra* pattern
 try:
-    result = subprocess.run(['hostnamectl'], capture_output=True, text=True)
-    hostname_output = result.stdout
-    first_line = hostname_output.split('\n')[0] if hostname_output else ""
-    
-    if use_default_dir and any(pattern in first_line for pattern in ["Static hostname: comp", "Static hostname: gpu", "Static hostname: hydra"]):
+    resulthostname = subprocess.run(['hostname'], capture_output=True, text=True)
+    if 'harvard' in resulthostname.stdout:
         data_path = "/mnt/extraspace/kitft/cy_yukawas/data"
     else:
-        data_path = "data"
+        result = subprocess.run(['hostnamectl'], capture_output=True, text=True)
+        hostname_output = result.stdout
+        first_line = hostname_output.split('\n')[0] if hostname_output else ""
+    
+        if use_default_dir and any(pattern in first_line for pattern in ["Static hostname: comp", "Static hostname: gpu", "Static hostname: hydra"]):
+            data_path = "/mnt/extraspace/kitft/cy_yukawas/data"
+        else:
+            data_path = "data"
     
 except Exception:
     # Default to local path if command fails
@@ -770,13 +774,7 @@ if __name__ ==  '__main__':
         'ambientTQ': ambientTQ,
         'monomialsTQ': monomialsTQ,
         'orbit': orbit_P1s,
-        'doubleprecision': double_precision,
-        'integrate_or_run': integrate_or_run,
-        'modeltype': modeltype,
-        'nPoints': nPoints,
-        'n_to_integrate': n_to_integrate,
-        'addtofilename': addtofilename,
-        'job_id': job_id
+        'doubleprecision': double_precision
     }
 
     masses, masserrors = do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH,
