@@ -141,6 +141,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     holomorphic_Yukawas_trained_and_ref_errors=[]
     topological_data={}
     for use_trained in [True,False]:
+        prefix = "trained" if use_trained else "ref"
         if loadvecs:
             filename = os.path.join(data_path,type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{use_trained}.npz")
             data = np.load(filename, allow_pickle=True)
@@ -461,10 +462,6 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             if wandb.run is not None:
                 # Split complex values into real and imaginary parts for wandb logging
                 # Use absolute value for error terms
-                if use_trained:
-                    prefix = "trained"
-                else:
-                    prefix = "bare"
                 wandb.log({
                     f"int_Q3U2_real_{prefix}": float(np.real(int_Q3U2)),
                     f"int_Q3U2_imag_{prefix}": float(np.imag(int_Q3U2)),
@@ -1057,11 +1054,10 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             # Create a dictionary to log masses and their errors
             mass_data = {}
             # Add trained or untrained prefix to the logs
-            prefix = "trained_" if use_trained else "ref_"
 
             for i in range(len(s)):
-                mass_data[f"{prefix}mass_{i+1}"] = s[i]
-                mass_data[f"{prefix}mass_{i+1}_error"] = singular_value_errors[i]
+                mass_data[f"{prefix}_mass_{i+1}"] = s[i]
+                mass_data[f"{prefix}_mass_{i+1}_error"] = singular_value_errors[i]
 
             # Log the data to wandb
             wandb.log(mass_data)
@@ -1072,9 +1068,9 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             for i in range(3):
                 for j in range(3):
                     # Add trained/ref values with specific keys for each component
-                    log_data[f"{prefix[:-1]}_physical_yukawa_matrix_{i}{j}_real"] = np.real(physical_yukawas[i,j])
-                    log_data[f"{prefix[:-1]}_physical_yukawa_matrix_{i}{j}_imag"] = np.imag(physical_yukawas[i,j])
-                    log_data[f"{prefix[:-1]}_physical_yukawa_matrix_{i}{j}_error"] = np.abs(physical_yukawas_errors[i,j])
+                    log_data[f"{prefix}_physical_yukawa_matrix_{i}{j}_real"] = np.real(physical_yukawas[i,j])
+                    log_data[f"{prefix}_physical_yukawa_matrix_{i}{j}_imag"] = np.imag(physical_yukawas[i,j])
+                    log_data[f"{prefix}_physical_yukawa_matrix_{i}{j}_error"] = np.abs(physical_yukawas_errors[i,j])
             
             # Log all the data at once
             wandb.log(log_data)
@@ -1087,13 +1083,13 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             for i in range(3):
                 for j in range(3):
                     # Add trained/ref values with specific keys for each component
-                    holo_log_data[f"{prefix[:-1]}_holomorphic_yukawa_matrix_{i}{j}_real"] = np.real(holomorphic_Yukawas_trained_and_ref[-1][i,j])
-                    holo_log_data[f"{prefix[:-1]}_holomorphic_yukawa_matrix_{i}{j}_imag"] = np.imag(holomorphic_Yukawas_trained_and_ref[-1][i,j])
-                    holo_log_data[f"{prefix[:-1]}_holomorphic_yukawa_matrix_{i}{j}_error"] = np.abs(holomorphic_Yukawas_trained_and_ref_errors[-1][i,j])
+                    holo_log_data[f"{prefix}_holomorphic_yukawa_matrix_{i}{j}_real"] = np.real(holomorphic_Yukawas_trained_and_ref[-1][i,j])
+                    holo_log_data[f"{prefix}_holomorphic_yukawa_matrix_{i}{j}_imag"] = np.imag(holomorphic_Yukawas_trained_and_ref[-1][i,j])
+                    holo_log_data[f"{prefix}_holomorphic_yukawa_matrix_{i}{j}_error"] = np.abs(holomorphic_Yukawas_trained_and_ref_errors[-1][i,j])
                     
                     # Also add to table format for visualization
                     holomorphic_yukawa_data.append([
-                        i, j, prefix[:-1], 
+                        i, j, prefix, 
                         np.real(holomorphic_Yukawas_trained_and_ref[-1][i,j]),
                         np.imag(holomorphic_Yukawas_trained_and_ref[-1][i,j]), 
                         np.abs(holomorphic_Yukawas_trained_and_ref_errors[-1][i,j])
