@@ -133,8 +133,12 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
     # Set USE_PROFILER=1 in environment to enable
     use_profiler = os.environ.get('USE_PROFILER', '0') == '1'
     number_ambients = len(point_gen.ambient)
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
+    try:
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+    except:
+        print(f"Failed to create directory {dirname}: continuing?")
+        pass
     if n_batches is None and n_p > 300000:
         n_batches = n_p // 300000 if n_p // 300000 > 0 else 1
     elif n_batches is None:
