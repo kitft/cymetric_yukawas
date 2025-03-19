@@ -157,7 +157,7 @@ class JAXPointGenerator:
 
     def _take_roots_single(self, p, selected_t_val):
         """JAX version of _take_roots for a single point"""
-        #print(f"selected_t_val: {selected_t_val}")
+        #tprint(f"selected_t_val: {selected_t_val}")
         # Compute polynomial coefficients
         all_sums = [
             jnp.sum(c * jnp.multiply.reduce(jnp.power(p.flatten(), m), axis=-1))
