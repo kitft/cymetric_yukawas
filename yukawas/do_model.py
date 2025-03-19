@@ -560,6 +560,8 @@ if __name__ == '__main__':
         orbit_P1s = 1
     elif 'orbitfirst' in sys.argv[1:]:
         orbit_P1s = 0
+    elif 'orbit' in sys.argv[1:]:
+        orbit_P1s = True
     else:
         orbit_P1s = True
     print(f"Orbiting over P1s")
