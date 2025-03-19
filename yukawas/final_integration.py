@@ -542,6 +542,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                     "int_bare_Q3U1_vU1_se": float(np.abs(int_bare_Q3U1_vU1_se)),
                     "int_bare_Q3U1_vU1_z_score": float(int_bare_Q3U1_vU1_stats['z_score'])
                 })
+                topological_data_toadd = {
                 "Q3U2": {
                     "actual": [int_Q3U2, int_Q3U2_se, int_Q3U2_stats['z_score']],
                     "vHsection": [int_bare_Q3U2_vH, int_bare_Q3U2_vH_se, int_bare_Q3U2_vH_stats['z_score']],
