@@ -1027,8 +1027,8 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     run_id = f"{timestamp}_{unique_id_or_coeff}"  
 
     # Save to unique file in results directory
-    os.makedirs(os.path.join(result_files_path,f'{manifold_name}_results'), exist_ok=True)
-    npzsavelocation = os.path.join(result_files_path,f'{manifold_name}_results/run_' + run_id + '.npz')
+    os.makedirs(os.path.join(result_files_path,f'{type_folder}_results'), exist_ok=True)
+    npzsavelocation = os.path.join(result_files_path,f'{type_folder}_results/run_' + run_id + '.npz')
     np.savez(npzsavelocation, **results)
 
     # Save masses to CSV
