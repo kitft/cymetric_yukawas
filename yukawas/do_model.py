@@ -126,7 +126,7 @@ try:
     resulthostname = subprocess.run(['hostname'], capture_output=True, text=True)
     if 'harvard' in resulthostname.stdout:
         print("We're on the harvard cluster")
-        data_path = "/mnt/extraspace/kitft/cy_yukawas/data"
+        data_path = "data"
     else:
         result = subprocess.run(['hostnamectl'], capture_output=True, text=True)
         hostname_output = result.stdout
