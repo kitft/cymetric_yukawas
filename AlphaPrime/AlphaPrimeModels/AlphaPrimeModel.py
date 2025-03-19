@@ -478,7 +478,7 @@ def prepare_dataset_Alpha(point_gen, data, dirname, metricModel,euler_char,BASIS
         np.float: kappa = vol_k / vol_cy
     """
     if not os.path.exists(dirname):
-        os.makedirs(dirname)
+        os.makedirs(dirname, exist_ok=True)
     
     X_train=tf.cast(data['X_train'],tf.float32)
     y_train=tf.cast(data['y_train'],tf.float32)

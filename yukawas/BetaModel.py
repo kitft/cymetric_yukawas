@@ -518,7 +518,7 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
         np.float: kappa = vol_k / vol_cy
     """
     if not os.path.exists(dirname):
-        os.makedirs(dirname)
+        os.makedirs(dirname, exist_ok=True)
     # new_np = int(round(n_p/(1-ltails-rtails)))
     # pwo = point_gen.generate_point_weights(new_np, omega=True)
     # if len(pwo) < new_np:

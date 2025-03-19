@@ -195,7 +195,7 @@ class Donaldson:
 
     def save_dzdzdz_basis(self, dirname):
         if not os.path.exists(dirname):
-            os.makedirs(dirname)
+            os.makedirs(dirname, exist_ok=True)
         fname = os.path.join(dirname, 'dbasis.npz')
         np.savez_compressed(fname,
                             DZDZDZB=self.dzdzdz_basis,
@@ -209,7 +209,7 @@ class Donaldson:
 
     def save_hbalanced(self, dirname):
         if not os.path.exists(dirname):
-            os.makedirs(dirname)
+            os.makedirs(dirname, exist_ok=True)
         fname = os.path.join(
             dirname, 'k'+str(int(np.mean(self.k)))+'hbalanced.npz')
         np.savez_compressed(fname,

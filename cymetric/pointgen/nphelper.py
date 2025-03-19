@@ -135,7 +135,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
     number_ambients = len(point_gen.ambient)
     try:
         if not os.path.exists(dirname):
-            os.makedirs(dirname)
+            os.makedirs(dirname, exist_ok=True)
     except:
         print(f"Failed to create directory {dirname}: continuing?")
         pass

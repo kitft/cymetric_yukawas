@@ -602,7 +602,7 @@ def prepare_dataset_HarmonicForm(point_gen, data,n_p, dirname, metricModel,lineb
         np.float: kappa = vol_k / vol_cy
     """
     if not os.path.exists(dirname):
-        os.makedirs(dirname)
+        os.makedirs(dirname, exist_ok=True)
     tf.keras.backend.clear_session()
     gc.collect()
     # new_np = int(round(n_p/(1-ltails-rtails)))
