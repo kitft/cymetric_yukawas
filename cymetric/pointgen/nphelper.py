@@ -274,7 +274,7 @@ def prepare_basis(point_gen, dirname, kappa=1.):
         int: 0
     """
     if not os.path.exists(dirname):
-        os.makedirs(dirname)
+        os.makedirs(dirname, exist_ok=True)
 
     np.savez_compressed(os.path.join(dirname, 'basis'),
                         DQDZB0=point_gen.BASIS['DQDZB0'],
