@@ -128,11 +128,11 @@ try:
         print("We're on the harvard cluster")
         data_path = "data"
         try:
-            from dotenv import load_dotenv
-            load_dotenv()
-            import os
-            if not os.getenv("WANDB_API_KEY"):
-                raise ValueError("WANDB_API_KEY not found in .env file")
+            # from dotenv import load_dotenv
+            # load_dotenv()
+            # import os
+            # if not os.getenv("WANDB_API_KEY"):
+            #     raise ValueError("WANDB_API_KEY not found in .env file")
             wandb.login()
         except FileNotFoundError:
             raise FileNotFoundError("No .env file found. Please create one with your WANDB_API_KEY.")
