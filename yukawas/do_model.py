@@ -626,8 +626,6 @@ do_extra_stuff_for_integration = True
     
 
 if __name__ ==  '__main__':
-    seed_for_gen=int((int(free_coefficient*100000000000)+free_coefficient*1000000))%4294967294 # modulo largest seed
-    print("seed for gen", seed_for_gen)
 
     unique_id_or_coeff = free_coefficient
     coefficientsTQ = get_coefficients_here(free_coefficient)
@@ -650,6 +648,7 @@ if __name__ ==  '__main__':
                       'data_path' : data_path,
                       'manifold_name' : manifold_name,
                       'type_folder' : type_folder,
+                      'seed' : seed_for_gen,
                       'tags': [integrate_or_run, modeltype, "nint"+str(n_to_integrate), "npoints"+str(nPoints), addtofilename]})
     
     
