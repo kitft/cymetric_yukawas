@@ -20,6 +20,8 @@ name_of_invoking_script = sys.argv[0]
 integrate_or_run = sys.argv[1] # integrate or run
 modeltype = sys.argv[2] # m13 or m1
 free_coefficient = float(sys.argv[3]) # free coefficient
+free_coefficient_str = str(sys.argv[3])
+# Extract last 10 digits of the decimal part
 start_from = sys.argv[4] if len(sys.argv) > 3+1 else 'phi' # start from phi, LB1, etc...
 npoints_config = sys.argv[5] if len(sys.argv) > 4+1 else '1hundred'
 job_id = sys.argv[-1] # job id
@@ -337,7 +339,11 @@ if __name__ == '__main__':
     tr_batchsize=64
     #free_coefficient=1.000000004# when the coefficient is 1, ensure that it's 1., not 1 for the sake of the filename
     import sys
-    seed_for_gen=int(int((int(free_coefficient*100000000000)+free_coefficient*1000000))+((free_coefficient*10**(18))%123987123157869))%4294967294 # modulo largest seed
+
+    decimal_part = free_coefficient_str.split('.')[-1] if '.' in free_coefficient_str else ''
+    last_few_digits_of_free_coeff = int(decimal_part[-10:]) if len(decimal_part) >= 10 else int(decimal_part.ljust(10, '0'))
+    print("last few digits of free coefficient", last_few_digits_of_free_coeff)
+    seed_for_gen=(int(int((int(free_coefficient*100000000000)+free_coefficient*1000000))+((free_coefficient*10**(18))%123987123157869)) + last_few_digits_of_free_coeff )%4294967294 # modulo largest seed
     print("seed for gen", seed_for_gen)
     coefficientsTQ = get_coefficients_here(free_coefficient)
 
