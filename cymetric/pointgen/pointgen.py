@@ -130,9 +130,22 @@ class PointGenerator:
 
     @staticmethod
     def _set_seed(seed):
-        # sets the numpy seed for point gen
+        # sets all seeds for point generation
         np.random.seed(seed)
-        
+        try:
+            import jax.random as jrandom
+        except ImportError:
+            pass
+        try:
+            import random
+            random.seed(seed)
+        except ImportError:
+            pass
+        try:
+            import tensorflow as tf
+            tf.random.set_seed(seed)
+        except ImportError:
+            pass
 
     def _generate_all_bases(self):
         r"""This function calls a bunch of others
@@ -1670,7 +1683,8 @@ class PointGenerator:
         
         Args:
             func (callable): Function to batch process
-            *args: Arguments to pass to the function
+            *args: Arguments to pass to the fonction
+            t_
             batch_size (int, optional): Size of each batch. Defaults to 1000000.
             **kwargs: Keyword arguments to pass to the function
             
