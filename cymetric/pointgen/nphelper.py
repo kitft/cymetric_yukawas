@@ -269,8 +269,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
         os.environ["XLA_FLAGS"] = "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1"
         
         all_points, all_weights, all_omega, all_pullbacks = [], [], [], []
-        n_batches = (n_p//100000) if n_p//100000 > 0 else 1
-        batch_n = n_p//n_batches
+        
 
         # import pickle
         # import cloudpickle
@@ -300,7 +299,11 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
         n_cpus = multiprocessing.cpu_count() - 1
         n_cpus = max(1, n_cpus)  # Ensure at least 1 CPU is used
         numpy_seed = np.random.get_state()[1][0]# use the same seed as numpy for the jax seed
-        random_seeds = np.random.RandomState(numpy_seed).randint(0, 2**32, size=10)
+
+        n_batches = (n_p//10000) if n_p//10000 > 0 else 1
+        batch_n = n_p//n_batches
+
+        random_seeds = np.random.RandomState(numpy_seed).randint(0, 2**32, size=n_batches)
         print(f"attempting to parallelise {n_batches} batches over {n_cpus} processes, each doing {batch_n} samples (so *8)") 
         # Execute the batch processing in parallel
         results = Parallel(n_jobs=n_cpus, prefer="processes")(

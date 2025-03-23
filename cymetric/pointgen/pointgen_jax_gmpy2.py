@@ -709,7 +709,7 @@ class gmpy2_poly_solver:
     def _process_batch(self, coeffs_batch, max_iter=None, tol=1e-30):
         """Process a single batch of polynomials"""
         max_iter = max_iter or self.max_iter
-        roots, initial_roots = self.find_roots_vectorized(np.array(coeffs_batch), use_gmpy2=True, max_iter=max_iter, tol=tol)
+        roots = self.find_roots_vectorized(np.array(coeffs_batch), use_gmpy2=True, max_iter=max_iter, tol=tol)
         return roots
     
     def solve_batch_of_polys(self, coeffs,  max_iter=None, tol=1e-30):
