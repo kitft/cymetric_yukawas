@@ -13,7 +13,7 @@ import pstats
 import os
 
 import math
-
+import sys
 
 def get_levicivita_tensor(dim):
     r"""Computes Levi-Civita tensor in dim dimensions.
@@ -142,6 +142,7 @@ def _prepare_dataset_batched_for_mp(point_gen, batch_n_p, ltails, rtails, seed :
     except Exception as e:
         print("Exception in _prepare_dataset_batched_for_mp", e, "perhaps try again?")
         raise e
+    sys.stdout.flush()
     return points, weights, omegasquared, pullbacks
 
 
