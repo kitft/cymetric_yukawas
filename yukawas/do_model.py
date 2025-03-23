@@ -51,7 +51,7 @@ use_wandb = True
 
 if os.path.exists(os.path.join(os.getcwd(), '.wandb_key')):
     # Override default with explicit command line flag
-    if 'wandb' in sys.argv[1:]:
+    if 'wandb' in sys.argv[1:] :
         use_wandb = True
     elif 'nowandb' in sys.argv[1:]:
         use_wandb = False
@@ -468,19 +468,31 @@ if __name__ == '__main__':
             raise ValueError("Invalid data size: " + npoints_config)
     #tr_batchsize = 10
     #SecondBSize = 10
-    nEpochsPhi = 1
-    nEpochsBeta = 1
-    nEpochsSigma = 1
-    nEpochsSigma2 = 1
+    nEpochsPhi = 3
+    nEpochsBeta = 3
+    nEpochsSigma = 3
+    nEpochsSigma2 = 3
+
+    if integrate_or_run == 'integrate':
+        depthPhi = 2
+        widthPhi = 3
+        depthBeta = 2
+        widthBeta = 3
+        depthSigma = 2
+        widthSigma = 3
+        depthSigma2 = 2
+        widthSigma2 = 3
     
-    depthPhi = 2
-    widthPhi = 3
-    depthBeta = 2
-    widthBeta = 3
-    depthSigma = 2
-    widthSigma = 3
-    depthSigma2 = 2
-    widthSigma2 = 3
+    elif integrate_or_run == 'run':
+        depthPhi = 3
+        widthPhi = 128
+        depthBeta = 3
+        widthBeta = 128
+        depthSigma = 3
+        widthSigma = 128
+        depthSigma2 = 3
+        widthSigma2 = 128
+
     if 'largenetworks' in sys.argv[1:]:
         depthPhi = 4
         widthPhi = 100
@@ -492,11 +504,16 @@ if __name__ == '__main__':
         widthSigma2 = 100
 
 
-    
-    return_random_phi = False
-    return_random_HYM = False
-    return_random_HF = True
-    return_random_HF_2 = True
+    if integrate_or_run == 'integrate':
+        return_random_phi = False
+        return_random_HYM = False
+        return_random_HF = True
+        return_random_HF_2 = True
+    else:
+        return_random_phi = False
+        return_random_HYM = False
+        return_random_HF = False
+        return_random_HF_2 = False
     
 
 
@@ -597,8 +614,11 @@ if __name__ == '__main__':
         use_quadratic_method = True
         use_jax = False
         do_multiprocessing = True
-    if orbit_P1s!=False:
-        print(f"Orbiting over P1s")
+if orbit_P1s!=False:
+    orbit_P1s = False
+    use_quadratic_method = True
+    use_jax = False
+    do_multiprocessing = True
 
 if __name__ == '__main__':
     print("Name of invoking script: ", name_of_invoking_script, "modeltype: ", modeltype, "namespace of vH: ", functionforbaseharmonicform_jbar_for_vH.__module__)
@@ -650,8 +670,7 @@ if __name__ ==  '__main__':
     manifold_name_and_data = (coefficientsTQ, kmoduliTQ, ambientTQ, monomialsTQ, type_folder, unique_id_or_coeff, manifold_name, data_path)
     
     #if start_from != 'end':
-    if n_to_integrate > 500_000 or 'wandb' in sys.argv[1:]:
-        wandb.init(project = type_folder,
+    wandb.init(project = type_folder,
             name = f'{modeltype}_fc_{unique_id_or_coeff}_{addtofilename}_{job_id}',
             config = {'unique_id_or_coeff': unique_id_or_coeff,
                       'phimodel_config': phimodel_config,

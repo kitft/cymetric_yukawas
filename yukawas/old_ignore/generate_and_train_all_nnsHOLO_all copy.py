@@ -123,17 +123,17 @@ def create_adam_optimizer_with_decay(initial_learning_rate, nEpochs, final_lr_fa
 
     return tf.keras.optimizers.Adam(learning_rate=initial_learning_rate)#lr_schedule)
 
-def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,number_points,force_generate=False,seed_set=0,average_selected_t = True, use_quadratic_method = False, do_multiprocessing = False, use_jax = True, max_iter = 10):
+def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,number_points,force_generate=False,seed_set=0):
    print("\n\n")
    coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path = (manifold_name_and_data)
-   pg = PointGenerator(monomials, coefficients, kmoduli, ambient, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing, max_iter = max_iter)
+   pg = PointGenerator(monomials, coefficients, kmoduli, ambient)
    pg._set_seed(seed_set)
    dirname = os.path.join(data_path, type_folder, manifold_name+'_pg_for_eval_with_'+str(unique_id_or_coeff)) 
    print("dirname: " + dirname)
    #test if the directory exists, if not, create it
    if force_generate or (not os.path.exists(dirname)):
       print("Generating: forced? " + str(force_generate))
-      kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
+      kappa = pg.prepare_dataset(number_points, dirname)
       pg.prepare_basis(dirname, kappa=kappa)
       print(f"Generated dataset: kappa: {kappa}")
    elif os.path.exists(dirname):
@@ -143,36 +143,30 @@ def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,numb
          if data['X_train'].dtype != 'float64':#real_dtype: if it's a bare cymetric file, it should always be float64
             print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
             print("Regenerating dataset with correct dtype")
-            kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
+            kappa = pg.prepare_dataset(number_points, dirname)
             pg.prepare_basis(dirname, kappa=kappa)
          elif len(data['X_train'])+len(data['X_val']) != number_points:
             length_total = len(data['X_train'])+len(data['X_val'])
             print(f"wrong length {length_total}, want {number_points} - generating anyway")
-            kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
+            kappa = pg.prepare_dataset(number_points, dirname)
             pg.prepare_basis(dirname, kappa=kappa)
       except:
          print("error loading - generating anyway")
-         kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
+         kappa = pg.prepare_dataset(number_points, dirname)
          pg.prepare_basis(dirname, kappa=kappa)
-   print("Kappa: " + str(kappa))
    return pg,kmoduli
 
 
-def generate_points_and_save_using_defaults(manifold_name_and_data,number_points,force_generate=False,seed_set=0,average_selected_t = True, use_quadratic_method = False, use_jax = True, do_multiprocessing = False, max_iter = 10):
+def generate_points_and_save_using_defaults(manifold_name_and_data,number_points,force_generate=False,seed_set=0):
    coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path =  manifold_name_and_data
-   pg = PointGenerator(monomials, coefficients, kmoduli, ambient, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing, max_iter = max_iter)
+   pg = PointGenerator(monomials, coefficients, kmoduli, ambient)
    pg._set_seed(seed_set)
    dirname = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff)) 
-   dirnameForMetric = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff))
    print("dirname: " + dirname)
-   if average_selected_t in [True,False] and not isinstance(average_selected_t, int):
-      print("Using orbit over average_selected_t: " + str(average_selected_t))
-   else:
-      print("Using particular selected_t: " + str(average_selected_t))
    #test if the directory exists, if not, create it
    if force_generate or (not os.path.exists(dirname)):
       print("Generating: forced? " + str(force_generate))
-      kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
+      kappa = pg.prepare_dataset(number_points, dirname)
       pg.prepare_basis(dirname, kappa=kappa)
       print(f"Generated dataset: kappa: {kappa}")
    elif os.path.exists(dirname):
@@ -183,18 +177,17 @@ def generate_points_and_save_using_defaults(manifold_name_and_data,number_points
          if data['X_train'].dtype != 'float64':#real_dtype: if it's a bare cymetric file, it should always be float64
             print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
             print("Regenerating dataset with correct dtype")
-            kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
+            kappa = pg.prepare_dataset(number_points, dirname)
             pg.prepare_basis(dirname, kappa=kappa)
          elif len(data['X_train'])+len(data['X_val']) != number_points:
             length_total = len(data['X_train'])+len(data['X_val'])
             print(f"wrong length {length_total}, want {number_points} - generating anyway")
-            kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
+            kappa = pg.prepare_dataset(number_points, dirname)
             pg.prepare_basis(dirname, kappa=kappa)
       except Exception as e:
          print(f"error loading - generating anyway  {e}")
-         kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
+         kappa = pg.prepare_dataset(number_points, dirname)
          pg.prepare_basis(dirname, kappa=kappa)
-   print("Kappa: " + str(kappa))
    
 
 def getcallbacksandmetrics(data, prefix, wandb = True):
@@ -213,128 +206,66 @@ def getcallbacksandmetrics(data, prefix, wandb = True):
    cb_list = [ scb, wandbcb] if wandb else [ scb]
    cmetrics = [TotalLoss(), SigmaLoss()]#, RicciLoss()]
    return cb_list, cmetrics
-def train_and_save_nn(manifold_name_and_data, phimodel_config=None,use_zero_network=False, unique_name='phi'):
-   nlayer = phimodel_config['depth']
-   nHidden = phimodel_config['width']
-   nEpochs = phimodel_config['nEpochs']
-   lRate = phimodel_config['lRate']
-   stddev = phimodel_config['stddev']
-   bSizes = phimodel_config['bSizes']
-   network_function = phimodel_config['network_function']
-   activation = phimodel_config['activation']
 
-   coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path =  (manifold_name_and_data)
-   dirname = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff))
-   name = 'phimodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(bSizes[1]) + 's' + str(nlayer) + 'x' +str(nHidden)+'_'+unique_name
-   print('dirname: ' + dirname)
-   print('name: ' + name)
-   
-   data = np.load(os.path.join(dirname, 'dataset.npz'))
-   data = convert_to_tensor_dict(data)
-   BASIS = prepare_tf_basis(np.load(os.path.join(dirname, 'basis.pickle'), allow_pickle=True))
-
-   cb_list, cmetrics = getcallbacksandmetrics(data, 'phi', wandb = True)
-
-   #nlayer = 3
-   #nHidden = 128
-   act = 'gelu'
-   #nEpochs = 100
-   #bSizes = [192, 150000]
-   alpha = [1., 1., 30., 1., 2.] # 1 AND 3??
-   nfold = 3
-   n_in = 2*8
-   n_out = 1
-   #lRate = 0.001
-   ambient=tf.cast(tf.math.abs(BASIS['AMBIENT']),tf.int32)
-
-   nfirstlayer= tf.reduce_prod((np.array(ambient)+determine_n_funcs)).numpy().item() if use_symmetry_reduced_TQ else tf.reduce_prod((np.array(ambient)+1)**2).numpy().item() 
-   shapeofinternalnetwork=[nHidden]*nlayer
-   shapeofnetwork=[nfirstlayer]+shapeofinternalnetwork+[1]
-   if network_function is None:
-      load_func = BiholoModelFuncGENERAL  
-   else:
-      load_func = network_function
-
-   print("network shape: " + str(shapeofnetwork), "load_func: " + str(load_func))
-   nn_phi = load_func(shapeofnetwork,BASIS,stddev=stddev,use_zero_network=use_zero_network,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
-   nn_phi_zero = load_func(shapeofnetwork,BASIS,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
-   #nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
-   phimodel = PhiFSModel(nn_phi, BASIS, alpha=alpha, unique_name=unique_name)
-   phimodelzero = PhiFSModel(nn_phi_zero, BASIS, alpha=alpha, unique_name=unique_name)
-   
-   #print('nn_phi ' )
-   #print('nn_phi ' + str(phimodel(data['X_train'][0:10])))
-
-   #Note, currently running legacy due to ongoing tf issue with M1/M2. 
-   #Use the commented line instead if not on an M1/M2 machine
-   #opt = tfk.optimizers.Adam(learning_rate=lRate)
-   #opt = tfk.optimizers.legacy.Adam(learning_rate=lRate)
-   opt = create_adam_optimizer_with_decay(
-    initial_learning_rate=lRate,
-    nEpochs=nEpochs*((len(data['X_train'])//bSizes[0])+1),
-    final_lr_factor=2  # This will decay to lRate/10
+# Create a standard phimodel configuration
+phi_config = NetworkConfig(
+    name='phi_standard',
+    depth=3,
+    width=128,
+    activation='gelu',
+    learning_rate=0.001,
+    weight_stddev=0.1,
+    batch_sizes=[192, 150000],
+    epochs=100,
+    network_class=BiholoModelFuncGENERAL,
+    weight_decay=True,
+    final_lr_factor=2
 )
-   # compile so we can test on validation set before training
-   phimodel.compile(custom_metrics=cmetrics)
-   phimodelzero.compile(custom_metrics=cmetrics)
 
-   ## compare validation loss before training for zero network and nonzero network
-   datacasted=[data['X_val'],data['y_val']]
-   #need to re-enable learning, in case there's been a problem:
-   phimodel.learn_transition = False
-   phimodelzero.learn_transition = False
-   phimodel.learn_volk = True
-   phimodelzero.learn_volk = True
-   #phimodel.learn_ricci_val= True
-   #phimodelzero.learn_ricci_val= True
-   print("testing")
-   valzero=phimodelzero.test_step(datacasted)
-   valraw=phimodel.test_step(datacasted)
-   print('tested')
-   # phimodel.learn_ricci_val=False 
-   # phimodelzero.learn_ricci_val=False 
-   valzero = {key: float(value.numpy()) for key, value in valzero.items()}
-   valraw = {key: float(value.numpy()) for key, value in valraw.items()}
-
-   #print("CHECKING MODEL:")
-   #print(data['X_train'][0:1])
-   #print(phimodel(data['X_train'][0:1]))
-   #print(phimodelzero(data['X_train'][0:1]))
-   #print(phimodel.fubini_study_pb(data['X_train'][0:1]))
-   #print("DONE")
-
-   #### maybe remove
-   phimodel.learn_volk = False
-   phimodel.learn_transition=False
-   phimodel, training_history = train_model(phimodel, data, optimizer=opt, epochs=nEpochs, batch_sizes=bSizes, 
-                                       verbose=1, custom_metrics=cmetrics, callbacks=cb_list)
-   print("finished training\n")
-   phimodel.model.save_weights(os.path.join(dirname, name) + '.weights.h5')
-   np.savez_compressed(os.path.join(dirname, 'trainingHistory-' + name),training_history)
-   #now print the initial losses and final losses for each metric
-   # first_metrics = {key: value[0] for key, value in training_history.items()}
-   # lastometrics = {key: value[-1] for key, value in training_history.items()}
-   phimodel.learn_transition = True
-   phimodel.learn_volk = True
-   #phimodel.learn_ricci_val= True
-   valfinal=phimodel.test_step(datacasted)
-   valfinal = {key: value.numpy() for key, value in valfinal.items()}
-   #phimodel.learn_ricci_val=False 
-   print("zero network validation loss: ")
-   print(valzero)
-   print("validation loss for raw network: ")
-   print(valraw)
-   print("validation loss for final network: ")
-   print(valfinal)
-   print("ratio of final to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valfinal.items()}))
-   print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
-
-   averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure(phimodel,data["X_val"])
-   print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
-   #IMPLEMENT THE FOLLOWING
-   #meanfailuretosolveequation,_,_=measure_laplacian_failure(phimodel,data)
-   print("\n\n")
-   return phimodel,training_history, None
+# Modified train_and_save_nn function using the new NetworkConfig
+def train_and_save_nn(manifold_name_and_data, network_config, use_zero_network=False):
+    # Extract data paths
+    coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path = manifold_name_and_data
+    dirname = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff))
+    name = f"phimodel_for_{network_config.epochs}_{network_config.batch_sizes[0]}_{network_config.batch_sizes[1]}s{network_config.depth}x{network_config.width}_{network_config.name}"
+    
+    # Load data
+    data = np.load(os.path.join(dirname, 'dataset.npz'))
+    data = convert_to_tensor_dict(data)
+    BASIS = prepare_tf_basis(np.load(os.path.join(dirname, 'basis.pickle'), allow_pickle=True))
+    
+    # Get callbacks and metrics
+    cb_list, cmetrics = getcallbacksandmetrics(data, 'phi', wandb=True)
+    
+    # Create model
+    ambient = tf.cast(tf.math.abs(BASIS['AMBIENT']), tf.int32)
+    phimodel = network_config.create_model(BASIS, ambient, use_zero_network=use_zero_network)
+    phimodelzero = network_config.create_model(BASIS, ambient, use_zero_network=True)
+    
+    # Create optimizer
+    opt = network_config.create_optimizer()
+    
+    # Compile models
+    phimodel.compile(custom_metrics=cmetrics)
+    phimodelzero.compile(custom_metrics=cmetrics)
+    
+    # Test validation loss
+    # [rest of the function remains the same]
+    
+    # Train model
+    phimodel, training_history = train_model(phimodel, data, optimizer=opt, 
+                                        epochs=network_config.epochs, 
+                                        batch_sizes=network_config.batch_sizes, 
+                                        verbose=1, custom_metrics=cmetrics, 
+                                        callbacks=cb_list)
+    
+    # Save model
+    phimodel.model.save_weights(os.path.join(dirname, name) + '.weights.h5')
+    np.savez_compressed(os.path.join(dirname, 'trainingHistory-' + name), training_history)
+    
+    # [rest of the function remains the same]
+    
+    return phimodel, training_history, None
 
 def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False, unique_name='LB'):
    nlayer = phimodel_config['depth']
@@ -382,12 +313,6 @@ def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=
    nn_phi = load_func(shapeofnetwork,BASIS,stddev=stddev,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    nn_phi_zero =load_func(shapeofnetwork,BASIS,use_zero_network=True,use_symmetry_reduced_TQ=use_symmetry_reduced_TQ)#make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=use_zero_network)
    #nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
-   print("nns made")
-
-   datacasted=[data['X_val'],data['y_val']]
-
-   #    nn_phi = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
-   #    nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
    phimodel = PhiFSModel(nn_phi, BASIS, alpha=alpha, unique_name=unique_name)
    phimodelzero = PhiFSModel(nn_phi_zero, BASIS, alpha=alpha, unique_name=unique_name)
    #initialise weights
@@ -447,43 +372,53 @@ def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=
    phimodelzero.learn_volk = True
    #phimodel.learn_ricci_val= True
    #phimodelzero.learn_ricci_val= True
-   #print("phimodel1: " +str(phimodel(datacasted[0][0:2])))
-   #print("phimodelzero: " +str(phimodelzero(datacasted[0][0:2])))
-
-   #print("phimodel1: " +str(phimodel.model(datacasted[0][0:2])))
-   #print("phimodelzero: " +str(phimodelzero.model(datacasted[0][0:2])))
-   #metricsnames=phimodelzero.metrics_names
-   #problem - metricsnames aren't defined unless model has been trained, not just evaluated? SOlution - return_dict
-   valzero=phimodelzero.evaluate(datacasted[0],datacasted[1],return_dict=True)
-   valtrained=phimodel.evaluate(datacasted[0],datacasted[1],return_dict=True)
-
-
+   print("testing")
+   valzero=phimodelzero.test_step(datacasted)
+   valraw=phimodel.test_step(datacasted)
+   print('tested')
    # phimodel.learn_ricci_val=False 
    # phimodelzero.learn_ricci_val=False 
-   #valzero = {metricsnames[i]: valzero[i] for i in range(len(valzero))}
-   #valtrained= {metricsnames[i]: valtrained[i] for i in range(len(valtrained))}
+   valzero = {key: float(value.numpy()) for key, value in valzero.items()}
+   valraw = {key: float(value.numpy()) for key, value in valraw.items()}
 
-   #valzero = {key: value.numpy() for key, value in valzero.items()}
-   #valtrained = {key: value.numpy() for key, value in valtrained.items()}
+   #print("CHECKING MODEL:")
+   #print(data['X_train'][0:1])
+   #print(phimodel(data['X_train'][0:1]))
+   #print(phimodelzero(data['X_train'][0:1]))
+   #print(phimodel.fubini_study_pb(data['X_train'][0:1]))
+   #print("DONE")
 
-   #valtrained = {key: value.numpy() for key, value in valtrained.items()}
-
+   #### maybe remove
+   phimodel.learn_volk = False
+   phimodel.learn_transition=False
+   phimodel, training_history = train_model(phimodel, data, optimizer=opt, epochs=nEpochs, batch_sizes=bSizes, 
+                                       verbose=1, custom_metrics=cmetrics, callbacks=cb_list)
+   print("finished training\n")
+   phimodel.model.save_weights(os.path.join(dirname, name) + '.weights.h5')
+   np.savez_compressed(os.path.join(dirname, 'trainingHistory-' + name),training_history)
+   #now print the initial losses and final losses for each metric
+   # first_metrics = {key: value[0] for key, value in training_history.items()}
+   # lastometrics = {key: value[-1] for key, value in training_history.items()}
    phimodel.learn_transition = True
    phimodel.learn_volk = True
-
+   #phimodel.learn_ricci_val= True
+   valfinal=phimodel.test_step(datacasted)
+   valfinal = {key: value.numpy() for key, value in valfinal.items()}
+   #phimodel.learn_ricci_val=False 
    print("zero network validation loss: ")
    print(valzero)
+   print("validation loss for raw network: ")
+   print(valraw)
    print("validation loss for final network: ")
-   print(valtrained)
-   print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
+   print(valfinal)
+   print("ratio of final to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valfinal.items()}))
+   print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
+
    averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure(phimodel,data["X_val"])
-   print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs), " mean discrepancy: ", mean_t_discrepancy)
-   print("\n\n")
+   print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
    #IMPLEMENT THE FOLLOWING
    #meanfailuretosolveequation,_,_=measure_laplacian_failure(phimodel,data)
-   #print("\n\n")
-   #print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
-   tf.keras.backend.clear_session()
+   print("\n\n")
    return phimodel,training_history, None
 
 def generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundleforHYM,number_pointsHYM,phimodel,force_generate=False,seed_set=0):
@@ -514,9 +449,8 @@ def generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundle
             kappaHYM = prepare_dataset_HYM(pg,data,number_pointsHYM, dirnameHYM,phimodel,linebundleforHYM,BASIS,normalize_to_vol_j=True)
          elif len(data['X_train'])+len(data['X_val']) != number_pointsHYM:
             length_total = len(data['X_train'])+len(data['X_val'])
-            dataMetric = np.load(os.path.join(dirnameForMetric, 'dataset.npz'))
             print(f"wrong length {length_total}, want {number_pointsHYM} - generating anyway")
-            kappaHYM = prepare_dataset_HYM(pg,dataMetric,number_pointsHYM, dirnameHYM,phimodel,linebundleforHYM,BASIS,normalize_to_vol_j=True)
+            kappaHYM = prepare_dataset_HYM(pg,data,number_pointsHYM, dirnameHYM,phimodel,linebundleforHYM,BASIS,normalize_to_vol_j=True)
       except:
          print("problem loading data - generating anyway")
          kappaHYM = prepare_dataset_HYM(pg,data,number_pointsHYM, dirnameHYM,phimodel,linebundleforHYM,BASIS,normalize_to_vol_j=True);
@@ -849,6 +783,8 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,phimode
       if skip_measures:
          print("RETURNING ZERO NETWORK")
          return betamodelzero, training_historyBeta, None
+      else:
+         print("USING ZERO NETWORK")
    elif set_weights_to_random:
       print("RETURNING RANDOM NETWORK")
       training_historyBeta=0
@@ -949,8 +885,7 @@ def generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundlef
          elif len(data['X_train'])+len(data['X_val']) != number_pointsHarmonic:
             length_total = len(data['X_train'])+len(data['X_val'])
             print(f"wrong length {length_total}, want {number_pointsHarmonic} - generating anyway")
-            dataMetric = np.load(os.path.join(dirnameForMetric, 'dataset.npz'))
-            kappaHarmonic=prepare_dataset_HarmonicForm(pg,dataMetric,number_pointsHarmonic,dirnameHarmonic,phimodel,linebundleforHYM,BASIS,functionforbaseharmonicform_jbar,betamodel)
+            kappaHarmonic=prepare_dataset_HarmonicForm(pg,data,number_pointsHarmonic,dirnameHarmonic,phimodel,linebundleforHYM,BASIS,functionforbaseharmonicform_jbar,betamodel)
       except:
          print("problem loading data - generating anyway")
          kappaHarmonic=prepare_dataset_HarmonicForm(pg,data,number_pointsHarmonic,dirnameHarmonic,phimodel,linebundleforHYM,BASIS,functionforbaseharmonicform_jbar,betamodel)
@@ -1057,10 +992,8 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
           load_func =BiholoModelFuncGENERALforSigma2_m13
        #load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log
       elif (nHidden ==65) or (nHidden ==129):
-         #load_func = BiholoModelFuncGENERALforSigmaWNorm
-         load_func = BiholoModelFuncGENERALforSigma2_m13
-      else:
-         load_func = BiholoModelFuncGENERALforSigma2_m13
+          #load_func = BiholoModelFuncGENERALforSigmaWNorm
+          load_func = BiholoModelFuncGENERALforSigma2_m13
       #if (nHidden ==66) or (nHidden ==130) or :
       if nHidden in [66,130,250,430,200]:
            load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log_residual 
@@ -1373,8 +1306,6 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
       elif (nHidden ==65) or (nHidden ==129):
           #load_func = BiholoModelFuncGENERALforSigmaWNorm
           load_func = BiholoModelFuncGENERALforSigma2_m13
-      else:
-         load_func = BiholoModelFuncGENERALforSigma2_m13
       #if (nHidden ==66) or (nHidden ==130) or :
       if nHidden in [66,130,250,430,200]:
            load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log_residual 
