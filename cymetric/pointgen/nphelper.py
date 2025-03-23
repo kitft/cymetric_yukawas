@@ -328,6 +328,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
             delayed(_prepare_dataset_batched_for_mp)(point_gen, batch_n, ltails, rtails, seed)
             for seed in random_seeds
         )
+        gc.collect()
         
         # Collect results
         for pts, w, om, pb in results:
