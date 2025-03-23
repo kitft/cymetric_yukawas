@@ -114,30 +114,34 @@ def _prepare_dataset_batched_for_mp(point_gen, batch_n_p, ltails, rtails, seed :
     Returns:
         tuple: (points, weights, omega)
     """
-    new_np = int(round(batch_n_p/(1-ltails-rtails)))
-    import time
-    start_time = time.time()
-    if seed is not None:
-        point_gen._set_seed(seed)
-    pwo = point_gen.generate_point_weights(new_np, omega=True, selected_t_val=None, use_quadratic_method = True)
-    print("generate_point_weights took", time.time() - start_time, "seconds")
-    start_time = time.time()
-    if len(pwo) < new_np:
-        print(f"Generating more points as only recieved {len(pwo)} after asking for {new_np}")
-        new_np = int((new_np-len(pwo))/(len(pwo))*new_np + 100)
-        pwo2 = point_gen.generate_point_weights(new_np, omega=True, selected_t_val=None, use_quadratic_method = True)
-        pwo = np.concatenate([pwo, pwo2], axis=0)
-    new_np = len(pwo)
-    sorted_weights = np.sort(pwo['weight'])
-    lower_bound = sorted_weights[round(ltails*new_np)]
-    upper_bound = sorted_weights[round((1-rtails)*new_np)-1]
-    mask = np.logical_and(pwo['weight'] >= lower_bound, pwo['weight'] <= upper_bound)
-    weights = np.expand_dims(pwo['weight'][mask], -1)
-    omega = np.expand_dims(pwo['omega'][mask], -1)
-    omegasquared = np.real(omega * np.conj(omega))
-    points = pwo['point'][mask]
-    pullbacks = pwo['pullbacks'][mask]
-    gc.collect()
+    try:
+        new_np = int(round(batch_n_p/(1-ltails-rtails)))
+        import time
+        start_time = time.time()
+        if seed is not None:
+            point_gen._set_seed(seed)
+        pwo = point_gen.generate_point_weights(new_np, omega=True, selected_t_val=None, use_quadratic_method = True)
+        print("generate_point_weights took", time.time() - start_time, "seconds")
+        start_time = time.time()
+        if len(pwo) < new_np:
+            print(f"Generating more points as only recieved {len(pwo)} after asking for {new_np}")
+            new_np = int((new_np-len(pwo))/(len(pwo))*new_np + 100)
+            pwo2 = point_gen.generate_point_weights(new_np, omega=True, selected_t_val=None, use_quadratic_method = True)
+            pwo = np.concatenate([pwo, pwo2], axis=0)
+        new_np = len(pwo)
+        sorted_weights = np.sort(pwo['weight'])
+        lower_bound = sorted_weights[round(ltails*new_np)]
+        upper_bound = sorted_weights[round((1-rtails)*new_np)-1]
+        mask = np.logical_and(pwo['weight'] >= lower_bound, pwo['weight'] <= upper_bound)
+        weights = np.expand_dims(pwo['weight'][mask], -1)
+        omega = np.expand_dims(pwo['omega'][mask], -1)
+        omegasquared = np.real(omega * np.conj(omega))
+        points = pwo['point'][mask]
+        pullbacks = pwo['pullbacks'][mask]
+        gc.collect()
+    except Exception as e:
+        print("Exception in _prepare_dataset_batched_for_mp", e, "perhaps try again?")
+        raise e
     return points, weights, omegasquared, pullbacks
 
 
