@@ -295,16 +295,28 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
         # Use joblib for efficient parallel processing with numpy arrays
         from joblib import Parallel, delayed
         import multiprocessing
-        
-        n_cpus = multiprocessing.cpu_count() - 1
-        n_cpus = max(1, n_cpus)  # Ensure at least 1 CPU is used
+        n_cpus = 1
+        try:
+            # Check SLURM environment variables
+            slurm_cpus = os.environ.get('SLURM_CPUS_PER_TASK') or os.environ.get('SLURM_JOB_CPUS_PER_NODE')
+            if slurm_cpus:
+                available_cpus = int(slurm_cpus)-1
+                print(f"we are on a SLURM job, with {available_cpus} CPUs available, using that many (nb we have subtracted 1)")
+                n_cpus = available_cpus
+            else:
+                n_cpus = multiprocessing.cpu_count() - 1
+                n_cpus = max(1, n_cpus)  # Ensure at least 1 CPU is used
+                print(f"we are not on a SLURM job, using all available CPUs (nb we have subtracted 1): {n_cpus}")
+        except Exception as e:
+            print("Exception in core counting, falling back to 1 CPU", e)
+            pass
         numpy_seed = np.random.get_state()[1][0]# use the same seed as numpy for the jax seed
 
         n_batches = (n_p//10000) if n_p//10000 > 0 else 1
         batch_n = n_p//n_batches
 
         random_seeds = np.random.RandomState(numpy_seed).randint(0, 2**32, size=n_batches)
-        print(f"attempting to parallelise {n_batches} batches over {n_cpus} processes, each doing {batch_n} samples (so *8)") 
+        print(f"attempting to parallelise {n_batches} batches over at most {n_cpus} processes, each doing {batch_n} points (so /8 random sections). Each batch has a random seed.") 
         # Execute the batch processing in parallel
         results = Parallel(n_jobs=n_cpus, prefer="processes")(
             delayed(_prepare_dataset_batched_for_mp)(point_gen, batch_n, ltails, rtails, seed)
