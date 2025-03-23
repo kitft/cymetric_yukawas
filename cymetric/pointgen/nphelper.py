@@ -8,6 +8,7 @@ import itertools as it
 from sympy import LeviCivita
 from cymetric.config import real_dtype, complex_dtype
 import cProfile
+import gc
 import pstats
 import os
 
@@ -136,6 +137,7 @@ def _prepare_dataset_batched_for_mp(point_gen, batch_n_p, ltails, rtails, seed :
     omegasquared = np.real(omega * np.conj(omega))
     points = pwo['point'][mask]
     pullbacks = pwo['pullbacks'][mask]
+    gc.collect()
     return points, weights, omegasquared, pullbacks
 
 
