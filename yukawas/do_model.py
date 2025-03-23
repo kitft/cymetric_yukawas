@@ -468,10 +468,16 @@ if __name__ == '__main__':
             raise ValueError("Invalid data size: " + npoints_config)
     #tr_batchsize = 10
     #SecondBSize = 10
-    nEpochsPhi = 1
-    nEpochsBeta = 1
-    nEpochsSigma = 1
-    nEpochsSigma2 = 1
+    if '5epochs' in sys.argv[1:]:
+        nEpochsPhi = 5
+        nEpochsBeta = 5
+        nEpochsSigma = 5
+        nEpochsSigma2 = 5
+    else:
+        nEpochsPhi = 1
+        nEpochsBeta = 1
+        nEpochsSigma = 1
+        nEpochsSigma2 = 1
 
     if integrate_or_run == 'integrate':
         depthPhi = 2
