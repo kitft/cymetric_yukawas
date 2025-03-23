@@ -325,7 +325,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
         random_seeds = np.random.RandomState(numpy_seed).randint(0, 2**32, size=n_batches)
         print(f"attempting to parallelise {n_batches} batches over at most {n_cpus} processes, each doing {batch_n} points (so /8 random sections). Each batch has a random seed.") 
         # Execute the batch processing in parallel
-        results = Parallel(n_jobs=n_cpus, prefer="processes")(
+        results = Parallel(n_jobs=n_cpus, prefer="processes", verbose=10)(
             delayed(_prepare_dataset_batched_for_mp)(point_gen, batch_n, ltails, rtails, seed)
             for seed in random_seeds
         )
