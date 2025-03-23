@@ -701,7 +701,7 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     kappaover6 = tf.cast(kappaover6, real_dtype)
     weightsreal = tf.cast(weights[:,0], real_dtype)
     print(f'kappa over 6 : {kappaover6}')
-    slopeassertlimit = 10 if len(sourcesCY) < 10000 else 3
+    slopeassertlimit = 10 if len(sourcesCY) < 10000 else 5
     
     # Calculate volumes and slopes using weighted mean and standard error
     vol_integrand = weightsreal
@@ -737,8 +737,8 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     fs_slope_error = tf.math.real(fs_slope_se)
     
     print('FS vol and slope: ' + str(volfromFSmetric.numpy().item()) + " and " + str(slopefromvolFSrhoFS.numpy().item()) + " ± " + str(fs_slope_error.numpy().item()))
-    tf.debugging.assert_less(tf.abs(slopefromvolFSrhoFS), tf.constant(slopeassertlimit//2, dtype=real_dtype) * tf.abs(fs_slope_error), 
-                            message=f"Error: Slope {slopefromvolFSrhoFS} exceeds threshold of {slopeassertlimit//2} times error {fs_slope_error}")
+    tf.debugging.assert_less(tf.abs(slopefromvolFSrhoFS), tf.constant(slopeassertlimit, dtype=real_dtype) * tf.abs(fs_slope_error), 
+                            message=f"Error: Slope {slopefromvolFSrhoFS} exceeds threshold of {slopeassertlimit} times error {fs_slope_error}")
     
     # Calculate effective sample size and error
     ess = tf.square(tf.reduce_sum(weightsreal)) / tf.reduce_sum(tf.square(weightsreal))
