@@ -570,7 +570,9 @@ if __name__ == '__main__':
     print("betamodel_config: ", betamodel_config)
     print("sigmamodel_config: ", sigmamodel_config)
     print("sigma2model_config: ", sigma2model_config)
-
+    use_jax = True
+    use_quadratic_method = False
+    do_multiprocessing = False
     if 'noorbit' in sys.argv[1:]:
         orbit_P1s = False
     elif 'orbitlast' in sys.argv[1:]:
@@ -583,8 +585,11 @@ if __name__ == '__main__':
         orbit_P1s = 0
     elif 'orbit' in sys.argv[1:]:
         orbit_P1s = True
-    else:
-        orbit_P1s = True
+    elif 'quadraticsampler' in sys.argv[1:]:
+        orbit_P1s = False
+        use_quadratic_method = True
+        use_jax = False
+        do_multiprocessing = True
     print(f"Orbiting over P1s")
 
 
@@ -659,7 +664,7 @@ if __name__ ==  '__main__':
     
     
     
-    generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,force_generate=force_generate_phi,seed_set=seed_for_gen,average_selected_t = orbit_P1s)
+    generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,force_generate=force_generate_phi,seed_set=seed_for_gen,average_selected_t = orbit_P1s, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing)
     if train_phi:
         #phimodel,training_history=train_and_save_nn(manifold_name_and_data,depthPhi,widthPhi,nEpochsPhi,bSizes=[64,tr_batchsize],lRate=lRatePhi) 
         phimodel,training_history, measure_phi=train_and_save_nn(manifold_name_and_data,phimodel_config,use_zero_network=use_zero_network_phi, unique_name=unique_name_phi)
@@ -755,7 +760,7 @@ if __name__ ==  '__main__':
     purge_dicts_and_mem()
     
 
-    pg,kmoduli=generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,n_to_integrate,seed_set=seed_for_gen,force_generate=force_generate_eval,average_selected_t = orbit_P1s)
+    pg,kmoduli=generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,n_to_integrate,seed_set=seed_for_gen,force_generate=force_generate_eval,average_selected_t = orbit_P1s, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing)
     dirnameEval = os.path.join(data_path,type_folder,f'{manifold_name}_pg_for_eval_with_{unique_id_or_coeff}')
     if not os.path.exists(dirnameEval):
         raise FileNotFoundError(f"Directory {dirnameEval} not found.")

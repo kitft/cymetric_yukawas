@@ -64,7 +64,7 @@ class PointGenerator:
         >>> pg.prepare_basis(dir_name)
     """
 
-    def __init__(self, monomials, coefficients, kmoduli, ambient, vol_j_norm=None, verbose=2, backend='multiprocessing', use_jax=True):
+    def __init__(self, monomials, coefficients, kmoduli, ambient, vol_j_norm=None, verbose=2, backend='multiprocessing', use_jax=True, use_quadratic_method = False, do_multiprocessing = False, max_iter = 10, tol = 1e-30):
         r"""The PointGenerator uses the *joblib* module to parallelize 
         computations. 
 
@@ -86,6 +86,10 @@ class PointGenerator:
             backend (str, optional): Backend for Parallel. Defaults to
                 'multiprocessing'. 'loky' makes issues with pickle5.
         """
+        if use_jax and use_quadratic_method:
+            print("use_jax and use_quadratic_method cannot both be True")
+            print("setting use_jax to False")
+            use_jax = False
         if verbose == 1:
             level = logging.DEBUG
         elif verbose == 2:
@@ -93,12 +97,16 @@ class PointGenerator:
         else:
             level = logging.WARNING
         logger.setLevel(level=level)
+        self.use_jax = use_jax
+        self.use_quadratic_method = use_quadratic_method
+        self.do_multiprocessing = do_multiprocessing
         self.monomials = monomials.astype(int)
         self.coefficients = coefficients
         self.kmoduli = kmoduli
         self.ambient = ambient.astype(int)
         self.degrees = ambient + 1
         self.nhyper = 1
+        self.dimCY = np.sum(self.ambient)-self.nhyper
         self.nmonomials, self.ncoords = monomials.shape
         self.nfold = np.sum(self.ambient) - self.nhyper
         self.backend = backend
@@ -126,6 +134,10 @@ class PointGenerator:
         if use_jax:
             import cymetric.pointgen.pointgen_jax as pointgen_jax
             self.pointgen_jax = pointgen_jax.JAXPointGenerator(self)
+
+        if use_quadratic_method:
+            from cymetric.pointgen.pointgen_jax_gmpy2 import JAXPointGeneratorQuadratic
+            self.pointgen_jax_quadratic = JAXPointGeneratorQuadratic(self, max_iter = max_iter, tol = tol)
             
 
     @staticmethod
@@ -873,7 +885,31 @@ class PointGenerator:
         self.BASIS['QB0'] = self.monomials
         self.BASIS['QF0'] = self.coefficients
 
-    def generate_points(self, n_p, nproc=-1, batch_size=5000, use_jax=True, process_parallel=False, selected_t_val=None):
+    def generate_points_quadratic(self, n_p):
+        r"""Generates complex points on the CY.
+
+        The points are automatically scaled, such that the largest 
+        coordinate in each projective space is 1+0.j.
+
+        Args:
+            n_p (int): # of points.
+            nproc (int, optional): # of jobs used. Defaults to -1. Then
+                uses all available resources.
+            batch_size (int, optional): batch_size of Parallel. 
+                Defaults to 5000.
+            parallel (bool, optional): Whether to use parallel processing.
+                Defaults to True.
+
+        Returns:
+            ndarray[(n_p, ncoords), np.complex128]: rescaled points
+        """
+        print(f"using JAX and the quadratic sampling method")
+        numpy_seed = np.random.get_state()[1][0]# use the same seed as numpy for the jax seed
+        #points = self.pointgen_jax.generate_points_jax(n_p, numpy_seed, selected_t_val=selected_t_val)
+        points = self.pointgen_jax_quadratic.generate_points_jax(n_p, numpy_seed)
+        return points
+
+    def generate_points(self, n_p, nproc=-1, batch_size=5000, use_jax=True, process_parallel=False, selected_t_val=None, use_quadratic_method = False):
         r"""Generates complex points on the CY.
 
         The points are automatically scaled, such that the largest 
@@ -895,6 +931,9 @@ class PointGenerator:
             print(f"using JAX: solving roots with jnp.roots on P1: {selected_t_val}")
             numpy_seed = np.random.get_state()[1][0]# use the same seed as numpy for the jax seed
             points = self.pointgen_jax.generate_points_jax(n_p, numpy_seed, selected_t_val=selected_t_val)
+            return points
+        if use_quadratic_method:
+            points = self.generate_points_quadratic(n_p)
             return points
         else:
             max_ts = np.max(self.selected_t[selected_t_val])
@@ -1043,7 +1082,7 @@ class PointGenerator:
             for m, c in zip(self.root_monomials_Q, self.root_factors_Q)]
         return np.array([p * t + q for t in np.roots(all_sums)])
 
-    def generate_point_weights(self, n_pw, omega=False, normalize_to_vol_j=False, selected_t_val=None):
+    def generate_point_weights(self, n_pw, omega=False, normalize_to_vol_j=False, selected_t_val=None, use_quadratic_method=False, get_pullbacks=False, seed : int = None):
         r"""Generates a numpy dictionary of point weights.
 
         Args:
@@ -1055,32 +1094,71 @@ class PointGenerator:
         Returns:
             np.dict: point weights
         """
-        if selected_t_val is None:
-            print("NOT GIVEN SELECTED T: USING DEFAULT")
-            selected_t_val = np.argmax(self.ambient)
-        data_types = [
-            ('point', np.complex128, self.ncoords),
-            ('weight', np.float64)
-        ]
-        data_types = data_types + [('omega', np.complex128)] if omega else data_types
-        dtype = np.dtype(data_types)
-        points = self.generate_points(n_pw, selected_t_val=selected_t_val)
+        if not use_quadratic_method:
+            if selected_t_val is None:
+                print("NOT GIVEN SELECTED T: USING DEFAULT")
+                selected_t_val = np.argmax(self.ambient)
+            data_types = [
+                ('point', np.complex128, self.ncoords),
+                ('weight', np.float64)
+            ]
+            data_types = data_types + [('omega', np.complex128)] if omega else data_types
+            dtype = np.dtype(data_types)
+            points = self.generate_points(n_pw, selected_t_val=selected_t_val)
 
-        #Throw away points for which the patch is ambiguous, since too many coordiantes are too close to 1
-        inv_one_mask = np.isclose(points, complex(1, 0))
-        bad_indices = np.where(np.sum(inv_one_mask, -1) != len(self.kmoduli))
-        point_mask = np.ones(len(points), dtype=bool)
-        point_mask[bad_indices] = False
-        points = points[point_mask]
+            #Throw away points for which the patch is ambiguous, since too many coordiantes are too close to 1
+            inv_one_mask = np.isclose(points, complex(1, 0))
+            bad_indices = np.where(np.sum(inv_one_mask, -1) != len(self.kmoduli))
+            point_mask = np.ones(len(points), dtype=bool)
+            point_mask[bad_indices] = False
+            
+            # Also throw away NaN points
+            nan_indices = np.where(np.isnan(points).any(axis=1))
+            if len(nan_indices[0]) > 0:
+                print(f"Warning: Found {len(nan_indices[0])} points/({len(points)}) with NaN values. These will be discarded.")
+                point_mask[nan_indices] = False
+                
+            points = points[point_mask]
 
-        n_p = len(points)
-        n_p = n_p if n_p < n_pw else n_pw
-        weights = self.point_weight(points, normalize_to_vol_j=normalize_to_vol_j, selected_t_val=selected_t_val)
-        point_weights = np.zeros((n_p), dtype=dtype)
-        point_weights['point'], point_weights['weight'] = points[0:n_p], weights[0:n_p]
-        if omega:
+            n_p = len(points)
+            n_p = n_p if n_p < n_pw else n_pw
+            weights = self.point_weight(points, normalize_to_vol_j=normalize_to_vol_j, selected_t_val=selected_t_val)
+            point_weights = np.zeros((n_p), dtype=dtype)
+            point_weights['point'], point_weights['weight'] = points[0:n_p], weights[0:n_p]
+            if omega:
+                point_weights['omega'] = self.holomorphic_volume_form(points[0:n_p])
+            return point_weights
+        else:
+            data_types = [
+                ('point', np.complex128, self.ncoords),
+                ('weight', np.float64),
+                ('pullbacks', np.complex128, (3,self.ncoords))
+            ]
+            data_types = data_types + [('omega', np.complex128)] if omega else data_types
+            dtype = np.dtype(data_types)
+            points = self.generate_points_quadratic(n_pw)
+            #print("points: ", points)
+            
+            pullbacks = self.pullbacks(points)
+
+            #Throw away points for which the patch is ambiguous, since too many coordiantes are too close to 1
+            inv_one_mask = np.isclose(points, complex(1, 0))
+            bad_indices = np.where(np.sum(inv_one_mask, -1) != len(self.kmoduli))
+            point_mask = np.ones(len(points), dtype=bool)
+            point_mask[bad_indices] = False
+            points = points[point_mask]
+            n_p = len(points)
+
+            point_weights = np.zeros((n_p), dtype=dtype)
             point_weights['omega'] = self.holomorphic_volume_form(points[0:n_p])
-        return point_weights
+            omegasquared = np.abs(point_weights['omega'])**2
+
+            n_p = n_p if n_p < n_pw else n_pw
+            weights = self.point_weight_quadratic(points, omegasquared, pullbacks, normalize_to_vol_j=normalize_to_vol_j)
+            point_weights['point'], point_weights['weight'] = points[0:n_p], weights[0:n_p]
+            point_weights['pullbacks'] = pullbacks[0:n_p]
+            return point_weights
+
     def holomorphic_volume_form(self, points, j_elim=None, use_jax=True):
         r"""We compute the holomorphic volume form
         at all points by solving the residue theorem:
@@ -1259,6 +1337,31 @@ class PointGenerator:
         dQdz = np.multiply(self.BASIS['DQDZF0'], dQdz)
         dQdz = np.add.reduce(dQdz, axis=-1)
         return dQdz
+
+    def point_weight_quadratic(self, points, omegasquared, pullbacks, normalize_to_vol_j=False):
+        r"""We compute the weight/mass of each point:
+
+        .. math::
+
+            w &= \frac{d\text{Vol}_\text{cy}}{dA}|_p \\
+              &\sim \frac{|\Omega|^2}{\det(g^\text{FS}_{ab})}|_p
+
+        the weight depends on the distribution of free parameters during 
+        point sampling. We employ a theorem due to Shiffman and Zelditch. 
+        See also: [9803052]."""
+
+        FS_shiffman = self.pointgen_jax_quadratic.pullback_all_3_spaces_vmap(points, pullbacks)
+        print("FS_shiffman: ", FS_shiffman)
+        print("omegasquared: ", omegasquared)
+        weights = np.real(omegasquared / FS_shiffman)
+        if normalize_to_vol_j:
+            fs_ref = self.fubini_study_metrics(points, vol_js=np.ones_like(self.kmoduli))
+            fs_ref_pb = np.einsum('xai,xij,xbj->xab', pullbacks, fs_ref, np.conj(pullbacks))
+            norm_fac = self.vol_j_norm / np.mean(np.real(np.linalg.det(fs_ref_pb)))
+            weights = norm_fac * weights
+        return weights
+
+
 
     def point_weight(self, points, normalize_to_vol_j=False, j_elim=None, selected_t_val=None):
         r"""We compute the weight/mass of each point:

@@ -9,6 +9,7 @@ from sympy import LeviCivita
 from cymetric.config import real_dtype, complex_dtype
 import cProfile
 import pstats
+import os
 
 import math
 
@@ -106,6 +107,38 @@ def _prepare_dataset_batched(point_gen, batch_n_p, ltails, rtails, selected_t_va
     pullbacks = point_gen.pullbacks(points)
     return points, weights, omega, pullbacks
 
+def _prepare_dataset_batched_for_mp(point_gen, batch_n_p, ltails, rtails, seed : int = None):
+    r"""Prepares a batch of data from point_gen without splitting or normalizing.
+
+    Returns:
+        tuple: (points, weights, omega)
+    """
+    new_np = int(round(batch_n_p/(1-ltails-rtails)))
+    import time
+    start_time = time.time()
+    if seed is not None:
+        point_gen._set_seed(seed)
+    pwo = point_gen.generate_point_weights(new_np, omega=True, selected_t_val=None, use_quadratic_method = True)
+    print("generate_point_weights took", time.time() - start_time, "seconds")
+    start_time = time.time()
+    if len(pwo) < new_np:
+        print(f"Generating more points as only recieved {len(pwo)} after asking for {new_np}")
+        new_np = int((new_np-len(pwo))/(len(pwo))*new_np + 100)
+        pwo2 = point_gen.generate_point_weights(new_np, omega=True, selected_t_val=None, use_quadratic_method = True)
+        pwo = np.concatenate([pwo, pwo2], axis=0)
+    new_np = len(pwo)
+    sorted_weights = np.sort(pwo['weight'])
+    print("sorted_weights: ", sorted_weights)
+    lower_bound = sorted_weights[round(ltails*new_np)]
+    upper_bound = sorted_weights[round((1-rtails)*new_np)-1]
+    mask = np.logical_and(pwo['weight'] >= lower_bound, pwo['weight'] <= upper_bound)
+    weights = np.expand_dims(pwo['weight'][mask], -1)
+    omega = np.expand_dims(pwo['omega'][mask], -1)
+    omegasquared = np.real(omega * np.conj(omega))
+    points = pwo['point'][mask]
+    pullbacks = pwo['pullbacks'][mask]
+    return points, weights, omegasquared, pullbacks
+
 
 def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltails=0, rtails=0, normalize_to_vol_j=True,average_selected_t = False, shuffle_points = True):
     r"""Prepares training and validation data from point_gen in batches.
@@ -130,6 +163,11 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
     Returns:
         np.float: kappa = vol_k / vol_cy computed from the combined data.
     """
+    use_quadratic_method = point_gen.use_quadratic_method
+    use_jax = point_gen.use_jax
+    do_multiprocessing = point_gen.do_multiprocessing
+    if use_quadratic_method ==True and do_multiprocessing ==False:
+        raise ValueError("use_quadratic_method is True, but do_multiprocessing is False. This is not allowed.")
     # Set USE_PROFILER=1 in environment to enable
     use_profiler = os.environ.get('USE_PROFILER', '0') == '1'
     number_ambients = len(point_gen.ambient)
@@ -139,87 +177,157 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
     except:
         print(f"Failed to create directory {dirname}: continuing?")
         pass
-    if n_batches is None and n_p > 300000:
-        n_batches = n_p // 300000 if n_p // 300000 > 0 else 1
-    elif n_batches is None:
-        n_batches = 1
-    if average_selected_t==True:
-        # Ensure n_batches is divisible by number_ambients
-        if n_batches % number_ambients != 0:
-            n_batches = n_batches * number_ambients // math.gcd(n_batches, number_ambients)
-        fixed_selected_t_val = None
-    elif isinstance(average_selected_t, int) and 0 <= average_selected_t < number_ambients:
-        fixed_selected_t_val = average_selected_t
-    elif average_selected_t==False:
-        fixed_selected_t_val = np.argmax(point_gen.ambient)
-    else:
-        raise ValueError("average_selected_t must be a boolean or an integer between 0 and number_ambients-1, inclusive.")
-        
-    if n_batches > 1:
-        print(f'Generating {n_p} points using {n_batches} batches')
-    base = n_p // n_batches
-    rem = n_p % n_batches
-    all_points, all_weights, all_omega, all_pullbacks = [], [], [], []
-    
-    for i in range(n_batches):
-        selected_t_val = (i % number_ambients) if (average_selected_t==True) else fixed_selected_t_val
-        if n_batches > 1:
-            print(f'Generating {base + (1 if i < rem else 0)} points on {i}th batch with solving for P1 ={selected_t_val} of ({(number_ambients)})')
-        else:
-            print(f'Generating {n_p} points with solving for P1 ={selected_t_val} of ({(number_ambients)}). No batching.')
-        batch_n = base + (1 if i < rem else 0)
-        
-        if i == 0 and use_profiler:
-            # Profile the function
-            profiler = cProfile.Profile()
-            profiler.enable()
-            pts, w, om, pb = _prepare_dataset_batched(
-                point_gen, batch_n, ltails, rtails, selected_t_val=selected_t_val)
-            profiler.disable()
-            
-            # Print sorted results
-            stats = pstats.Stats(profiler).sort_stats('cumtime')
-            print("--------------------------------PROFILING--------------------------------")
-            stats.print_stats(20)  
-            print("--------------------------------PROFILED--------------------------------")
-        else:
-            pts, w, om, pb = _prepare_dataset_batched(
-                point_gen, batch_n, ltails, rtails, selected_t_val=selected_t_val)
-        all_points.append(pts)
-        all_weights.append(w)
-        all_omega.append(om)
-        all_pullbacks.append(pb)
-    # Concatenate all batches
-    if shuffle_points:
-        print("Shuffling points")
-        # Process batches in groups of 4
-        for i in range(0, len(all_points), 4):
-            end_idx = min(i + 4, len(all_points))
-            # Concatenate this group of batches
-            group_points = np.concatenate(all_points[i:end_idx], axis=0)
-            group_weights = np.concatenate(all_weights[i:end_idx], axis=0)
-            group_omega = np.concatenate(all_omega[i:end_idx], axis=0)
-            group_pullbacks = np.concatenate(all_pullbacks[i:end_idx], axis=0)
-            
-            # Shuffle the concatenated data
-            indices = np.random.permutation(len(group_points))
-            group_points = group_points[indices]
-            group_weights = group_weights[indices]
-            group_omega = group_omega[indices]
-            group_pullbacks = group_pullbacks[indices]
-            
-            # Replace the original batches with equal-sized chunks of the shuffled data
-            start_idx = 0
-            for j in range(i, end_idx):
-                batch_size = len(all_points[j])
-                all_points[j] = group_points[start_idx:start_idx + batch_size]
-                all_weights[j] = group_weights[start_idx:start_idx + batch_size]
-                all_omega[j] = group_omega[start_idx:start_idx + batch_size]
-                all_pullbacks[j] = group_pullbacks[start_idx:start_idx + batch_size]
-                start_idx += batch_size
-    else:
+
+    if not do_multiprocessing:
+        if n_batches is None and n_p > 300000:
+            n_batches = n_p // 300000 if n_p // 300000 > 0 else 1
+        elif n_batches is None:
+            n_batches = 1
         if average_selected_t==True:
-            raise ValueError("Shuffling points must be done when average_selected_t is True")
+            # Ensure n_batches is divisible by number_ambients
+            if n_batches % number_ambients != 0:
+                n_batches = n_batches * number_ambients // math.gcd(n_batches, number_ambients)
+            fixed_selected_t_val = None
+        elif isinstance(average_selected_t, int) and 0 <= average_selected_t < number_ambients:
+            fixed_selected_t_val = average_selected_t
+        elif average_selected_t==False:
+            fixed_selected_t_val = np.argmax(point_gen.ambient)
+        else:
+            raise ValueError("average_selected_t must be a boolean or an integer between 0 and number_ambients-1, inclusive.")
+
+        if n_batches > 1:
+            print(f'Generating {n_p} points using {n_batches} batches')
+        base = n_p // n_batches
+        rem = n_p % n_batches
+        all_points, all_weights, all_omega, all_pullbacks = [], [], [], []
+    
+        for i in range(n_batches):
+            selected_t_val = (i % number_ambients) if (average_selected_t==True) else fixed_selected_t_val
+            if n_batches > 1:
+                print(f'Generating {base + (1 if i < rem else 0)} points on {i}th batch with solving for P1 ={selected_t_val} of ({(number_ambients)})')
+            else:
+                print(f'Generating {n_p} points with solving for P1 ={selected_t_val} of ({(number_ambients)}). No batching.')
+            batch_n = base + (1 if i < rem else 0)
+
+            if i == 0 and use_profiler:
+                # Profile the function
+                profiler = cProfile.Profile()
+                profiler.enable()
+                pts, w, om, pb = _prepare_dataset_batched(
+                    point_gen, batch_n, ltails, rtails, selected_t_val=selected_t_val)
+                profiler.disable()
+
+                # Print sorted results
+                stats = pstats.Stats(profiler).sort_stats('cumtime')
+                print("--------------------------------PROFILING--------------------------------")
+                stats.print_stats(20)  
+                print("--------------------------------PROFILED--------------------------------")
+            else:
+                pts, w, om, pb = _prepare_dataset_batched(
+                    point_gen, batch_n, ltails, rtails, selected_t_val=selected_t_val)
+            all_points.append(pts)
+            all_weights.append(w)
+            all_omega.append(om)
+            all_pullbacks.append(pb)
+        # Concatenate all batches
+        if shuffle_points:
+            print("Shuffling points")
+            # Process batches in groups of 4
+            for i in range(0, len(all_points), 4):
+                end_idx = min(i + 4, len(all_points))
+                # Concatenate this group of batches
+                group_points = np.concatenate(all_points[i:end_idx], axis=0)
+                group_weights = np.concatenate(all_weights[i:end_idx], axis=0)
+                group_omega = np.concatenate(all_omega[i:end_idx], axis=0)
+                group_pullbacks = np.concatenate(all_pullbacks[i:end_idx], axis=0)
+
+                # Shuffle the concatenated data
+                indices = np.random.permutation(len(group_points))
+                group_points = group_points[indices]
+                group_weights = group_weights[indices]
+                group_omega = group_omega[indices]
+                group_pullbacks = group_pullbacks[indices]
+
+                # Replace the original batches with equal-sized chunks of the shuffled data
+                start_idx = 0
+                for j in range(i, end_idx):
+                    batch_size = len(all_points[j])
+                    all_points[j] = group_points[start_idx:start_idx + batch_size]
+                    all_weights[j] = group_weights[start_idx:start_idx + batch_size]
+                    all_omega[j] = group_omega[start_idx:start_idx + batch_size]
+                    all_pullbacks[j] = group_pullbacks[start_idx:start_idx + batch_size]
+                    start_idx += batch_size
+        else:
+            if average_selected_t==True:
+                raise ValueError("Shuffling points must be done when average_selected_t is True")
+
+    elif do_multiprocessing:
+        print("Using multiprocessing with fork")
+        # Set JAX to use only 1 thread per process to avoid oversubscription
+        # Limit ourselves to single-threaded jax/xla operations to avoid thrashing. See
+        # https://github.com/google/jax/issues/743.
+        os.environ["XLA_FLAGS"] = "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1"
+        
+        all_points, all_weights, all_omega, all_pullbacks = [], [], [], []
+        n_batches = (n_p//100000) if n_p//100000 > 0 else 1
+        batch_n = n_p//n_batches
+
+        # import pickle
+        # import cloudpickle
+        # pickle.dumps = cloudpickle.dumps
+        # pickle.loads = cloudpickle.loads
+        # pickle.Pickler = cloudpickle.Pickler
+        # from multiprocessing import reduction
+        # reduction.ForkingPickler = cloudpickle.Pickler
+        # import multiprocessing
+        # # Replace the default serializer
+        # #ForkingPickler.dumps = cloudpickle.dumps
+        # # print(f"Generating {n_p} points using {n_batches} batches, and with {n_cpus} CPUs")
+        # try:
+        #     multiprocessing.set_start_method('fork', force=False)
+        # except Exception as e:
+        #     print("Failed to set start method to fork, error: ", e)
+        # from contextlib import nullcontext
+        #with nullcontext():
+        #Import cloudpickle
+        #Import multiprocessing as mp
+        #From multiprocessing.reduction import ForkingPickler
+        #Import numpy as np
+        # Use joblib for efficient parallel processing with numpy arrays
+        from joblib import Parallel, delayed
+        import multiprocessing
+        
+        n_cpus = multiprocessing.cpu_count() - 1
+        n_cpus = max(1, n_cpus)  # Ensure at least 1 CPU is used
+        numpy_seed = np.random.get_state()[1][0]# use the same seed as numpy for the jax seed
+        random_seeds = np.random.RandomState(numpy_seed).randint(0, 2**32, size=10)
+        print(f"attempting to parallelise {n_batches} batches over {n_cpus} processes, each doing {batch_n} samples (so *8)") 
+        # Execute the batch processing in parallel
+        results = Parallel(n_jobs=n_cpus, prefer="processes")(
+            delayed(_prepare_dataset_batched_for_mp)(point_gen, batch_n, ltails, rtails, seed)
+            for seed in random_seeds
+        )
+        
+        # Collect results
+        for pts, w, om, pb in results:
+            all_points.append(pts)
+            all_weights.append(w)
+            all_omega.append(om)
+            all_pullbacks.append(pb)
+        # Not using multiprocessing pool
+        # results = []
+        # for _ in range(n_batches):
+        #     result = _prepare_dataset_batched_for_mp(point_gen, batch_n, ltails, rtails)
+        #     results.append(result)
+            
+        # # Unpack results
+        # for pts, w, om, pb in results:
+        #     all_points.append(pts)
+        #     all_weights.append(w)
+        #     all_omega.append(om)
+        #     all_pullbacks.append(pb)
+
+        os.environ["XLA_FLAGS"] = ""
     
     all_points = np.concatenate(all_points, axis=0)
     all_weights = np.concatenate(all_weights, axis=0)

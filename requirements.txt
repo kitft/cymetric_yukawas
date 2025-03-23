@@ -11,3 +11,5 @@ psutil
 jax
 wandb
 dotenv
+cython
+gmpy2
