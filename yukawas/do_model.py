@@ -639,7 +639,7 @@ do_extra_stuff_for_integration = True
 
 if __name__ ==  '__main__':
 
-    unique_id_or_coeff = free_coefficient
+    unique_id_or_coeff = free_coefficient_str
     coefficientsTQ = get_coefficients_here(free_coefficient)
     manifold_name_and_data = (coefficientsTQ, kmoduliTQ, ambientTQ, monomialsTQ, type_folder, unique_id_or_coeff, manifold_name, data_path)
     

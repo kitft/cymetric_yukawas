@@ -318,7 +318,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
         numpy_seed = np.random.get_state()[1][0]# use the same seed as numpy for the jax seed
 
         n_batches = (n_p//10000) if n_p//10000 > 0 else 1
-        n_batches = n_cpus*(int(np.ceil(n_batches/n_cpus)))
+        n_batches = n_cpus*(int(np.ceil(n_batches/n_cpus))) if n_p>10000 else n_batches
         batch_n = n_p//n_batches
 
         random_seeds = np.random.RandomState(numpy_seed).randint(0, 2**32, size=n_batches)
