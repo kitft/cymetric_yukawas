@@ -128,7 +128,6 @@ def _prepare_dataset_batched_for_mp(point_gen, batch_n_p, ltails, rtails, seed :
         pwo = np.concatenate([pwo, pwo2], axis=0)
     new_np = len(pwo)
     sorted_weights = np.sort(pwo['weight'])
-    print("sorted_weights: ", sorted_weights)
     lower_bound = sorted_weights[round(ltails*new_np)]
     upper_bound = sorted_weights[round((1-rtails)*new_np)-1]
     mask = np.logical_and(pwo['weight'] >= lower_bound, pwo['weight'] <= upper_bound)
@@ -313,6 +312,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
         numpy_seed = np.random.get_state()[1][0]# use the same seed as numpy for the jax seed
 
         n_batches = (n_p//10000) if n_p//10000 > 0 else 1
+        n_batches = n_cpus*(int(np.ceil(n_batches/n_cpus)))
         batch_n = n_p//n_batches
 
         random_seeds = np.random.RandomState(numpy_seed).randint(0, 2**32, size=n_batches)

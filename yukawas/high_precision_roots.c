@@ -9720,7 +9720,7 @@ static PyObject *__pyx_pf_20high_precision_roots_20find_roots_vectorized(CYTHON_
   /* "high_precision_roots.pyx":222
  * 
  *     # Refine with high precisionnewton_refine_root_gmpy2
- *     return batch_refine_roots_gmpy2(coeffs_batch, initial_roots_batch, max_iter = max_iter), initial_roots_batch             # <<<<<<<<<<<<<<
+ *     return batch_refine_roots_gmpy2(coeffs_batch, initial_roots_batch, max_iter = max_iter)#,i initial_roots_batch             # <<<<<<<<<<<<<<
  * def batch_eval_polynomial_gmpy2(coeffs, roots):
  *     """Evaluate a polynomial at multiple roots using gmpy2 precision"""
  */
@@ -9743,16 +9743,8 @@ static PyObject *__pyx_pf_20high_precision_roots_20find_roots_vectorized(CYTHON_
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 222, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_GIVEREF(__pyx_t_7);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_7)) __PYX_ERR(0, 222, __pyx_L1_error);
-  __Pyx_INCREF(__pyx_v_initial_roots_batch);
-  __Pyx_GIVEREF(__pyx_v_initial_roots_batch);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_v_initial_roots_batch)) __PYX_ERR(0, 222, __pyx_L1_error);
+  __pyx_r = __pyx_t_7;
   __pyx_t_7 = 0;
-  __pyx_r = __pyx_t_2;
-  __pyx_t_2 = 0;
   goto __pyx_L0;
 
   /* "high_precision_roots.pyx":201
@@ -9780,7 +9772,7 @@ static PyObject *__pyx_pf_20high_precision_roots_20find_roots_vectorized(CYTHON_
 
 /* "high_precision_roots.pyx":223
  *     # Refine with high precisionnewton_refine_root_gmpy2
- *     return batch_refine_roots_gmpy2(coeffs_batch, initial_roots_batch, max_iter = max_iter), initial_roots_batch
+ *     return batch_refine_roots_gmpy2(coeffs_batch, initial_roots_batch, max_iter = max_iter)#,i initial_roots_batch
  * def batch_eval_polynomial_gmpy2(coeffs, roots):             # <<<<<<<<<<<<<<
  *     """Evaluate a polynomial at multiple roots using gmpy2 precision"""
  *     cdef int n = len(coeffs)
@@ -10283,7 +10275,7 @@ static PyObject *__pyx_pf_20high_precision_roots_22batch_eval_polynomial_gmpy2(C
 
   /* "high_precision_roots.pyx":223
  *     # Refine with high precisionnewton_refine_root_gmpy2
- *     return batch_refine_roots_gmpy2(coeffs_batch, initial_roots_batch, max_iter = max_iter), initial_roots_batch
+ *     return batch_refine_roots_gmpy2(coeffs_batch, initial_roots_batch, max_iter = max_iter)#,i initial_roots_batch
  * def batch_eval_polynomial_gmpy2(coeffs, roots):             # <<<<<<<<<<<<<<
  *     """Evaluate a polynomial at multiple roots using gmpy2 precision"""
  *     cdef int n = len(coeffs)
@@ -10635,7 +10627,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
 
   /* "high_precision_roots.pyx":223
  *     # Refine with high precisionnewton_refine_root_gmpy2
- *     return batch_refine_roots_gmpy2(coeffs_batch, initial_roots_batch, max_iter = max_iter), initial_roots_batch
+ *     return batch_refine_roots_gmpy2(coeffs_batch, initial_roots_batch, max_iter = max_iter)#,i initial_roots_batch
  * def batch_eval_polynomial_gmpy2(coeffs, roots):             # <<<<<<<<<<<<<<
  *     """Evaluate a polynomial at multiple roots using gmpy2 precision"""
  *     cdef int n = len(coeffs)
@@ -11415,7 +11407,7 @@ if (!__Pyx_RefNanny) {
 
   /* "high_precision_roots.pyx":223
  *     # Refine with high precisionnewton_refine_root_gmpy2
- *     return batch_refine_roots_gmpy2(coeffs_batch, initial_roots_batch, max_iter = max_iter), initial_roots_batch
+ *     return batch_refine_roots_gmpy2(coeffs_batch, initial_roots_batch, max_iter = max_iter)#,i initial_roots_batch
  * def batch_eval_polynomial_gmpy2(coeffs, roots):             # <<<<<<<<<<<<<<
  *     """Evaluate a polynomial at multiple roots using gmpy2 precision"""
  *     cdef int n = len(coeffs)
