@@ -330,7 +330,7 @@ class BetaModel(FSModel):
         for g, var in zip(gradients, trainable_vars):
             if g is None:
                 print(f"None gradient for variable: {var.name}")
-        gradients = [tf.where(tf.math.is_nan(g), 1e-8, g) for g in gradients]
+        gradients = [tf.where(tf.math.is_nan(g), tf.cast(1e-8, g.dtype), g) for g in gradients]
         gradients, _ = tf.clip_by_global_norm(gradients, self.gclipping)
         
         # Update weights using optimizer
