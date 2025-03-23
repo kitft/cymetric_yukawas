@@ -1351,8 +1351,8 @@ class PointGenerator:
         See also: [9803052]."""
 
         FS_shiffman = self.pointgen_jax_quadratic.pullback_all_3_spaces_vmap(points, pullbacks)
-        print("FS_shiffman: ", FS_shiffman)
-        print("omegasquared: ", omegasquared)
+        #print("FS_shiffman: ", FS_shiffman)
+        #print("omegasquared: ", omegasquared)
         weights = np.real(omegasquared / FS_shiffman)
         if normalize_to_vol_j:
             fs_ref = self.fubini_study_metrics(points, vol_js=np.ones_like(self.kmoduli))

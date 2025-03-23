@@ -4,6 +4,7 @@
 #import multiprocessing
 import time
 import os
+os.environ["JAX_PLATFORMS"] = "cpu"
 start_time_of_process = time.time()
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import sys

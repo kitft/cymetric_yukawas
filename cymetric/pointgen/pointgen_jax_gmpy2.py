@@ -618,7 +618,7 @@ class IntersectionSolverJAX:
         polyA_batch = self.funcall_A_batch(cde_batch)
         polyA_batch = polyA_batch/jnp.sqrt(jnp.sum(jnp.abs(polyA_batch)**2, axis=1, keepdims=True))
         if self.use_gmpy2:
-            print("solving using gmpy2")
+            #print("solving using gmpy2")
             roots = self.roots_solver.solve_batch_of_polys(polyA_batch,  max_iter = self.max_iter, tol = self.tol)
             pointsA = self.get_point_from_solution_batchA_nested(np.array(roots), cde_batch).reshape(-1,8)
             if not return_residuals:
