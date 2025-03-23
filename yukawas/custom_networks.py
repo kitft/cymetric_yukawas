@@ -1232,28 +1232,55 @@ class BiholoModelFuncGENERALforHYMinv3(tf.keras.Model):
     def call(self, inputs):
         #sum_coords=(tf.reduce_sum(inputs,axis=-1))
         #norm_factor_phase=np.e**((1.j)*tf.cast(tf.math.atan2(tf.math.imag(sum_coords),tf.math.real(sum_coords)),complex_dtype))
+        
+        tf.print("inputs dtype:", inputs.dtype)
         inputs = tf.complex(inputs[:, :self.nCoords], inputs[:, self.nCoords:])
+        tf.print("complex inputs dtype:", inputs.dtype)
+        
         #print("ncCoords" +  str(self.nCoords))
         #norm=tf.math.abs(tf.norm(inputs,axis=-1))
-        bihom =self.bihom_func(inputs)
+        bihom = self.bihom_func(inputs)
+        tf.print("bihom dtype:", bihom.dtype)
 
         #bihom =bihomogeneous_section_for_prod_not_mult(inputs,self.BASIS)
         #print(tf.shape(inputs))
         #print(tf.shape(inputs))
         #return tf.math.log(tf.reduce_sum(inputs,axis=-1))
-        inputs= bihom
-        inputs2= bihom
+        inputs = bihom
+        inputs2 = bihom
+        
         for layer in self.layers_list[:-1]:
             inputs = layer(inputs)
+            tf.print("after layer dtype (inputs):", inputs.dtype)
+            
         for layer in self.layers_list2[:-1]:
-            inputs2 = layer(inputs2)   
-            #print(tf.shape(inputs))
+            inputs2 = layer(inputs2)
+            tf.print("after layer dtype (inputs2):", inputs2.dtype)
+            
         #print(len(self.layers_list))
         ### incorrect!
         #print("new inv")
         #return  self.layers_list[-1](inputs)/self.layers_list2[-1](inputs2)
-        out=self.layers_list[-1](safe_log_abs(inputs))-self.layers_list2[-1](safe_log_abs(inputs2))
-        return tf.clip_by_value(out,-1e6,1e6)
+        
+        log_inputs = safe_log_abs(inputs)
+        tf.print("log_inputs dtype:", log_inputs.dtype)
+        
+        log_inputs2 = safe_log_abs(inputs2)
+        tf.print("log_inputs2 dtype:", log_inputs2.dtype)
+        
+        final_inputs = self.layers_list[-1](log_inputs)
+        tf.print("final_inputs dtype:", final_inputs.dtype)
+        
+        final_inputs2 = self.layers_list2[-1](log_inputs2)
+        tf.print("final_inputs2 dtype:", final_inputs2.dtype)
+        
+        out = final_inputs - final_inputs2
+        tf.print("out dtype:", out.dtype)
+        
+        clipped = tf.clip_by_value(out, -1e6, 1e6)
+        tf.print("clipped dtype:", clipped.dtype)
+        
+        return clipped
         #return  -self.layers_list[-1](tf.math.log(inputs))
 
 
