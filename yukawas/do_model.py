@@ -468,10 +468,10 @@ if __name__ == '__main__':
             raise ValueError("Invalid data size: " + npoints_config)
     #tr_batchsize = 10
     #SecondBSize = 10
-    nEpochsPhi = 3
-    nEpochsBeta = 3
-    nEpochsSigma = 3
-    nEpochsSigma2 = 3
+    nEpochsPhi = 1
+    nEpochsBeta = 1
+    nEpochsSigma = 1
+    nEpochsSigma2 = 1
 
     if integrate_or_run == 'integrate':
         depthPhi = 2
@@ -502,6 +502,16 @@ if __name__ == '__main__':
         widthSigma = 100
         depthSigma2 = 4
         widthSigma2 = 100
+
+    if 'tinynetworks' in sys.argv[1:]:
+        depthPhi = 2
+        widthPhi = 3
+        depthBeta = 2
+        widthBeta = 3
+        depthSigma = 2
+        widthSigma = 3
+        depthSigma2 = 2
+        widthSigma2 = 3
 
 
     if integrate_or_run == 'integrate':
