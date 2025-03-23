@@ -14,7 +14,7 @@ jax.config.update("jax_disable_jit", True)
 class JAXPointGeneratorQuadratic:
     """JAX-optimized version of PointGenerator with vectorized operations"""
     
-    def __init__(self, original_generator, max_iter = 10, tol = 1e-30):
+    def __init__(self, original_generator, max_iter = 10, tol = 1e-20):
         # Copy necessary attributes from the original generator
         self.selected_t = original_generator.selected_t
         if len(self.selected_t) != len(original_generator.ambient):
@@ -224,7 +224,7 @@ class IntersectionSolverJAX:
 
     
 
-    def __init__(self, monomials=None, coefficients=None, use_gmpy2=True, max_iter = 10,tol = 1e-30):
+    def __init__(self, monomials=None, coefficients=None, use_gmpy2=True, max_iter = 10,tol = 1e-20):
         """
         monomials: List[8-int], shape=(N,8). Each row => exponents of
                    [x0,x1,y0,y1,z0,z1,w0,w1].
@@ -694,7 +694,7 @@ from functools import partial
 
 
 class gmpy2_poly_solver:
-    def __init__(self, max_iter = 10, tol = 1e-30):
+    def __init__(self, max_iter = 10, tol = 1e-20):
         try:
             from high_precision_roots import find_roots_vectorized
         except ImportError:
@@ -705,14 +705,18 @@ class gmpy2_poly_solver:
         self.find_roots_vectorized = find_roots_vectorized
         self.max_iter = max_iter
         self.tol = tol
+        self.vmapped_roots = jax.vmap(lambda x: jnp.roots(x, strip_zeros=False), in_axes=(0))
     
-    def _process_batch(self, coeffs_batch, max_iter=None, tol=1e-30):
+    def _process_batch(self, coeffs_batch, max_iter=None, tol=1e-20):
         """Process a single batch of polynomials"""
         max_iter = max_iter or self.max_iter
-        roots = self.find_roots_vectorized(np.array(coeffs_batch), use_gmpy2=True, max_iter=max_iter, tol=tol)
+        if max_iter==0:
+            roots = self.vmapped_roots(jnp.array(coeffs_batch))
+        else:
+            roots = self.find_roots_vectorized(np.array(coeffs_batch), use_gmpy2=True, max_iter=max_iter, tol=tol)
         return roots
     
-    def solve_batch_of_polys(self, coeffs,  max_iter=None, tol=1e-30):
+    def solve_batch_of_polys(self, coeffs,  max_iter=None, tol=1e-20):
         """Solve a batch of polynomials, optionally using multiprocessing"""
         #if not self.use_multiprocessing:
         return self._process_batch(coeffs, max_iter, tol)

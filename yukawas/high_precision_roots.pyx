@@ -92,7 +92,7 @@ def preconvert_coeffs_gmpy2(coeffs):
         else:
             g_coeffs.append(gmpy2.mpc(float(c), 0))
     return g_coeffs
-def newton_refine_root_gmpy2(coeffs, root, max_iter=50, tol=1e-30):
+def newton_refine_root_gmpy2(coeffs, root, max_iter=50, tol=1e-20):
     """Refine a single root using Newton's method with gmpy2 precision"""
     cdef int i
     
@@ -123,7 +123,7 @@ def newton_refine_root_gmpy2(coeffs, root, max_iter=50, tol=1e-30):
     # Always return complex values
     return complex(float(x.real), float(x.imag))
 
-def refine_roots_gmpy2(coeffs, initial_roots, max_iter=50, tol=1e-30):
+def refine_roots_gmpy2(coeffs, initial_roots, max_iter=50, tol=1e-20):
     """Refine all roots of a polynomial using Newton's method with gmpy2 precision"""
     refined_roots = []
     for root in initial_roots:
@@ -183,7 +183,7 @@ def jax_batch_find_roots(coeffs_batch):
     vectorized_roots = vmap(jax_find_roots)
     return vectorized_roots(jnp.array(coeffs_batch))
 
-def batch_refine_roots_gmpy2(all_coeffs, all_initial_roots, max_iter =50, tol = 1e-30):
+def batch_refine_roots_gmpy2(all_coeffs, all_initial_roots, max_iter =50, tol = 1e-20):
     """Refine batches of roots using gmpy2 high precision"""
     all_refined_roots = []
     
@@ -198,7 +198,7 @@ def batch_refine_roots_gmpy2(all_coeffs, all_initial_roots, max_iter =50, tol = 
     
     return all_refined_roots
 
-def find_roots_vectorized(coeffs_batch, use_gmpy2=True, max_iter = 50, tol = 1e-30):
+def find_roots_vectorized(coeffs_batch, use_gmpy2=True, max_iter = 50, tol = 1e-20):
     """Find roots for multiple polynomials at once
     
     Args:

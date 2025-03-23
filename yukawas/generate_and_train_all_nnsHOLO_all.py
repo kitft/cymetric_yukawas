@@ -123,10 +123,10 @@ def create_adam_optimizer_with_decay(initial_learning_rate, nEpochs, final_lr_fa
 
     return tf.keras.optimizers.Adam(learning_rate=initial_learning_rate)#lr_schedule)
 
-def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,number_points,force_generate=False,seed_set=0,average_selected_t = True, use_quadratic_method = False, do_multiprocessing = False, use_jax = True):
+def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,number_points,force_generate=False,seed_set=0,average_selected_t = True, use_quadratic_method = False, do_multiprocessing = False, use_jax = True, max_iter = 10):
    print("\n\n")
    coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path = (manifold_name_and_data)
-   pg = PointGenerator(monomials, coefficients, kmoduli, ambient, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing)
+   pg = PointGenerator(monomials, coefficients, kmoduli, ambient, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing, max_iter = max_iter)
    pg._set_seed(seed_set)
    dirname = os.path.join(data_path, type_folder, manifold_name+'_pg_for_eval_with_'+str(unique_id_or_coeff)) 
    print("dirname: " + dirname)
@@ -158,9 +158,9 @@ def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,numb
    return pg,kmoduli
 
 
-def generate_points_and_save_using_defaults(manifold_name_and_data,number_points,force_generate=False,seed_set=0,average_selected_t = True, use_quadratic_method = False, use_jax = True, do_multiprocessing = False):
+def generate_points_and_save_using_defaults(manifold_name_and_data,number_points,force_generate=False,seed_set=0,average_selected_t = True, use_quadratic_method = False, use_jax = True, do_multiprocessing = False, max_iter = 10):
    coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path =  manifold_name_and_data
-   pg = PointGenerator(monomials, coefficients, kmoduli, ambient, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing)
+   pg = PointGenerator(monomials, coefficients, kmoduli, ambient, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing, max_iter = max_iter)
    pg._set_seed(seed_set)
    dirname = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff)) 
    dirnameForMetric = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff))

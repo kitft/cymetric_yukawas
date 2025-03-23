@@ -64,7 +64,7 @@ class PointGenerator:
         >>> pg.prepare_basis(dir_name)
     """
 
-    def __init__(self, monomials, coefficients, kmoduli, ambient, vol_j_norm=None, verbose=2, backend='multiprocessing', use_jax=True, use_quadratic_method = False, do_multiprocessing = False, max_iter = 10, tol = 1e-30):
+    def __init__(self, monomials, coefficients, kmoduli, ambient, vol_j_norm=None, verbose=2, backend='multiprocessing', use_jax=True, use_quadratic_method = False, do_multiprocessing = False, max_iter = 10, tol = 1e-20):
         r"""The PointGenerator uses the *joblib* module to parallelize 
         computations. 
 
@@ -137,6 +137,10 @@ class PointGenerator:
 
         if use_quadratic_method:
             from cymetric.pointgen.pointgen_jax_gmpy2 import JAXPointGeneratorQuadratic
+            if max_iter==0:
+                print("using quadratic method but not using newton improvement")
+            else:
+                print("using quadratic method, with max_iterations: ", max_iter, " and tol: ", tol)
             self.pointgen_jax_quadratic = JAXPointGeneratorQuadratic(self, max_iter = max_iter, tol = tol)
             
 

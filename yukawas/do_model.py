@@ -591,8 +591,14 @@ if __name__ == '__main__':
         use_quadratic_method = True
         use_jax = False
         do_multiprocessing = True
-    print(f"Orbiting over P1s")
-
+    else:
+        print("Doing quadratic method as default.")
+        orbit_P1s = False
+        use_quadratic_method = True
+        use_jax = False
+        do_multiprocessing = True
+    if orbit_P1s!=False:
+        print(f"Orbiting over P1s")
 
 if __name__ == '__main__':
     print("Name of invoking script: ", name_of_invoking_script, "modeltype: ", modeltype, "namespace of vH: ", functionforbaseharmonicform_jbar_for_vH.__module__)

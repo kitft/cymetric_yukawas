@@ -75,6 +75,8 @@ pip install --no-dependencies git+https://github.com/kift/cymetric_yukawas.git
 ```
 Then you can use the function ```prepare_toric_cy_data(tv, "toric_data.pickle"))``` to create and store all the toric data needed, and then run the ML algorithms with this data file from a separate package installation (with tensorflow).
 
+
+You need to run `python ... ... setup_` to use the quadratic sampler (cython).
 ### 4. Install within Mathematica
 The whole installation process is fully automatic in the [Mathematica notebook](/notebooks/4.Mathematica_integration_example.nb). Just download it and follow the instructions in the notebook. In a nutshell, you run
 ```console
