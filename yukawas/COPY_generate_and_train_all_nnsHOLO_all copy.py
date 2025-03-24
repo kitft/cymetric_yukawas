@@ -18,13 +18,9 @@ import wandb
 
 # Extend WandbMetricsLogger to add prefixes
 class PrefixedWandbMetricsLogger(WandbMetricsLogger):
-    def __init__(self, prefix, n_batches_in_epoch=None, **kwargs):
+    def __init__(self, prefix, **kwargs):
         super().__init__(**kwargs)
         self.prefix = prefix
-        self.n_batches_in_epoch = n_batches_in_epoch
-        # Reset counters for each new logger
-        self.global_step = 0
-        self.global_batch = 0
 
     def on_epoch_end(self, epoch, logs=None):
         logs = dict() if logs is None else {f"{self.prefix}/{k}": v for k, v in logs.items()}
@@ -40,13 +36,7 @@ class PrefixedWandbMetricsLogger(WandbMetricsLogger):
         self.global_step += 1
         if self.logging_batch_wise and batch % self.log_freq == 0:
             logs = {f"{self.prefix}/{k}": v for k, v in logs.items()} if logs else {}
-            
-            # Log as fraction of epoch if batch_size is provided
-            if self.n_batches_in_epoch:
-                epoch_fraction = batch / self.n_batches_in_epoch
-                logs[f"{self.prefix}/epoch_fraction"] = epoch_fraction
-            else:
-                logs[f"{self.prefix}/batch_step"] = self.global_batch
+            logs[f"{self.prefix}/batch_step"] = self.global_batch
             
             lr = self._get_lr()
             if lr is not None:
@@ -207,14 +197,14 @@ def generate_points_and_save_using_defaults(manifold_name_and_data,number_points
    print("Kappa: " + str(kappa))
    
 
-def getcallbacksandmetrics(data, prefix, wandb = True, batchsize = 64):
+def getcallbacksandmetrics(data, prefix, wandb = True):
    #rcb = RicciCallback((data['X_val'], data['y_val']), data['val_pullbacks'])
    scb = SigmaCallback((data['X_val'], data['y_val']))
    volkcb = VolkCallback((data['X_val'], data['y_val']))
    kcb = KaehlerCallback((data['X_val'], data['y_val']))
    tcb = TransitionCallback((data['X_val'], data['y_val']))
    if wandb:
-      wandbcb = PrefixedWandbMetricsLogger(prefix, log_freq=log_freq, n_batches_in_epoch=len(data['X_train'])//batchsize)
+      wandbcb = PrefixedWandbMetricsLogger(prefix, log_freq=log_freq)
    else:
       wandbcb = None
    #cb_list = [rcb, scb, kcb, tcb, volkcb]
@@ -243,7 +233,7 @@ def train_and_save_nn(manifold_name_and_data, phimodel_config=None,use_zero_netw
    data = convert_to_tensor_dict(data)
    BASIS = prepare_tf_basis(np.load(os.path.join(dirname, 'basis.pickle'), allow_pickle=True))
 
-   cb_list, cmetrics = getcallbacksandmetrics(data, 'phi', wandb = True, batchsize = bSizes[0])
+   cb_list, cmetrics = getcallbacksandmetrics(data, 'phi', wandb = True)
 
    #nlayer = 3
    #nHidden = 128
@@ -364,7 +354,7 @@ def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=
    data = convert_to_tensor_dict(data)
    BASIS = prepare_tf_basis(np.load(os.path.join(dirname, 'basis.pickle'), allow_pickle=True))
 
-   cb_list, cmetrics = getcallbacksandmetrics(data, 'phi', wandb = False, batchsize = bSizes[0])
+   cb_list, cmetrics = getcallbacksandmetrics(data, 'phi', wandb = False)
 
    #nlayer = 3
    #nHidden = 128
@@ -533,12 +523,12 @@ def generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundle
       
    
 
-def getcallbacksandmetricsHYM(databeta, prefix, wandb = True, batchsize = 64):
+def getcallbacksandmetricsHYM(databeta, prefix, wandb = True):
    databeta_val_dict=dict(list(dict(databeta).items())[len(dict(databeta))//2:])
    tcb = TransitionCallback((databeta['X_val'], databeta['y_val']))
    lplcb = LaplacianCallback(databeta_val_dict)
    if wandb:
-      wandbcb = PrefixedWandbMetricsLogger(prefix, log_freq=log_freq, n_batches_in_epoch=len(databeta['X_train'])//batchsize)
+      wandbcb = PrefixedWandbMetricsLogger(prefix, log_freq=log_freq)
    else:
       wandbcb = None
    # lplcb = LaplacianCallback(data_val)
@@ -591,7 +581,7 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
    print("sources integrated ",integrated_source)
    print("abs sources integrated ",integrated_abs_source)
 
-   cb_list, cmetrics = getcallbacksandmetricsHYM(databeta, prefix = lbstring, wandb = True, batchsize = bSizes[0])
+   cb_list, cmetrics = getcallbacksandmetricsHYM(databeta, prefix = lbstring, wandb = True)
 
    #nlayer = 3
    #nHidden = 128
@@ -798,7 +788,7 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,phimode
    databeta_val_dict=dict(list(dict(databeta).items())[len(dict(databeta))//2:])
    datacasted=[databeta['X_val'],databeta['y_val']]
 
-   cb_list, cmetrics = getcallbacksandmetricsHYM(databeta, prefix = lbstring, wandb = False, batchsize = bSizes[0])
+   cb_list, cmetrics = getcallbacksandmetricsHYM(databeta, prefix = lbstring, wandb = False)
 
    #nlayer = 3
    #nHidden = 128
@@ -966,13 +956,13 @@ def generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundlef
          kappaHarmonic=prepare_dataset_HarmonicForm(pg,data,number_pointsHarmonic,dirnameHarmonic,phimodel,linebundleforHYM,BASIS,functionforbaseharmonicform_jbar,betamodel)
    
 
-def getcallbacksandmetricsHF(dataHF, prefix, wandb = True, batchsize = 64):
+def getcallbacksandmetricsHF(dataHF, prefix, wandb = True):
    dataHF_val_dict=dict(list(dict(dataHF).items())[len(dict(dataHF))//2:])
 
    tcbHF = TransitionCallback((dataHF['X_val'], dataHF['y_val']))
    lplcbHF = LaplacianCallback(dataHF_val_dict)
    if wandb:
-      wandbcbHF = PrefixedWandbMetricsLogger(prefix, log_freq=log_freq, n_batches_in_epoch=len(dataHF['X_train'])//batchsize)
+      wandbcbHF = PrefixedWandbMetricsLogger(prefix, log_freq=log_freq)
    else:
       wandbcbHF = None
    NaNcbHF = NaNCallback()
@@ -1015,7 +1005,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    datacasted=[dataHF['X_val'],dataHF['y_val']]
 
    prefix = nameOfBaseHF.split('_')[-1]
-   cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF, prefix = prefix, wandb = True, batchsize = bSizes[0])
+   cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF, prefix = prefix, wandb = True)
 
    #nlayer = 3
    #nHidden = 128
@@ -1067,10 +1057,8 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
           load_func =BiholoModelFuncGENERALforSigma2_m13
        #load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log
       elif (nHidden ==65) or (nHidden ==129):
-         #load_func = BiholoModelFuncGENERALforSigmaWNorm
-         load_func = BiholoModelFuncGENERALforSigma2_m13
-      else:
-         load_func = BiholoModelFuncGENERALforSigma2_m13
+          #load_func = BiholoModelFuncGENERALforSigmaWNorm
+          load_func = BiholoModelFuncGENERALforSigma2_m13
       #if (nHidden ==66) or (nHidden ==130) or :
       if nHidden in [66,130,250,430,200]:
            load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log_residual 
@@ -1288,19 +1276,21 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
 
    import time
    start=time.time()
-   meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF, batch=True)
-   # meanfailuretosolveequation= batch_process_helper_func(
+   meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF, batch = True)
+   meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation).numpy().item()
+
+   # weightsxcoclosuretrained, weightsxcoclosureFS= batch_process_helper_func(
    #      tf.function(lambda x,y,z,w: tf.expand_dims(HYM_measure_val_with_H_for_batching(HFmodel,x,y,z,w),axis=0)),
    #      (dataHF['X_val'],dataHF['y_val'],dataHF['val_pullbacks'],dataHF['inv_mets_val']),
    #      batch_indices=(0,1,2,3),
-   #      batch_size=50
+   #      batch_size=10000
    #  )
-   meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation).numpy().item()
+   # meanfailuretosolveequation = tf.reduce_mean(weightsxcoclosuretrained)/tf.reduce_mean(weightsxcoclosureFS)
 
 
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("time to do that: ",time.time()-start)
-   TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model, batch=True)
+   TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model, batch = True)
    print("trained coclosure divided by norm of v: " + str(TrainedDivTrained))
    print("avg/avg trained coclosure divided by norm of trained v: " + str(avgavagTrainedDivTrained))
    print("trained coclosure divided by norm of v_FS: " + str(TrainedDivFS))
@@ -1350,7 +1340,7 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    datacasted=[dataHF['X_val'],dataHF['y_val']]
 
    prefix = nameOfBaseHF.split('_')[-1]
-   cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF, prefix = prefix, wandb = False, batchsize = bSizes[0])
+   cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF, prefix = prefix, wandb = False)
 
    #nlayer = 3
    #nHidden = 128
@@ -1413,8 +1403,6 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
       elif (nHidden ==65) or (nHidden ==129):
           #load_func = BiholoModelFuncGENERALforSigmaWNorm
           load_func = BiholoModelFuncGENERALforSigma2_m13
-      else:
-         load_func = BiholoModelFuncGENERALforSigma2_m13
       #if (nHidden ==66) or (nHidden ==130) or :
       if nHidden in [66,130,250,430,200]:
            load_func = BiholoModelFuncGENERALforSigmaWNorm_no_log_residual 
