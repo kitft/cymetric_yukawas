@@ -1212,7 +1212,6 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    np.savez_compressed(os.path.join(dirnameHarmonic, 'trainingHistory-' + name),training_historyHF)
    tf.print("saved training\n")
    print("saved training\n")
-   import gc
    gc.collect()
    for i in range(10):
       tf.keras.backend.clear_session()
