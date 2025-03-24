@@ -5,8 +5,10 @@
 import time
 import os
 os.environ["JAX_PLATFORMS"] = "cpu"
-start_time_of_process = time.time()
+os.environ["XLA_FLAGS"] = "--xla_gpu_cuda_data_dir=/dev/null"
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+start_time_of_process = time.time()
 import sys
 if 'profile' in sys.argv[1:]:
     os.environ["USE_PROFILER"] = "1"
