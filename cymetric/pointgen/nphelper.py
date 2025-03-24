@@ -266,6 +266,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
                 raise ValueError("Shuffling points must be done when average_selected_t is True")
 
     elif use_quadratic_method:
+        numpy_seed = np.random.get_state()[1][0]# use the same seed as numpy for the jax seed
         all_points, all_weights, all_omega, all_pullbacks = [], [], [], []
         print("Using quadratic method")
         if do_multiprocessing:
@@ -291,7 +292,6 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
             except Exception as e:
                 print("Exception in core counting, falling back to 1 CPU", e)
                 pass
-            numpy_seed = np.random.get_state()[1][0]# use the same seed as numpy for the jax seed
 
             n_batches = (n_p//10000) if n_p//10000 > 0 else 1
             n_batches = n_cpus*(int(np.ceil(n_batches/n_cpus))) if n_p>10000 else n_batches
@@ -328,8 +328,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
             os.environ["XLA_FLAGS"] = ""
         else:
             print("asked not to use multiprocessing, but use_quadratic_method is True")
-            n_batches = (n_p//10000) if n_p//10000 > 0 else 1
-            n_batches = n_cpus*(int(np.ceil(n_batches/n_cpus))) if n_p>10000 else n_batches
+            n_batches = (n_p//100000) if n_p//100000 > 0 else 1
             batch_n = n_p//n_batches
             random_seeds = np.random.RandomState(numpy_seed).randint(0, 2**32, size=n_batches)
             print(f"Running {n_batches} batches on one processes, each doing {batch_n} points (so /8 random sections). Each batch has a random seed.") 
