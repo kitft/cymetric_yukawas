@@ -702,6 +702,7 @@ if __name__ ==  '__main__':
                       'sigma2model_config': sigma2model_config,
                       'invoking_command': ' '.join(sys.argv),
                       'nPoints': nPoints,
+                      'start_from': start_from,
                       'n_to_integrate': n_to_integrate,
                       'doubleprecision': double_precision,
                       'sampling_orbit_type': orbit_P1s,
