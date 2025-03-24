@@ -53,7 +53,7 @@ def batch_helper(batch_indices=None):
                     args,
                     batch_indices=indices_to_batch,
                     batch_size=10000,  # Default batch size
-                    compile_tf_func=True
+                    compile_func=True
                 )
             except Exception as e:
                 print(f"Compiled batch processing failed: {e}. Falling back to non-compiled execution.")
@@ -62,7 +62,7 @@ def batch_helper(batch_indices=None):
                     args,
                     batch_indices=indices_to_batch,
                     batch_size=10000,
-                    compile_tf_func=False
+                    compile_func=False
                 )
             return result
         
