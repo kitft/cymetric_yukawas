@@ -1126,7 +1126,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    #dataHF_val_dict_short={key: value[:100] for key, value in dataHF_val_dict.items()}
    print("testing zero and raw")
    # Enable eager execution for debugging
-   #tf.config.run_functions_eagerly(True)
+   tf.config.run_functions_eagerly(True)
    print("Check eager execution enabled:", tf.executing_eagerly())
    print("batched calls")
 
@@ -1164,9 +1164,13 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    for i in range(10):
       gc.collect()
    print('sleeping')
-   time.sleep(10)
+   time.sleep(300)
+   wandb.log({"test": "test"})
+   time.sleep(300)
+
    print('done sleeping')
-   #tf.config.run_functions_eagerly(False)
+   tf.config.run_functions_eagerly(False)
+   print("hopefully now disabled")
    print("Check eager execution enabled:", tf.executing_eagerly())
    valzero = {key: float(value.numpy()) for key, value in valzero.items()}
    valraw = {key: float(value.numpy()) for key, value in valraw.items()}

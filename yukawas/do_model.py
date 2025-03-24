@@ -89,7 +89,7 @@ if __name__ == '__main__':
     if 'eager' in sys.argv[1:]:
         run_eagerly = True
     tf.config.run_functions_eagerly(run_eagerly)
-    print("Running with eager execution:",run_eagerly)
+    print("Running with eager execution:",run_eagerly, "? eager execution test: ", tf.executing_eagerly())
 
     from cymetric.config import real_dtype, complex_dtype, set_double_precision
     if 'doubleprecision' in sys.argv[1:]:
