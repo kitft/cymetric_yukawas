@@ -143,6 +143,7 @@ def _prepare_dataset_batched_for_mp(point_gen, batch_n_p, ltails, rtails, seed :
         print("Exception in _prepare_dataset_batched_for_mp", e, "perhaps try again?")
         raise e
     sys.stdout.flush()
+    gc.collect()
     return points, weights, omegasquared, pullbacks
 
 
@@ -304,7 +305,8 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
                     delayed(_prepare_dataset_batched_for_mp)(point_gen, batch_n, ltails, rtails, seed)
                     for seed in random_seeds
                 )
-            gc.collect()
+            for i in range(10):
+                gc.collect()
         
             # Collect results
             for pts, w, om, pb in results:

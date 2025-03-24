@@ -371,8 +371,8 @@ if __name__ == '__main__':
     stddev_beta = 0.05 
     stddev_sigma = 1
     stddev_sigma2=0.5#0.5
-    final_layer_scale_sigma=0.01#0.01
-    final_layer_scale_sigma2=0.01#0.3#0.000001#0.01
+    final_layer_scale_sigma=0.0001#0.01
+    final_layer_scale_sigma2=0.0001#0.3#0.000001#0.01
 
     if 'skipall' in sys.argv[1:]:
         print("Requested to skip all measures")
