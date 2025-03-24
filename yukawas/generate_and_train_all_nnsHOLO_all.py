@@ -15,6 +15,7 @@ from cymetric.models.callbacks import SigmaCallback, KaehlerCallback, Transition
 from cymetric.models.metrics import SigmaLoss, KaehlerLoss, TransitionLoss, RicciLoss, VolkLoss, TotalLoss
 from wandb.integration.keras import WandbMetricsLogger
 import wandb
+import gc
 
 # Extend WandbMetricsLogger to add prefixes
 class PrefixedWandbMetricsLogger(WandbMetricsLogger):
