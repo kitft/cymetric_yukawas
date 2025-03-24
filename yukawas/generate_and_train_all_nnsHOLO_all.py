@@ -1126,20 +1126,48 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    #dataHF_val_dict_short={key: value[:100] for key, value in dataHF_val_dict.items()}
    print("testing zero and raw")
    # Enable eager execution for debugging
-   tf.config.run_functions_eagerly(True)
-   print("Eager execution enabled:", tf.executing_eagerly())
+   #tf.config.run_functions_eagerly(True)
+   print("Check eager execution enabled:", tf.executing_eagerly())
+   print("batched calls")
 
-   valzero=HFmodelzero.test_step(dataHF_val_dict)
+   def batched_test_step(model, data_dict, batch_size=1000):
+       """Run test_step in batches to avoid memory issues."""
+       results = {}
+       n_samples = len(data_dict['X_val'])
+       n_batches = (n_samples + batch_size - 1) // batch_size  # Ceiling division
+       
+       for i in range(n_batches):
+           start_idx = i * batch_size
+           end_idx = min((i + 1) * batch_size, n_samples)
+           
+           # Create batch dictionary
+           batch_dict = {k: v[start_idx:end_idx] for k, v in data_dict.items()}
+           
+           # Run test step on batch
+           batch_results = model.test_step(batch_dict)
+           
+           # Initialize or accumulate results
+           if not results:
+               results = {k: v * (end_idx - start_idx) for k, v in batch_results.items()}
+           else:
+               for k, v in batch_results.items():
+                   results[k] += v * (end_idx - start_idx)
+       
+       # Normalize by total number of samples
+       results = {k: v / n_samples for k, v in results.items()}
+       return results
+   
+   valzero = batched_test_step(HFmodelzero, dataHF_val_dict)
    tf.keras.backend.clear_session()   
-   valraw=HFmodel.test_step(dataHF_val_dict)
+   valraw = batched_test_step(HFmodel, dataHF_val_dict)
    tf.keras.backend.clear_session()
    for i in range(10):
       gc.collect()
    print('sleeping')
    time.sleep(10)
    print('done sleeping')
-   tf.config.run_functions_eagerly(False)
-   print("Eager execution enabled:", tf.executing_eagerly())
+   #tf.config.run_functions_eagerly(False)
+   print("Check eager execution enabled:", tf.executing_eagerly())
    valzero = {key: float(value.numpy()) for key, value in valzero.items()}
    valraw = {key: float(value.numpy()) for key, value in valraw.items()}
    print("tested zero and raw")
