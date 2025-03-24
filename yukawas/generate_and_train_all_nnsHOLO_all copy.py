@@ -1196,7 +1196,37 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    print("saved training\n")
    import gc
    gc.collect()
-   tf.keras.backend.clear_session()
+   for i in range(10):
+      tf.keras.backend.clear_session()
+
+   # Clear computational graph
+   if hasattr(tf, 'reset_default_graph'):  # TF 1.x
+      tf.reset_default_graph()
+   if hasattr(os, 'system'):
+      try:
+         os.system('sync')  # Flush file system buffers
+      except:
+         pass
+
+   # Force garbage collection
+   for _ in range(10):
+      gc.collect()
+   try:
+      threshold = 1024 * 1024  # 1MB
+      large_objects = []
+
+      for obj in gc.get_objects():
+         try:
+            size = sys.getsizeof(obj)
+            if size > threshold:
+                  large_objects.append((type(obj), size, obj))
+         except:
+            pass  # Some objects can't have their size measured
+           
+      # Sort by size (largest first)
+      large_objects.sort(key=lambda x: x[1], reverse=True)
+   except Exception as e:
+      print("Error in large objects: ", e)
 
    valfinal =HFmodel.test_step(dataHF_val_dict)
    valfinal = {key: float(value.numpy()) for key, value in valfinal.items()}
