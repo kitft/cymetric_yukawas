@@ -1125,6 +1125,10 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    #only use 100 entries in dataHF_val_dict
    #dataHF_val_dict_short={key: value[:100] for key, value in dataHF_val_dict.items()}
    print("testing zero and raw")
+   # Enable eager execution for debugging
+   tf.config.run_functions_eagerly(True)
+   print("Eager execution enabled:", tf.executing_eagerly())
+
    valzero=HFmodelzero.test_step(dataHF_val_dict)
    tf.keras.backend.clear_session()   
    valraw=HFmodel.test_step(dataHF_val_dict)
@@ -1134,6 +1138,8 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    print('sleeping')
    time.sleep(10)
    print('done sleeping')
+   tf.config.run_functions_eagerly(False)
+   print("Eager execution enabled:", tf.executing_eagerly())
    valzero = {key: float(value.numpy()) for key, value in valzero.items()}
    valraw = {key: float(value.numpy()) for key, value in valraw.items()}
    print("tested zero and raw")
