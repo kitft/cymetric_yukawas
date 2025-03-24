@@ -41,7 +41,7 @@ def batch_helper(batch_indices=None):
             # Create a tf.function that wraps the original function and adds an axis
             # for batch processing
             tf_func = tf.function(
-                lambda *batch_args: tf.expand_dims(func(*batch_args, **kwargs), axis=0)
+                lambda *batch_args: func(*batch_args, **kwargs)
             )
             
             # Extract the arguments to be batched
@@ -564,15 +564,15 @@ def HYM_measure_val_with_H(HFmodel,dataHF, batch = False):
     #print("check this is tiny: ",tf.math.reduce_std(coclosureofjustdsigma/(laplacianvals)))
     return averageoftraineddivaverageofvFS,traineddivaverageofvFS,tf.math.reduce_std(coclosureofjustdsigma/laplacianvals)
 
-def HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF,HYMmetric_model,metric_model):
+def HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF,HYMmetric_model,metric_model, batch = False):
     #returns ratio means of deldagger V_corrected/deldagger V_FS
     #and returns
     pts = tf.cast(dataHF['X_val'],real_dtype)
     # compute the laplacian (withH) acting on the HFmodel
-    laplacianvals=laplacianWithH(HFmodel,pts,dataHF['val_pullbacks'],dataHF['inv_mets_val'],HFmodel.HYMmetric)
-    coclosuretrained=coclosure_check(pts,HFmodel.HYMmetric,HFmodel.functionforbaseharmonicform_jbar,HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'])
-    coclosureofjustdsigma=coclosure_check(pts,HFmodel.HYMmetric,lambda x: 0*HFmodel.functionforbaseharmonicform_jbar(x),HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'])
-    coclosureofFSdirect=coclosure_check(pts,HFmodel.HYMmetric,HFmodel.functionforbaseharmonicform_jbar,lambda x: tf.ones(x.shape[0],dtype=complex_dtype),dataHF['inv_mets_val'],dataHF['val_pullbacks'])
+    laplacianvals=laplacianWithH(HFmodel,pts,dataHF['val_pullbacks'],dataHF['inv_mets_val'],HFmodel.HYMmetric, batch=batch)
+    coclosuretrained=coclosure_check(pts,HFmodel.HYMmetric,HFmodel.functionforbaseharmonicform_jbar,HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'], batch=batch )
+    coclosureofjustdsigma=coclosure_check(pts,HFmodel.HYMmetric,lambda x: 0*HFmodel.functionforbaseharmonicform_jbar(x),HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'], batch=batch)
+    coclosureofFSdirect=coclosure_check(pts,HFmodel.HYMmetric,HFmodel.functionforbaseharmonicform_jbar,lambda x: tf.ones(x.shape[0],dtype=complex_dtype),dataHF['inv_mets_val'],dataHF['val_pullbacks'], batch=batch)
     coclosureofvFS = coclosuretrained-coclosureofjustdsigma # by linearity
     averageoftraineddivaverageofvFS = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(tf.math.abs(coclosureofvFS))
     traineddivaverageofvFS = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(tf.math.abs(coclosureofvFS))
@@ -602,26 +602,26 @@ def HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF,HYMmetric_model,metri
     #print("check this is tiny: ",tf.math.reduce_std(coclosureofjustdsigma/(laplacianvals)))
     return TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS
 
-def HYM_measure_val_with_H_for_batching(HFmodel, X_val, y_val, val_pullbacks, inv_mets_val):
-    #returns ratio means of deldagger V_corrected/deldagger V_FS
-    #and returns
-    pts = tf.cast(X_val, real_dtype)
-    # compute the laplacian (withH) acting on the HFmodel
-    laplacianvals = laplacianWithH(HFmodel, pts, val_pullbacks, inv_mets_val, HFmodel.HYMmetric)
-    coclosuretrained = coclosure_check(pts, HFmodel.HYMmetric, HFmodel.functionforbaseharmonicform_jbar, HFmodel, inv_mets_val, val_pullbacks)
-    coclosureofjustdsigma = coclosure_check(pts, HFmodel.HYMmetric, lambda x: 0*HFmodel.functionforbaseharmonicform_jbar(x), HFmodel, inv_mets_val, val_pullbacks)
-    coclosureofvFS = coclosuretrained - coclosureofjustdsigma # by linearity
+# def HYM_measure_val_with_H_for_batching(HFmodel, X_val, y_val, val_pullbacks, inv_mets_val):
+#     #returns ratio means of deldagger V_corrected/deldagger V_FS
+#     #and returns
+#     pts = tf.cast(X_val, real_dtype)
+#     # compute the laplacian (withH) acting on the HFmodel
+#     laplacianvals = laplacianWithH(HFmodel, pts, val_pullbacks, inv_mets_val, HFmodel.HYMmetric)
+#     coclosuretrained = coclosure_check(pts, HFmodel.HYMmetric, HFmodel.functionforbaseharmonicform_jbar, HFmodel, inv_mets_val, val_pullbacks)
+#     coclosureofjustdsigma = coclosure_check(pts, HFmodel.HYMmetric, lambda x: 0*HFmodel.functionforbaseharmonicform_jbar(x), HFmodel, inv_mets_val, val_pullbacks)
+#     coclosureofvFS = coclosuretrained - coclosureofjustdsigma # by linearity
     
-    # Use y_val as weights for the averages
-    weights = y_val[:, 0]  # Assuming the first column of y_val contains the weights
-    averageoftraineddivaverageofvFS = tf.reduce_mean(weights * tf.math.abs(coclosuretrained)) / tf.reduce_mean(weights * tf.math.abs(coclosureofvFS))
-    traineddivaverageofvFS = tf.reduce_mean(weights * tf.math.abs(coclosuretrained)) / tf.reduce_mean(weights * tf.math.abs(coclosureofvFS))
+#     # Use y_val as weights for the averages
+#     weights = y_val[:, 0]  # Assuming the first column of y_val contains the weights
+#     averageoftraineddivaverageofvFS = tf.reduce_mean(weights * tf.math.abs(coclosuretrained)) / tf.reduce_mean(weights * tf.math.abs(coclosureofvFS))
+#     traineddivaverageofvFS = tf.reduce_mean(weights * tf.math.abs(coclosuretrained)) / tf.reduce_mean(weights * tf.math.abs(coclosureofvFS))
 
-    #print("check this is tiny: ",tf.math.reduce_std(coclosureofjustdsigma/(laplacianvals)))
-    #return averageoftraineddivaverageofvFS#, traineddivaverageofvFS, tf.math.reduce_std(weights * coclosureofjustdsigma/laplacianvals)
-    weightsxtrained = weights * tf.math.abs(coclosuretrained)
-    weightsxFS = weights * tf.math.abs(coclosureofvFS)
-    return weightsxtrained, weightsxFS
+#     #print("check this is tiny: ",tf.math.reduce_std(coclosureofjustdsigma/(laplacianvals)))
+#     #return averageoftraineddivaverageofvFS#, traineddivaverageofvFS, tf.math.reduce_std(weights * coclosureofjustdsigma/laplacianvals)
+#     weightsxtrained = weights * tf.math.abs(coclosuretrained)
+#     weightsxFS = weights * tf.math.abs(coclosureofvFS)
+#     return weightsxtrained, weightsxFS
 
 def compute_transition_pointwise_measure_section(HFmodel, points, weights=None, only_inside_belt=False):
         r"""Computes transition loss at each point. In the case of the harmonic form model, we demand that the section transforms as a section of the line bundle to which it belongs. \phi(\lambda^q_i z_i)=\phi(z_i)
