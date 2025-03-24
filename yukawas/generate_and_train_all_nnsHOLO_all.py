@@ -754,7 +754,6 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
 
 
-   import time
    start=time.time()
    meanfailuretosolveequation,_,_=HYM_measure_val(betamodel,databeta)
    #meanfailuretosolveequation= batch_process_helper_func(
@@ -906,7 +905,6 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,phimode
 
    averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure(betamodel,databeta["X_val"])
    print("average section transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
-   import time
    start=time.time()
    #meanfailuretosolveequation,_,_=HYM_measure_val(betamodel,databeta)
    meanfailuretosolveequation= batch_process_helper_func(
@@ -1268,7 +1266,6 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    print(valfinal)
    print("ratio of final to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valfinal.items()}))
    print("ratio of final to raw: " + str({key + " ratio": value/(valraw[key]+1e-8) for key, value in valfinal.items()}))
-   import time
    start = time.time()
    print("start time:", time.strftime("%H:%M:%S", time.localtime()))
    check_vals_again = closure_check(pts_check,HFmodel.functionforbaseharmonicform_jbar, HFmodel, pullbacks_check)
@@ -1291,7 +1288,6 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    print("1-form transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()))
 
 
-   import time
    start=time.time()
    meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF, batch=True)
    # meanfailuretosolveequation= batch_process_helper_func(
