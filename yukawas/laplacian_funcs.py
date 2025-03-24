@@ -1,6 +1,6 @@
 from cymetric.config import real_dtype, complex_dtype
 import tensorflow as tf
-
+from yukawas.auxiliary_funcs import batch_process_helper_func
 def convertcomptoreal(complexvec):
     # this converts from complex to real
     return tf.concat([tf.math.real(complexvec),tf.math.imag(complexvec)],-1) 
@@ -11,6 +11,56 @@ def point_vec_to_real(complexvec):
 def point_vec_to_complex(p):
     plen = tf.shape(p)[-1] // 2
     return tf.complex(p[..., :plen], p[..., plen:])
+
+def batch_helper(batch_indices=None):
+    """
+    A decorator that adds batching capability to any function.
+    
+    Args:
+        batch_indices (tuple, optional): Indices of arguments that should be batched.
+            If None, all arguments will be batched.
+    
+    Returns:
+        function: The decorated function with batching capability.
+    """
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            # Extract the batch parameter if provided
+            batch = kwargs.pop('batch', False)
+            
+            if not batch:
+                # If batching is disabled, just call the original function
+                return func(*args, **kwargs)
+            
+            # Determine which arguments to batch
+            indices_to_batch = batch_indices
+            if indices_to_batch is None:
+                # If no specific indices provided, batch all arguments
+                indices_to_batch = tuple(range(len(args)))
+            
+            # Create a tf.function that wraps the original function and adds an axis
+            # for batch processing
+            tf_func = tf.function(
+                lambda *batch_args: tf.expand_dims(func(*batch_args, **kwargs), axis=0)
+            )
+            
+            # Extract the arguments to be batched
+            batch_args = tuple(args[i] for i in indices_to_batch)
+            
+            # Call the batch processing helper with the batched arguments
+            result = batch_process_helper_func(
+                tf_func,
+                batch_args,
+                batch_indices=tuple(range(len(batch_indices))),
+                batch_size=10000  # Default batch size
+            )
+            
+            return result
+        
+        return wrapper
+    
+    return decorator
+
 
 @tf.function
 def laplacian(betamodel,points,pullbacks,invmetrics, training=False):
@@ -162,6 +212,7 @@ def laplacian(betamodel,points,pullbacks,invmetrics, training=False):
 #    #gdd_phi = tf.einsum('xai,xji,xbj->xab', pullbacks, dd_phi, tf.math.conj(pullbacks))
 #    return gdd_phi
 
+@batch_helper(batch_indices=(1,2,3))
 @tf.function
 def laplacianWithH(sigmamodel,points,pullbacks,invmetrics,Hfunc,training=False):
     ncoords = tf.shape(points[0])[-1] // 2 
@@ -231,6 +282,7 @@ def laplacianWithH(sigmamodel,points,pullbacks,invmetrics,Hfunc,training=False):
     #gdd_phi = tf.einsum('xai,xji,xbj->xab', pullbacks, dd_phi, tf.math.conj(pullbacks))
     return gdd_phi
 
+@batch_helper(batch_indices=(0,4,5))
 def coclosure_check(points,HYMmetric,harmonicform_jbar,sigma,invmetric,pullbacks):
     ncoords = tf.shape(points[0])[-1] // 2 
     pointstensor=points#tf.constant(points)
@@ -264,6 +316,7 @@ def coclosure_check(points,HYMmetric,harmonicform_jbar,sigma,invmetric,pullbacks
     return tf.einsum('xba,xbj,xai,xji->x',invmetric,tf.math.conj(pullbacks),pullbacks,dz_Hnu) #the barred index is first, and the derivative index is second! Same is true, in fact, for the inverse metric
     #return dz_Hnu#tf.einsum('xbj,xai,xji->xab',tf.math.conj(pullbacks),pullbacks,dz_Hnu) #the barred index is first, and the derivative index is second! Same is true, in fact, for the inverse metric
 
+@batch_helper(batch_indices=(0,3))
 def closure_check(points,harmonicform_jbar,sigma,pullbacks, return_both=False):
     #break
     ncoords = tf.shape(points[0])[-1] // 2 
@@ -304,7 +357,7 @@ def closure_check(points,harmonicform_jbar,sigma,pullbacks, return_both=False):
 
 
 
-
+@batch_helper(batch_indices=(0))
 def extder_jbar_for_sigma(points,sigma):
     ncoords = tf.shape(points[0])[-1] // 2 
     #pointstensor=tf.constant(points)
@@ -473,14 +526,37 @@ def HYM_measure_val_for_batching(betamodel, X_val, y_val, val_pullbacks, inv_met
 #     return val/mean_ofabsolute_valofsourcetimesweight, vals/mean_ofabsolute_valofsourcetimesweight,vals/absolutevalsofsourcetimesweight
 
 
-def HYM_measure_val_with_H(HFmodel,dataHF):
+def HYM_measure_val_with_H(HFmodel,dataHF, batch = False):
     #returns ratio means of deldagger V_corrected/deldagger V_FS
     #and returns
     pts = tf.cast(dataHF['X_val'],real_dtype)
     # compute the laplacian (withH) acting on the HFmodel
-    laplacianvals=laplacianWithH(HFmodel,pts,dataHF['val_pullbacks'],dataHF['inv_mets_val'],HFmodel.HYMmetric)
-    coclosuretrained=coclosure_check(pts,HFmodel.HYMmetric,HFmodel.functionforbaseharmonicform_jbar,HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'])
-    coclosureofjustdsigma=coclosure_check(pts,HFmodel.HYMmetric,lambda x: 0*HFmodel.functionforbaseharmonicform_jbar(x),HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'])
+    if batch:
+        laplacianvals=laplacianWithH(HFmodel,pts,dataHF['val_pullbacks'],dataHF['inv_mets_val'],HFmodel.HYMmetric, batch=True)
+        coclosuretrained=coclosure_check(pts,HFmodel.HYMmetric,HFmodel.functionforbaseharmonicform_jbar,HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'], batch=True  )
+        coclosureofjustdsigma=coclosure_check(pts,HFmodel.HYMmetric,lambda x: 0*HFmodel.functionforbaseharmonicform_jbar(x),HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'], batch=True)
+        # laplacianvals = batch_process_helper_func(
+        #     tf.function(lambda x,z,w: tf.expand_dims(laplacianWithH(HFmodel,x,z,w,HFmodel.HYMmetric),axis=0)),
+        #     (dataHF['X_val'],dataHF['val_pullbacks'],dataHF['inv_mets_val']),
+        #     batch_indices=(0,1,2),
+        #     batch_size=10000
+        # )
+        # coclosuretrained = batch_process_helper_func(
+        #     tf.function(lambda x,z,w: tf.expand_dims(coclosure_check(x,HFmodel.HYMmetric,HFmodel.functionforbaseharmonicform_jbar,HFmodel,w,z),axis=0)),
+        #     (dataHF['X_val'],dataHF['val_pullbacks'],dataHF['inv_mets_val']),
+        #     batch_indices=(0,1,2),
+        #     batch_size=10000
+        # )
+        # coclosureofjustdsigma = batch_process_helper_func(
+        #     tf.function(lambda x,z,w: tf.expand_dims(coclosure_check(x,HFmodel.HYMmetric,lambda x: 0*HFmodel.functionforbaseharmonicform_jbar(x),HFmodel,w,z),axis=0)),
+        #     (dataHF['X_val'],dataHF['val_pullbacks'],dataHF['inv_mets_val']),
+        #     batch_indices=(0,1,2),
+        #     batch_size=10000
+        # )
+    else:
+        laplacianvals=laplacianWithH(HFmodel,pts,dataHF['val_pullbacks'],dataHF['inv_mets_val'],HFmodel.HYMmetric)
+        coclosuretrained=coclosure_check(pts,HFmodel.HYMmetric,HFmodel.functionforbaseharmonicform_jbar,HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'])
+        coclosureofjustdsigma=coclosure_check(pts,HFmodel.HYMmetric,lambda x: 0*HFmodel.functionforbaseharmonicform_jbar(x),HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'])
     coclosureofvFS = coclosuretrained-coclosureofjustdsigma # by linearity
     averageoftraineddivaverageofvFS = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(tf.math.abs(coclosureofvFS))
     traineddivaverageofvFS = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(tf.math.abs(coclosureofvFS))
@@ -542,7 +618,10 @@ def HYM_measure_val_with_H_for_batching(HFmodel, X_val, y_val, val_pullbacks, in
     traineddivaverageofvFS = tf.reduce_mean(weights * tf.math.abs(coclosuretrained)) / tf.reduce_mean(weights * tf.math.abs(coclosureofvFS))
 
     #print("check this is tiny: ",tf.math.reduce_std(coclosureofjustdsigma/(laplacianvals)))
-    return averageoftraineddivaverageofvFS#, traineddivaverageofvFS, tf.math.reduce_std(weights * coclosureofjustdsigma/laplacianvals)
+    #return averageoftraineddivaverageofvFS#, traineddivaverageofvFS, tf.math.reduce_std(weights * coclosureofjustdsigma/laplacianvals)
+    weightsxtrained = weights * tf.math.abs(coclosuretrained)
+    weightsxFS = weights * tf.math.abs(coclosureofvFS)
+    return weightsxtrained, weightsxFS
 
 def compute_transition_pointwise_measure_section(HFmodel, points, weights=None, only_inside_belt=False):
         r"""Computes transition loss at each point. In the case of the harmonic form model, we demand that the section transforms as a section of the line bundle to which it belongs. \phi(\lambda^q_i z_i)=\phi(z_i)

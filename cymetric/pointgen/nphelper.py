@@ -172,8 +172,6 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
     use_quadratic_method = point_gen.use_quadratic_method
     use_jax = point_gen.use_jax
     do_multiprocessing = point_gen.do_multiprocessing
-    if use_quadratic_method ==True and do_multiprocessing ==False:
-        raise ValueError("use_quadratic_method is True, but do_multiprocessing is False. This is not allowed.")
     # Set USE_PROFILER=1 in environment to enable
     use_profiler = os.environ.get('USE_PROFILER', '0') == '1'
     number_ambients = len(point_gen.ambient)
@@ -184,7 +182,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
         print(f"Failed to create directory {dirname}: continuing?")
         pass
 
-    if not do_multiprocessing:
+    if not use_quadratic_method:
         if n_batches is None and n_p > 300000:
             n_batches = n_p // 300000 if n_p // 300000 > 0 else 1
         elif n_batches is None:
@@ -267,90 +265,82 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
             if average_selected_t==True:
                 raise ValueError("Shuffling points must be done when average_selected_t is True")
 
-    elif do_multiprocessing:
-        print("Using multiprocessing with fork")
-        # Set JAX to use only 1 thread per process to avoid oversubscription
-        # Limit ourselves to single-threaded jax/xla operations to avoid thrashing. See
-        # https://github.com/google/jax/issues/743.
-        os.environ["XLA_FLAGS"] = "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1"
-        
+    elif use_quadratic_method:
         all_points, all_weights, all_omega, all_pullbacks = [], [], [], []
+        print("Using quadratic method")
+        if do_multiprocessing:
+            # Set JAX to use only 1 thread per process to avoid oversubscription
+            # Limit ourselves to single-threaded jax/xla operations to avoid thrashing. See
+            # https://github.com/google/jax/issues/743.
+            os.environ["XLA_FLAGS"] = "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1"
+
+            from joblib import Parallel, delayed
+            import multiprocessing
+            n_cpus = 1
+            try:
+                # Check SLURM environment variables
+                slurm_cpus = os.environ.get('SLURM_CPUS_PER_TASK') or os.environ.get('SLURM_JOB_CPUS_PER_NODE')
+                if slurm_cpus:
+                    available_cpus = int(slurm_cpus)-1
+                    print(f"we are on a SLURM job, with {available_cpus} CPUs available, using that many (nb we have subtracted 1)")
+                    n_cpus = available_cpus
+                else:
+                    n_cpus = multiprocessing.cpu_count() - 1
+                    n_cpus = max(1, n_cpus)  # Ensure at least 1 CPU is used
+                    print(f"we are not on a SLURM job, using all available CPUs (nb we have subtracted 1): {n_cpus}")
+            except Exception as e:
+                print("Exception in core counting, falling back to 1 CPU", e)
+                pass
+            numpy_seed = np.random.get_state()[1][0]# use the same seed as numpy for the jax seed
+
+            n_batches = (n_p//10000) if n_p//10000 > 0 else 1
+            n_batches = n_cpus*(int(np.ceil(n_batches/n_cpus))) if n_p>10000 else n_batches
+            batch_n = n_p//n_batches
+            random_seeds = np.random.RandomState(numpy_seed).randint(0, 2**32, size=n_batches)
+            print(f"attempting to parallelise {n_batches} batches over at most {n_cpus} processes, each doing {batch_n} points (so /8 random sections). Each batch has a random seed.") 
+            # Execute the batch processing in parallel using with context to ensure proper cleanup
+            with Parallel(n_jobs=n_cpus, prefer="processes", verbose=10) as parallel:
+                results = parallel(
+                    delayed(_prepare_dataset_batched_for_mp)(point_gen, batch_n, ltails, rtails, seed)
+                    for seed in random_seeds
+                )
+            gc.collect()
         
+            # Collect results
+            for pts, w, om, pb in results:
+                all_points.append(pts)
+                all_weights.append(w)
+                all_omega.append(om)
+                all_pullbacks.append(pb)
+            # Not using multiprocessing pool
+            # results = []
+            # for _ in range(n_batches):
+            #     result = _prepare_dataset_batched_for_mp(point_gen, batch_n, ltails, rtails)
+            #     results.append(result)
 
-        # import pickle
-        # import cloudpickle
-        # pickle.dumps = cloudpickle.dumps
-        # pickle.loads = cloudpickle.loads
-        # pickle.Pickler = cloudpickle.Pickler
-        # from multiprocessing import reduction
-        # reduction.ForkingPickler = cloudpickle.Pickler
-        # import multiprocessing
-        # # Replace the default serializer
-        # #ForkingPickler.dumps = cloudpickle.dumps
-        # # print(f"Generating {n_p} points using {n_batches} batches, and with {n_cpus} CPUs")
-        # try:
-        #     multiprocessing.set_start_method('fork', force=False)
-        # except Exception as e:
-        #     print("Failed to set start method to fork, error: ", e)
-        # from contextlib import nullcontext
-        #with nullcontext():
-        #Import cloudpickle
-        #Import multiprocessing as mp
-        #From multiprocessing.reduction import ForkingPickler
-        #Import numpy as np
-        # Use joblib for efficient parallel processing with numpy arrays
-        from joblib import Parallel, delayed
-        import multiprocessing
-        n_cpus = 1
-        try:
-            # Check SLURM environment variables
-            slurm_cpus = os.environ.get('SLURM_CPUS_PER_TASK') or os.environ.get('SLURM_JOB_CPUS_PER_NODE')
-            if slurm_cpus:
-                available_cpus = int(slurm_cpus)-1
-                print(f"we are on a SLURM job, with {available_cpus} CPUs available, using that many (nb we have subtracted 1)")
-                n_cpus = available_cpus
-            else:
-                n_cpus = multiprocessing.cpu_count() - 1
-                n_cpus = max(1, n_cpus)  # Ensure at least 1 CPU is used
-                print(f"we are not on a SLURM job, using all available CPUs (nb we have subtracted 1): {n_cpus}")
-        except Exception as e:
-            print("Exception in core counting, falling back to 1 CPU", e)
-            pass
-        numpy_seed = np.random.get_state()[1][0]# use the same seed as numpy for the jax seed
+            # # Unpack results
+            # for pts, w, om, pb in results:
+            #     all_points.append(pts)
+            #     all_weights.append(w)
+            #     all_omega.append(om)
+            #     all_pullbacks.append(pb)
 
-        n_batches = (n_p//10000) if n_p//10000 > 0 else 1
-        n_batches = n_cpus*(int(np.ceil(n_batches/n_cpus))) if n_p>10000 else n_batches
-        batch_n = n_p//n_batches
+            os.environ["XLA_FLAGS"] = ""
+        else:
+            print("asked not to use multiprocessing, but use_quadratic_method is True")
+            n_batches = (n_p//10000) if n_p//10000 > 0 else 1
+            n_batches = n_cpus*(int(np.ceil(n_batches/n_cpus))) if n_p>10000 else n_batches
+            batch_n = n_p//n_batches
+            random_seeds = np.random.RandomState(numpy_seed).randint(0, 2**32, size=n_batches)
+            print(f"Running {n_batches} batches on one processes, each doing {batch_n} points (so /8 random sections). Each batch has a random seed.") 
+            # Execute the batch processing in parallel using with context to ensure proper cleanup
+            for seed in random_seeds:
+                pts, w, om, pb = _prepare_dataset_batched_for_mp(point_gen, batch_n, ltails, rtails, seed)
+                all_points.append(pts)
+                all_weights.append(w)
+                all_omega.append(om)
+                all_pullbacks.append(pb)
 
-        random_seeds = np.random.RandomState(numpy_seed).randint(0, 2**32, size=n_batches)
-        print(f"attempting to parallelise {n_batches} batches over at most {n_cpus} processes, each doing {batch_n} points (so /8 random sections). Each batch has a random seed.") 
-        # Execute the batch processing in parallel
-        results = Parallel(n_jobs=n_cpus, prefer="processes", verbose=10)(
-            delayed(_prepare_dataset_batched_for_mp)(point_gen, batch_n, ltails, rtails, seed)
-            for seed in random_seeds
-        )
-        gc.collect()
-        
-        # Collect results
-        for pts, w, om, pb in results:
-            all_points.append(pts)
-            all_weights.append(w)
-            all_omega.append(om)
-            all_pullbacks.append(pb)
-        # Not using multiprocessing pool
-        # results = []
-        # for _ in range(n_batches):
-        #     result = _prepare_dataset_batched_for_mp(point_gen, batch_n, ltails, rtails)
-        #     results.append(result)
-            
-        # # Unpack results
-        # for pts, w, om, pb in results:
-        #     all_points.append(pts)
-        #     all_weights.append(w)
-        #     all_omega.append(om)
-        #     all_pullbacks.append(pb)
-
-        os.environ["XLA_FLAGS"] = ""
     
     all_points = np.concatenate(all_points, axis=0)
     all_weights = np.concatenate(all_weights, axis=0)

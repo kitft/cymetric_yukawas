@@ -1246,14 +1246,16 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
 
    import time
    start=time.time()
-   meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
-   # meanfailuretosolveequation= batch_process_helper_func(
-   #      tf.function(lambda x,y,z,w: tf.expand_dims(HYM_measure_val_with_H_for_batching(HFmodel,x,y,z,w),axis=0)),
-   #      (dataHF['X_val'],dataHF['y_val'],dataHF['val_pullbacks'],dataHF['inv_mets_val']),
-   #      batch_indices=(0,1,2,3),
-   #      batch_size=50
-   #  )
-   meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation).numpy().item()
+   # meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
+   #meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation).numpy().item()
+
+   weightsxcoclosuretrained, weightsxcoclosureFS= batch_process_helper_func(
+        tf.function(lambda x,y,z,w: tf.expand_dims(HYM_measure_val_with_H_for_batching(HFmodel,x,y,z,w),axis=0)),
+        (dataHF['X_val'],dataHF['y_val'],dataHF['val_pullbacks'],dataHF['inv_mets_val']),
+        batch_indices=(0,1,2,3),
+        batch_size=10000
+    )
+   meanfailuretosolveequation = tf.reduce_mean(weightsxcoclosuretrained)/tf.reduce_mean(weightsxcoclosureFS)
 
 
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))

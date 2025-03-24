@@ -1248,7 +1248,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
 
    import time
    start=time.time()
-   meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
+   meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF, batch=True)
    # meanfailuretosolveequation= batch_process_helper_func(
    #      tf.function(lambda x,y,z,w: tf.expand_dims(HYM_measure_val_with_H_for_batching(HFmodel,x,y,z,w),axis=0)),
    #      (dataHF['X_val'],dataHF['y_val'],dataHF['val_pullbacks'],dataHF['inv_mets_val']),
@@ -1260,7 +1260,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
 
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("time to do that: ",time.time()-start)
-   TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model)
+   TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model, batch=True)
    print("trained coclosure divided by norm of v: " + str(TrainedDivTrained))
    print("avg/avg trained coclosure divided by norm of trained v: " + str(avgavagTrainedDivTrained))
    print("trained coclosure divided by norm of v_FS: " + str(TrainedDivFS))
