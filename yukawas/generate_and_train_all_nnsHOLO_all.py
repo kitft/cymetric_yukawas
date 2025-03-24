@@ -1128,6 +1128,11 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    print("testing zero and raw")
    valzero=HFmodelzero.test_step(dataHF_val_dict)
    valraw=HFmodel.test_step(dataHF_val_dict)
+   for i in range(10):
+      gc.collect()
+   print('sleeping')
+   time.sleep(300)
+   print('done sleeping')
    valzero = {key: float(value.numpy()) for key, value in valzero.items()}
    valraw = {key: float(value.numpy()) for key, value in valraw.items()}
    print("tested zero and raw")
