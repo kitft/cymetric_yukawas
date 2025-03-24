@@ -42,7 +42,7 @@ class PrefixedWandbMetricsLogger(WandbMetricsLogger):
             logs = {f"{self.prefix}/{k}": v for k, v in logs.items()} if logs else {}
             
             # Log as fraction of epoch if batch_size is provided
-            if self.batch_size:
+            if self.n_batches_in_epoch:
                 epoch_fraction = batch / self.n_batches_in_epoch
                 logs[f"{self.prefix}/epoch_fraction"] = epoch_fraction
             else:
