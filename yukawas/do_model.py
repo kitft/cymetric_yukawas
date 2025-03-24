@@ -632,6 +632,11 @@ if __name__ == '__main__':
         use_quadratic_method = True
         use_jax = False
         do_multiprocessing = True
+
+    if 'nomultiprocessing' in sys.argv[1:]:
+        print("Not using multiprocessing, as requested.")
+        do_multiprocessing = False
+
 if orbit_P1s!=False:
     orbit_P1s = False
     use_quadratic_method = True
