@@ -41,20 +41,29 @@ def batch_helper(batch_indices=None):
             # Create a tf.function that wraps the original function and adds an axis
             # for batch processing
             tf_func = tf.function(
-                lambda *batch_args: func(*batch_args, **kwargs)
+                lambda *args: func(*args, **kwargs)
             )
             
             # Extract the arguments to be batched
-            batch_args = tuple(args[i] for i in indices_to_batch)
             
             # Call the batch processing helper with the batched arguments
-            result = batch_process_helper_func(
-                tf_func,
-                batch_args,
-                batch_indices=tuple(range(len(batch_indices))),
-                batch_size=10000  # Default batch size
-            )
-            
+            try:
+                result = batch_process_helper_func(
+                    tf_func,
+                    args,
+                    batch_indices=indices_to_batch,
+                    batch_size=10000,  # Default batch size
+                    compile_tf_func=True
+                )
+            except Exception as e:
+                print(f"Compiled batch processing failed: {e}. Falling back to non-compiled execution.")
+                result = batch_process_helper_func(
+                    tf_func,
+                    args,
+                    batch_indices=indices_to_batch,
+                    batch_size=10000,
+                    compile_tf_func=False
+                )
             return result
         
         return wrapper
