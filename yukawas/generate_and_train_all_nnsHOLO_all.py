@@ -1126,11 +1126,13 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    #dataHF_val_dict_short={key: value[:100] for key, value in dataHF_val_dict.items()}
    print("testing zero and raw")
    valzero=HFmodelzero.test_step(dataHF_val_dict)
+   tf.keras.backend.clear_session()   
    valraw=HFmodel.test_step(dataHF_val_dict)
+   tf.keras.backend.clear_session()
    for i in range(10):
       gc.collect()
    print('sleeping')
-   time.sleep(300)
+   time.sleep(10)
    print('done sleeping')
    valzero = {key: float(value.numpy()) for key, value in valzero.items()}
    valraw = {key: float(value.numpy()) for key, value in valraw.items()}
