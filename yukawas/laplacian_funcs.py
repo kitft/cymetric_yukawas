@@ -54,7 +54,8 @@ def batch_helper(batch_indices=None, print_progress = False):
                     batch_indices=indices_to_batch,
                     batch_size=10000,  # Default batch size
                     compile_func=True,
-                    print_progress=print_progress
+                    print_progress=print_progress,
+                    print_anything=print_progress
                 )
             except Exception as e:
                 print(f"Compiled batch processing failed: {e}. Falling back to non-compiled execution.")
@@ -64,7 +65,8 @@ def batch_helper(batch_indices=None, print_progress = False):
                     batch_indices=indices_to_batch,
                     batch_size=10000,
                     compile_func=False,
-                    print_progress=print_progress
+                    print_progress=print_progress,
+                    print_anything=print_progress
                 )
             return result
         
