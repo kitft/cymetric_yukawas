@@ -1143,6 +1143,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
 
    pts_check = dataHF_val_dict['X_val'][0:1000]
    pullbacks_check = dataHF_val_dict['val_pullbacks'][0:1000]
+   weights_check = dataHF_val_dict['y_val'][0:1000][:, -2]
    #check_vals = closure_check(pts_check,HFmodel.functionforbaseharmonicform_jbar, HFmodel, pullbacks_check)
    #check_valszero = closure_check(pts_check,HFmodelzero.functionforbaseharmonicform_jbar, HFmodelzero, pullbacks_check)
    #print("check1:",tf.reduce_mean(tf.math.abs(check_vals)))
@@ -1317,18 +1318,17 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    #print("perm10")
    #print(perm.print_diff())
    print("-----CHECKS------")
-   averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
+   averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure_section(HFmodel, pts_check, weights=weights_check)
    print("average section transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
-   transition_loss = compute_transition_loss_for_corrected_HF_model(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
+   transition_loss = compute_transition_loss_for_corrected_HF_model(HFmodel, pts_check, weights=weights_check)
    print("1-form transition loss: " + str(tf.reduce_mean(transition_loss).numpy()))
-   transition_loss_zero = compute_transition_loss_for_corrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2] )
+   transition_loss_zero = compute_transition_loss_for_corrected_HF_model(HFmodelzero, pts_check, weights=weights_check)
    print("1-form transition loss for zero network: " + str(tf.reduce_mean(transition_loss_zero).numpy()))
    
-   transition_loss_for_uncorrected_HF = compute_transition_loss_for_uncorrected_HF_model(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
+   transition_loss_for_uncorrected_HF = compute_transition_loss_for_uncorrected_HF_model(HFmodel, pts_check, weights=weights_check)
    print("1-form transition loss for uncorrected HF: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF).numpy()))
-   transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
+   transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero, pts_check, weights=weights_check)
    print("1-form transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()))
-
 
    start=time.time()
    meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF, batch=True)
@@ -1394,6 +1394,10 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
 
    prefix = nameOfBaseHF.split('_')[-1]
    cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF, prefix = prefix, wandb = False, batchsize = bSizes[0])
+
+   pts_check = dataHF_val_dict['X_val'][0:1000]
+   pullbacks_check = dataHF_val_dict['val_pullbacks'][0:1000]
+   weights_check = dataHF_val_dict['y_val'][0:1000][:, -2]
 
    #nlayer = 3
    #nHidden = 128
@@ -1538,18 +1542,19 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    print(valtrained)
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
 
-
-   averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure_section(HFmodel,dataHF["X_val"],dataHF["y_val"][:, -2])
+   print("-----CHECKS------")
+   averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure_section(HFmodel, pts_check, weights=weights_check)
    print("average section transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
-   transition_loss = compute_transition_loss_for_corrected_HF_model(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("1-form transition loss: " + str(tf.reduce_mean(transition_loss).numpy()), tf.reduce_max(transition_loss).numpy())
-   transition_loss_zero = compute_transition_loss_for_corrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2] )
-   print("1-form transition loss for zero network: " + str(tf.reduce_mean(transition_loss_zero).numpy()), tf.reduce_max(transition_loss_zero).numpy())
+   transition_loss = compute_transition_loss_for_corrected_HF_model(HFmodel, pts_check, weights=weights_check)
+   print("1-form transition loss: " + str(tf.reduce_mean(transition_loss).numpy()))
+   transition_loss_zero = compute_transition_loss_for_corrected_HF_model(HFmodelzero, pts_check, weights=weights_check)
+   print("1-form transition loss for zero network: " + str(tf.reduce_mean(transition_loss_zero).numpy()))
    
-   transition_loss_for_uncorrected_HF = compute_transition_loss_for_uncorrected_HF_model(HFmodel,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("1-form transition loss for uncorrected HF (should be same as above): " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF).numpy()), tf.reduce_max(transition_loss_for_uncorrected_HF).numpy())
-   transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero,dataHF["X_val"], weights=dataHF["y_val"][:, -2])
-   print("1-form transition loss for uncorrected HF zero network (should be same as above): " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()), tf.reduce_max(transition_loss_for_uncorrected_HF_zero).numpy())
+   transition_loss_for_uncorrected_HF = compute_transition_loss_for_uncorrected_HF_model(HFmodel, pts_check, weights=weights_check)
+   print("1-form transition loss for uncorrected HF: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF).numpy()))
+   transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero, pts_check, weights=weights_check)
+   print("1-form transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()))
+
    #meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
 
    #meanfailuretosolveequation= batch_process_helper_func(
@@ -1560,19 +1565,19 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    # )
    start = time.time()
    print("start time:", time.strftime("%H:%M:%S", time.localtime()))
-   check_vals_again, check_vals_again_2 = closure_check(dataHF["X_val"], HFmodel.functionforbaseharmonicform_jbar, HFmodel, dataHF["val_pullbacks"], return_both = True)
+   check_vals_again, check_vals_again_2 = closure_check(pts_check, HFmodel.functionforbaseharmonicform_jbar, HFmodel, pullbacks_check, return_both = True)
    print("closure_check on base form again:",tf.reduce_mean(tf.math.abs(check_vals_again)).numpy().item(), tf.reduce_max(tf.math.abs(check_vals_again)).numpy().item(), "took " + str(time.time()-start) + " seconds")
    print("closure_check on base form (not asym) again:",tf.reduce_mean(tf.math.abs(check_vals_again_2)).numpy().item(),tf.reduce_max(tf.math.abs(check_vals_again_2)).numpy().item(), "took " + str(time.time()-start) + " seconds")
    #return HFmodel,training_historyHF, 0 
    start = time.time()
    print("computing mean failure to solve equation", time.strftime("%H:%M:%S", time.localtime()))
-   meanfailuretosolveequation,_,_ = HYM_measure_val_with_H(HFmodel,dataHF)
+   meanfailuretosolveequation,_,_ = HYM_measure_val_with_H(HFmodel,dataHF, batch=True)
    meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation).numpy().item()
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("TIME to compute mean failure to solve equation: ", time.time()-start)
    start = time.time()
    print("computing trained coclosure divided by norm of v", time.strftime("%H:%M:%S", time.localtime()))
-   TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model)
+   TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model, batch=True)
    print("trained coclosure divided by norm of v: " + str(TrainedDivTrained))
    print("avg/avg trained coclosure divided by norm of trained v: " + str(avgavagTrainedDivTrained))
    print("trained coclosure divided by norm of v_FS: " + str(TrainedDivFS))
