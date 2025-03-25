@@ -86,6 +86,7 @@ class PointGenerator:
             backend (str, optional): Backend for Parallel. Defaults to
                 'multiprocessing'. 'loky' makes issues with pickle5.
         """
+        self.get_moduli_space_metric = False
         if use_jax and use_quadratic_method:
             print("use_jax and use_quadratic_method cannot both be True")
             print("setting use_jax to False")
@@ -142,6 +143,7 @@ class PointGenerator:
             else:
                 print("using quadratic method, with max_iterations: ", max_iter, " and tol: ", tol)
             self.pointgen_jax_quadratic = JAXPointGeneratorQuadratic(self, max_iter = max_iter, tol = tol)
+
             
 
     @staticmethod
@@ -293,6 +295,35 @@ class PointGenerator:
             good[np.where(basis < 0)[0]] = False
             self.dQdz_basis += [basis[good]]
             self.dQdz_factors += [factors[good]]
+
+    def _generate_dQdz_basis(self):
+        r"""Generates a monomial basis for dQ/dz_j."""
+        self.dQdz_basis = []
+        self.dQdz_factors = []
+        if self.get_moduli_space_metric: 
+            self.d2Qdz2_basis = []
+            self.d2Qdz2_factors = []
+            self.dI_DQZbasis = []
+            self.dI_DQZfactors = []
+        
+        for i, m in enumerate(np.eye(self.ncoords, dtype=int)):
+            # First derivatives
+            basis = self.monomials - m
+            factors = self.monomials[:, i] * self.coefficients
+            good = np.ones(len(basis), dtype=bool)
+            good[np.where(basis < 0)[0]] = False
+            self.dQdz_basis += [basis[good]]
+            self.dQdz_factors += [factors[good]]
+            if self.get_moduli_space_metric: 
+                # Second derivatives (same j twice)
+                basis2 = basis - m
+                factors2 = factors * (self.monomials[:, i] - 1)
+                good2 = np.ones(len(basis2), dtype=bool)
+                good2[np.where(basis2 < 0)[0]] = False
+                self.d2Qdz2_basis += [basis2[good2]]
+                self.d2Qdz2_factors += [factors2[good2]]
+            if self.get_moduli_space_metric: 
+                pass
 
     def _generate_dzdz_basis(self, nproc=-1):
         r"""Generates a monomial basis for dz_i/dz_j
@@ -888,6 +919,18 @@ class PointGenerator:
         self.BASIS['DQDZF0'] = DQDZF
         self.BASIS['QB0'] = self.monomials
         self.BASIS['QF0'] = self.coefficients
+
+    def _generate_moduli_space_basis(self):
+        shape = np.array([np.shape(mb) for mb in self.d2Qdz2_basis])
+        D2QDZ2B = np.zeros((len(shape), np.max(shape[:, 0]), len(shape)), dtype=np.complex128)
+        D2QDZ2F = np.zeros((len(shape), np.max(shape[:, 0])), dtype=np.complex128)
+        for i, m in enumerate(zip(self.d2Qdz2_basis, self.d2Qdz2_factors)):
+            D2QDZ2B[i, 0:shape[i, 0]] += m[0]
+            D2QDZ2F[i, 0:shape[i, 0]] += m[1]
+        self.BASIS['D2QDZ2B0'] = D2QDZ2B
+        self.BASIS['D2QDZ2F0'] = D2QDZ2F
+
+        #DI_DQZB
 
     def generate_points_quadratic(self, n_p):
         r"""Generates complex points on the CY.
@@ -1785,7 +1828,7 @@ class PointGenerator:
         """
         return self.fubini_study_metrics(points, vol_js=vol_js)
 
-    def batch_function(self, func, *args, batch_size=100000, **kwargs):
+    def batch_function(self, func, *args, batch_size=30000, **kwargs):
         """Batches any function to process data in chunks of specified size.
         
         Args:

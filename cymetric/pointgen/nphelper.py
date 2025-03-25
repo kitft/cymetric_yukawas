@@ -341,6 +341,8 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
                 all_weights.append(w)
                 all_omega.append(om)
                 all_pullbacks.append(pb)
+                for i in range(10):
+                    gc.collect()
 
     
     all_points = np.concatenate(all_points, axis=0)
