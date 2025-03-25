@@ -8,7 +8,7 @@ from cymetric.config import real_dtype, complex_dtype
 
 
 
-def sigma_measure(model, points, y_true):
+def sigma_measure(model, points, y_true, batch = False):
     r"""We compute the Monge Ampere equation
 
     .. math::
@@ -23,18 +23,62 @@ def sigma_measure(model, points, y_true):
     Returns:
         tf.float: sigma measure
     """
-    g = model(points)
-    weights = y_true[:, -2]
-    omega = y_true[:, -1]
-    # use gamma series
-    det = tf.math.real(tf.linalg.det(g))  # * factorial / (2**nfold)
-    det_over_omega = det / omega
-    volume_cy = tf.math.reduce_mean(weights, axis=-1)
-    vol_k = tf.math.reduce_mean(det_over_omega * weights, axis=-1)
-    ratio = volume_cy / vol_k
-    sigma_integrand = tf.abs(tf.ones(tf.shape(det_over_omega), dtype=real_dtype) - det_over_omega * ratio) * weights
-    sigma = tf.math.reduce_mean(sigma_integrand) / volume_cy
-    return sigma
+    if batch:
+        # Process in batches using tf.while_loop
+        batch_size = 1000
+        num_points = tf.shape(points)[0]
+        
+        # Initialize accumulator variables
+        i = tf.constant(0)
+        sigma_sum = tf.constant(0.0, dtype=real_dtype)
+        volume_cy_sum = tf.constant(0.0, dtype=real_dtype)
+        
+        # Define condition and body for while loop
+        def condition(i, sigma_sum, volume_cy_sum):
+            return i < num_points
+        
+        def body(i, sigma_sum, volume_cy_sum):
+            end_idx = tf.minimum(i + batch_size, num_points)
+            batch_points = points[i:end_idx]
+            batch_y_true = y_true[i:end_idx]
+            
+            g = model(batch_points)
+            weights = batch_y_true[:, -2]
+            omega = batch_y_true[:, -1]
+            
+            det = tf.math.real(tf.linalg.det(g))
+            det_over_omega = det / omega
+            batch_volume_cy = tf.math.reduce_mean(weights, axis=-1)
+            vol_k = tf.math.reduce_mean(det_over_omega * weights, axis=-1)
+            ratio = batch_volume_cy / vol_k
+            sigma_integrand = tf.abs(tf.ones(tf.shape(det_over_omega), dtype=real_dtype) - det_over_omega * ratio) * weights
+            
+            # Accumulate weighted sum
+            batch_sigma_sum = tf.reduce_sum(sigma_integrand)
+            batch_vol_sum = tf.reduce_sum(weights)
+            
+            return i + batch_size, sigma_sum + batch_sigma_sum, volume_cy_sum + batch_vol_sum
+        
+        # Run the loop
+        _, final_sigma_sum, final_volume_cy_sum = tf.while_loop(
+            condition, body, [i, sigma_sum, volume_cy_sum])
+        
+        # Compute final result
+        sigma = final_sigma_sum / final_volume_cy_sum
+        return sigma
+    else:
+        g = model(points)
+        weights = y_true[:, -2]
+        omega = y_true[:, -1]
+        # use gamma series
+        det = tf.math.real(tf.linalg.det(g))  # * factorial / (2**nfold)
+        det_over_omega = det / omega
+        volume_cy = tf.math.reduce_mean(weights, axis=-1)
+        vol_k = tf.math.reduce_mean(det_over_omega * weights, axis=-1)
+        ratio = volume_cy / vol_k
+        sigma_integrand = tf.abs(tf.ones(tf.shape(det_over_omega), dtype=real_dtype) - det_over_omega * ratio) * weights
+        sigma = tf.math.reduce_mean(sigma_integrand) / volume_cy
+        return sigma
 
 
 def ricci_measure(model, points, y_true, pullbacks=None, verbose=0):

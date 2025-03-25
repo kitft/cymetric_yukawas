@@ -227,7 +227,7 @@ class SigmaCallback(tfk.callbacks.Callback):
             epoch (int): epoch
             logs (dict, optional): history.history. Defaults to None.
         """
-        sigma = sigma_measure_tf(self.model, self.X_val, self.y_val)
+        sigma = sigma_measure_tf(self.model, self.X_val, self.y_val, batch = True)
 
         cb_res = sigma.numpy().tolist()
         logs['sigma_val'] = cb_res

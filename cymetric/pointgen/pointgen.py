@@ -305,6 +305,7 @@ class PointGenerator:
             self.d2Qdz2_factors = []
             self.dI_DQZbasis = []
             self.dI_DQZfactors = []
+            n_moduli_directions = len(self.moduli_space_directions)
         
         for i, m in enumerate(np.eye(self.ncoords, dtype=int)):
             # First derivatives
@@ -322,8 +323,25 @@ class PointGenerator:
                 good2[np.where(basis2 < 0)[0]] = False
                 self.d2Qdz2_basis += [basis2[good2]]
                 self.d2Qdz2_factors += [factors2[good2]]
-            if self.get_moduli_space_metric: 
-                pass
+        if self.get_moduli_space_metric:
+            """then, to evaluate, we need to sum over the 2nd axis of dI_DQAbasis/factors.
+                #  The first axis is the direction in moduli space, the second is the z coordinate,
+                #  the third axis is the individual monomial contibution (so 4th is the powers of each z).
+                #  As usual, sum over third and exp prod over 4th"""
+            for i in range(n_moduli_directions):
+                dI_DQZone = []
+                dI_DQZfactor = []
+                for i, m in enumerate(np.eye(self.ncoords, dtype=int)):
+                    # First derivatives
+                    basis = self.monomials - m
+                    factors = self.monomials[:, i] * self.n_moduli_directions[i]# we actually don't want the coeffs here
+                    good = np.ones(len(basis), dtype=bool)
+                    good[np.where(basis < 0)[0]] = False
+                    dI_DQZone += [basis[good]]
+                    dI_DQZfactor += [factors[good]]
+                self.dI_DQZbasis += [dI_DQZone]
+                self.dI_DQZfactors += [dI_DQZfactor]
+                
 
     def _generate_dzdz_basis(self, nproc=-1):
         r"""Generates a monomial basis for dz_i/dz_j
@@ -931,6 +949,9 @@ class PointGenerator:
         self.BASIS['D2QDZ2F0'] = D2QDZ2F
 
         #DI_DQZB
+        #n_moduli_directions = len(self.n_moduli_directions)
+        #for
+
 
     def generate_points_quadratic(self, n_p):
         r"""Generates complex points on the CY.
