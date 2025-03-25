@@ -784,7 +784,7 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
 
    start=time.time()
    failuretosolveequation= batch_process_helper_func(
-        lambda x,y,z,w,a: tf.expand_dims(HYM_measure_val_for_batching(betamodel,x,y,z,w,a),axis=0),
+        lambda x,y,z,w,a: HYM_measure_val_for_batching(betamodel,x,y,z,w,a),
         (databeta['X_val'],databeta['y_val'],databeta['val_pullbacks'],databeta['inv_mets_val'],databeta['sources_val']),
         batch_indices=(0,1,2,3,4),
         batch_size=10000,
