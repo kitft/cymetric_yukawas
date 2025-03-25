@@ -24,7 +24,7 @@ def delete_all_dicts_except(*except_dict_names):
 
     # Optionally, you can clear memory by calling garbage collector
     gc.collect()
-def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10000, compile_func=False, actually_batch=True, kwargs=None, print_progress=False, batch_kwargs_keys=None):
+def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10000, compile_func=False, actually_batch=True, kwargs=None, print_progress=False, batch_kwargs_keys=None, print_anything=True):
     if kwargs is None:
         kwargs = {}
         
@@ -40,10 +40,10 @@ def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10
     # Determine the number of batches based on the first batched argument
     num_batches = tf.cast(tf.math.ceil(tf.shape(args[batch_indices[0]])[0] / batch_size), tf.int32)
     # Get function name safely - handle both regular functions and tf.function objects
-    func_name = func_orig.__name__ if hasattr(func_orig, '__name__') else str(func_orig)
-    print(f"Batching function {func_name} with {num_batches} batches, compiled? {compile_func}")
+    if print_anything:
+        func_name = func_orig.__name__ if hasattr(func_orig, '__name__') else str(func_orig)
+        print(f"Batching function {func_name} with {num_batches} batches, compiled? {compile_func}")
     results_list = []
-    import time
     start_time = time.time()
     first_iter_time = None
     second_iter_time = None
@@ -76,17 +76,18 @@ def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10
         results_list.append(batch_results)
         
         # Time tracking and ETA calculation
-        if i == 0:
-            first_iter_time = time.time() - iter_start_time
-            print(f"    First batch took {first_iter_time:.2f}s")
-        elif i == 1:
-            second_iter_time = time.time() - iter_start_time
-            eta = second_iter_time * (tf.cast(num_batches, tf.float32) - 2)
-            #if print_progress:
-            print(f"    Second batch took {second_iter_time:.2f}s. ETA: {eta:.2f}s")
-        else:
-            if print_progress:
-                print(i)
+        if print_anything:
+            if i == 0:
+                first_iter_time = time.time() - iter_start_time
+                print(f"    First batch took {first_iter_time:.2f}s")
+            elif i == 1:
+                second_iter_time = time.time() - iter_start_time
+                eta = second_iter_time * (tf.cast(num_batches, tf.float32) - 2)
+                #if print_progress:
+                print(f"    Second batch took {second_iter_time:.2f}s. ETA: {eta:.2f}s")
+            else:
+                if print_progress:
+                    print(i)
 
     return tf.concat(results_list, axis=0)
 
