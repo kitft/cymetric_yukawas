@@ -52,7 +52,7 @@ def batch_helper(batch_indices=None, print_progress = False):
                     tf_func,
                     args,
                     batch_indices=indices_to_batch,
-                    batch_size=10000,  # Default batch size
+                    batch_size=1000,  # Default batch size
                     compile_func=True,
                     print_progress=print_progress,
                     print_anything=print_progress
@@ -63,7 +63,7 @@ def batch_helper(batch_indices=None, print_progress = False):
                     tf_func,
                     args,
                     batch_indices=indices_to_batch,
-                    batch_size=10000,
+                    batch_size=1000,
                     compile_func=False,
                     print_progress=print_progress,
                     print_anything=print_progress
