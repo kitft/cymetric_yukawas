@@ -180,6 +180,9 @@ class PointGenerator:
         # pullback accuracy with the inverse vs implicit derivatives.
         self.dzdz_generated = False
         self._generate_padded_basis()
+        if self.get_moduli_space_metric:
+            self._generate_moduli_space_basis()
+            self._generate_padded_dIdQZ_basis()
 
     def _generate_root_basis(self):
         r"""Generates monomial basis for the polynomials in 
@@ -951,7 +954,39 @@ class PointGenerator:
         #DI_DQZB
         #n_moduli_directions = len(self.n_moduli_directions)
         #for
-
+    def _generate_padded_dIdQZ_basis(self):
+        """Generates padded basis for moduli space derivatives.
+        
+        The structure is:
+        - First axis: direction in moduli space
+        - Second axis: z coordinate
+        - Third axis: individual monomial contribution
+        - Fourth axis: powers of each z
+        """
+        n_moduli_directions = len(self.moduli_space_directions)
+        
+        # Find maximum shape across all directions and coordinates
+        max_shape = 0
+        for direction_basis in self.dI_DQZbasis:
+            for coord_basis in direction_basis:
+                if len(coord_basis) > max_shape:
+                    max_shape = len(coord_basis)
+        
+        # Create padded arrays
+        DI_DQZB = np.zeros((n_moduli_directions, self.ncoords, max_shape, self.ncoords), dtype=np.complex128)
+        DI_DQZF = np.zeros((n_moduli_directions, self.ncoords, max_shape), dtype=np.complex128)
+        
+        # Fill the padded arrays
+        for i in range(n_moduli_directions):
+            for j in range(self.ncoords):
+                basis = self.dI_DQZbasis[i][j]
+                factors = self.dI_DQZfactors[i][j]
+                DI_DQZB[i, j, 0:len(basis)] += basis
+                DI_DQZF[i, j, 0:len(factors)] += factors
+        
+        self.BASIS['DI_DQZB0'] = DI_DQZB
+        self.BASIS['DI_DQZF0'] = DI_DQZF
+    
 
     def generate_points_quadratic(self, n_p):
         r"""Generates complex points on the CY.

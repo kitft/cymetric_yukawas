@@ -1215,6 +1215,10 @@ class BiholoModelFuncGENERALforHYMinv3(tf.keras.Model):
                              for widths_out in layer_sizes[1:-1]]#i.e. 0->1,1->2,... layer_sizes-2->layer_sizes-3->layer_sizes-2. so misses the last 1. this should be 1.
         self.layers_list2+=[tf.keras.layers.Dense(units=layer_sizes[-1], use_bias=False)]
         self.layers_list2+=[tf.keras.layers.Dense(units=1, use_bias=False,kernel_initializer=final_layer_inits)]# add the extra free parameter after the log
+        
+        # Additional bias parameter for the final output
+        self.final_bias = tf.Variable(0.0, dtype=tf.float32, trainable=True)
+        
         self.BASIS=BASIS
         self.nCoords=tf.reduce_sum(tf.cast(BASIS['AMBIENT'],tf.int32)+1)
         self.ambient=tf.cast(BASIS['AMBIENT'],tf.int32)
@@ -1253,9 +1257,33 @@ class BiholoModelFuncGENERALforHYMinv3(tf.keras.Model):
         ### incorrect!
         #print("new inv")
         #return  self.layers_list[-1](inputs)/self.layers_list2[-1](inputs2)
-        out=self.layers_list[-1](safe_log_abs(inputs))-self.layers_list2[-1](safe_log_abs(inputs2))
+        out=self.layers_list[-1](safe_log_abs(inputs))-self.layers_list2[-1](safe_log_abs(inputs2)) + self.final_bias
         return tf.clip_by_value(out,-1e6,1e6)
         #return  -self.layers_list[-1](tf.math.log(inputs))
+    
+    def set_zero_integral(self, points, weights):
+        """Sets the final_bias parameter such that the weighted integral of the model is zero.
+        
+        Args:
+            points: Tensor of points to evaluate the model at
+            weights: Tensor of weights for each point
+        """
+        # Temporarily set bias to zero to get the base output
+        #original_bias = self.final_bias.numpy()
+        self.final_bias.assign(0.0)
+        
+        # Compute model outputs without the bias
+        outputs = self(points)
+        
+        # Calculate the weighted average
+        weighted_sum = tf.reduce_mean(outputs * weights)
+        total_weight = tf.reduce_mean(weights)
+        weighted_avg = weighted_sum / total_weight
+        
+        # Set the bias to the negative of the weighted average to make integral zero
+        self.final_bias.assign(-weighted_avg)
+        
+        return -weighted_avg
 
 
 class BiholoModelFuncGENERALforHYMinv4(tf.keras.Model):
