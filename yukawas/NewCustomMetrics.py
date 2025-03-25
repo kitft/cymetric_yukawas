@@ -37,7 +37,7 @@ class LaplacianLoss(tfk.metrics.Metric):
 
 
 
-def laplacian_measure_loss(model, validation_data, batch=False):
+def laplacian_measure_loss(model, validation_data, batch = False):
     r"""Computes the Transition loss measure.
 
     Args:
@@ -57,8 +57,29 @@ def laplacian_measure_loss(model, validation_data, batch=False):
     #y_val = tf.cast(y_val, real_dtype)
     #aux=tf.cast(aux, real_dtype)
     #sort out this float32 problem!
-    return tf.math.reduce_mean(
-        model.compute_laplacian_loss(X_val,pullbacks,invmetrics,sources, batch=batch))
+    if batch:
+        # Batch process with size 1000
+        batch_size = 1000
+        num_samples = tf.shape(X_val)[0]
+        num_batches = tf.cast(tf.math.ceil(num_samples / batch_size), tf.int32)
+        
+        results = []
+        for i in range(num_batches):
+            start_idx = i * batch_size
+            end_idx = tf.minimum((i + 1) * batch_size, num_samples)
+            
+            batch_X = X_val[start_idx:end_idx]
+            batch_pullbacks = pullbacks[start_idx:end_idx]
+            batch_invmetrics = invmetrics[start_idx:end_idx]
+            batch_sources = sources[start_idx:end_idx]
+            
+            batch_result = model.compute_laplacian_loss(batch_X, batch_pullbacks, batch_invmetrics, batch_sources)
+            results.append(batch_result)
+            
+        return tf.math.reduce_mean(tf.concat(results, axis=0))
+    else:
+        return tf.math.reduce_mean(
+            model.compute_laplacian_loss(X_val, pullbacks, invmetrics, sources))
 
 laplacian_measure_tf = tf.function(func=laplacian_measure_loss)
 class LaplacianCallback(tfk.callbacks.Callback):
