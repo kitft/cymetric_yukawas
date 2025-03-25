@@ -47,47 +47,114 @@ def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10
     start_time = time.time()
     first_iter_time = None
     second_iter_time = None
-
-    for i in range(num_batches):
-        iter_start_time = time.time()
-        start_idx = i * batch_size
-        end_idx = tf.minimum((i + 1) * batch_size, tf.shape(args[batch_indices[0]])[0])
+    
+    # Option to use tf.while_loop for potentially better performance
+    use_tf_loop = kwargs.pop('use_tf_loop', True)
+    
+    if use_tf_loop:
+        # Define the loop variables
+        i = tf.constant(0)
+        results_list_tensor = tf.TensorArray(
+            dtype=tf.nest.flatten(func(*[arg[:1] if idx in batch_indices else arg for idx, arg in enumerate(args)], **kwargs))[0].dtype,
+            size=num_batches,
+            dynamic_size=False,
+            clear_after_read=True
+        )
         
-        # Create batched arguments
-        batched_args = list(args)
-        for idx in batch_indices:
-            batched_args[idx] = args[idx][start_idx:end_idx]
+        # Define loop condition and body
+        def condition(i, _):
+            return i < num_batches
         
-        # Create batched kwargs with only the relevant keys
-        batched_kwargs = {}
-        # Copy only the keys we need to batch
-        if batch_kwargs_keys:
-            for key in batch_kwargs_keys:
-                if key in kwargs:
-                    batched_kwargs[key] = kwargs[key][start_idx:end_idx]
-            # Add remaining keys from original kwargs
-            for key, value in kwargs.items():
-                if key not in batched_kwargs:
-                    batched_kwargs[key] = value
-        else:
-            batched_kwargs = kwargs
-        # Call the function with batched and static arguments
-        batch_results = func(*batched_args, **batched_kwargs)
-        results_list.append(batch_results)
-        
-        # Time tracking and ETA calculation
-        if print_anything:
-            if i == 0:
-                first_iter_time = time.time() - iter_start_time
-                print(f"    First batch took {first_iter_time:.2f}s")
-            elif i == 1:
-                second_iter_time = time.time() - iter_start_time
-                eta = second_iter_time * (tf.cast(num_batches, tf.float32) - 2)
-                #if print_progress:
-                print(f"    Second batch took {second_iter_time:.2f}s. ETA: {eta:.2f}s")
+        def body(i, results_array):
+            iter_start_time = time.time()
+            start_idx = i * batch_size
+            end_idx = tf.minimum((i + 1) * batch_size, tf.shape(args[batch_indices[0]])[0])
+            
+            # Create batched arguments
+            batched_args = list(args)
+            for idx in batch_indices:
+                batched_args[idx] = args[idx][start_idx:end_idx]
+            
+            # Create batched kwargs
+            batched_kwargs = {}
+            if batch_kwargs_keys:
+                for key in batch_kwargs_keys:
+                    if key in kwargs:
+                        batched_kwargs[key] = kwargs[key][start_idx:end_idx]
+                for key, value in kwargs.items():
+                    if key not in batched_kwargs:
+                        batched_kwargs[key] = value
             else:
-                if print_progress:
-                    print(i)
+                batched_kwargs = kwargs
+                
+            # Call function and store result
+            batch_results = func(*batched_args, **batched_kwargs)
+            results_array = results_array.write(i, batch_results)
+            
+            # Time tracking
+            if print_anything:
+                nonlocal first_iter_time, second_iter_time
+                if i == 0:
+                    first_iter_time = time.time() - iter_start_time
+                    tf.print("    First batch took", first_iter_time, "s")
+                elif i == 1:
+                    second_iter_time = time.time() - iter_start_time
+                    eta = second_iter_time * tf.cast(num_batches - 2, tf.float32)
+                    tf.print("    Second batch took", second_iter_time, "s. ETA:", eta, "s")
+                elif print_progress:
+                    tf.print(i)
+            
+            return i + 1, results_array
+        
+        # Run the loop
+        _, results_array = tf.while_loop(condition, body, [i, results_list_tensor])
+        
+        # Stack results
+        results = results_array.stack()
+        return tf.reshape(results, [-1] + results.shape.as_list()[1:])
+    
+    else:
+        # Original implementation with Python for loop
+        for i in range(num_batches):
+            iter_start_time = time.time()
+            start_idx = i * batch_size
+            end_idx = tf.minimum((i + 1) * batch_size, tf.shape(args[batch_indices[0]])[0])
+            
+            # Create batched arguments
+            batched_args = list(args)
+            for idx in batch_indices:
+                batched_args[idx] = args[idx][start_idx:end_idx]
+            
+            # Create batched kwargs with only the relevant keys
+            batched_kwargs = {}
+            # Copy only the keys we need to batch
+            if batch_kwargs_keys:
+                for key in batch_kwargs_keys:
+                    if key in kwargs:
+                        batched_kwargs[key] = kwargs[key][start_idx:end_idx]
+                # Add remaining keys from original kwargs
+                for key, value in kwargs.items():
+                    if key not in batched_kwargs:
+                        batched_kwargs[key] = value
+            else:
+                batched_kwargs = kwargs
+            # Call the function with batched and static arguments
+            batch_results = func(*batched_args, **batched_kwargs)
+            results_list.append(batch_results)
+            
+            # Time tracking and ETA calculation
+            if print_anything:
+                if i == 0:
+                    first_iter_time = time.time() - iter_start_time
+                    print(f"    First batch took {first_iter_time:.2f}s")
+                elif i == 1:
+                    second_iter_time = time.time() - iter_start_time
+                    eta = second_iter_time * (tf.cast(num_batches, tf.float32) - 2)
+                    #if print_progress:
+                    print(f"    Second batch took {second_iter_time:.2f}s. ETA: {eta:.2f}s")
+                else:
+                    if print_progress:
+                        print(i)
 
     return tf.concat(results_list, axis=0)
 
