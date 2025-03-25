@@ -564,15 +564,15 @@ def generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundle
 
 def getcallbacksandmetricsHYM(databeta, prefix, wandb = True, batchsize = 64):
    databeta_val_dict=dict(list(dict(databeta).items())[len(dict(databeta))//2:])
-   tcb = TransitionCallback((databeta['X_val'], databeta['y_val']))
+   #tcb = TransitionCallback((databeta['X_val'], databeta['y_val']))
    lplcb = LaplacianCallback(databeta_val_dict)
    if wandb:
       wandbcb = PrefixedWandbMetricsLogger(prefix, log_freq=log_freq, n_batches_in_epoch=len(databeta['X_train'])//batchsize)
    else:
       wandbcb = None
    # lplcb = LaplacianCallback(data_val)
-   cb_list = [lplcb,tcb, wandbcb] if wandb else [lplcb,tcb]
-   cmetrics = [TotalLoss(), LaplacianLoss(), TransitionLoss()]
+   cb_list = [lplcb, wandbcb] if wandb else [lplcb]#
+   cmetrics = [TotalLoss(), LaplacianLoss()]#TransitionLoss()
    return cb_list, cmetrics
 
 def convert_to_tensor_dict(data):
