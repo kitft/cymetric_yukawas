@@ -337,7 +337,7 @@ class PointGenerator:
                 for i, m in enumerate(np.eye(self.ncoords, dtype=int)):
                     # First derivatives
                     basis = self.monomials - m
-                    factors = self.monomials[:, i] * self.n_moduli_directions[i]# we actually don't want the coeffs here
+                    factors = self.monomials[:, i] * self.moduli_space_directions[i]# we actually don't want the coeffs here
                     good = np.ones(len(basis), dtype=bool)
                     good[np.where(basis < 0)[0]] = False
                     dI_DQZone += [basis[good]]
@@ -1299,6 +1299,58 @@ class PointGenerator:
         omega = jnp.add.reduce(DQDZF0[indices] * omega, axis=-1)
         # compute (dQ/dzj)**-1
         return 1 / omega
+    @staticmethod
+    @jax_jit
+    def _compute_d2q_dz2_jax(points, indices, D2QDZ2B0, D2QDZ2F0):
+        """Compute second derivatives of Q with respect to z."""
+        d2q_dz2 = jnp.power(jnp.expand_dims(points, 1), D2QDZ2B0[:,indices])
+        d2q_dz2 = jnp.multiply.reduce(d2q_dz2, axis=-1)
+        d2q_dz2 = jnp.add.reduce(D2QDZ2F0[:,indices] * d2q_dz2, axis=-1)
+        return d2q_dz2
+    
+    @staticmethod
+    @jax_jit
+    def _compute_dq_dz_jax(points, indices, DQDZB0, DQDZF0):
+        """Compute first derivatives of Q with respect to z."""
+        dq_dz = jnp.power(jnp.expand_dims(points, 1), DQDZB0[:,indices])
+        dq_dz = jnp.multiply.reduce(dq_dz, axis=-1)
+        dq_dz = jnp.add.reduce(DQDZF0[:,indices] * dq_dz, axis=-1)
+        return dq_dz
+    
+    @staticmethod
+    @jax_jit
+    def _compute_dI_dQZ_jax(points, indices, DI_DQZB0, DI_DQZF0):
+        """Compute derivatives of I with respect to Q and Z."""
+        dI_dQZ = jnp.power(jnp.expand_dims(points, 1), DI_DQZB0[:,indices])
+        dI_dQZ = jnp.multiply.reduce(dI_dQZ, axis=-1)
+        dI_dQZ = jnp.add.reduce(DI_DQZF0[:,indices] * dI_dQZ, axis=-1)
+        return dI_dQZ
+    
+    @staticmethod
+    @jax_jit
+    def _compute_dIp_jax(points, indices, QB0, coeffsfordir):
+        """Compute dIp using the moduli space directions."""
+        dIp = jnp.power(jnp.expand_dims(points, 1), QB0[:,indices])
+        dIp = jnp.multiply.reduce(dIp, axis=-1)
+        dIp = jnp.einsum('Ii,xi->xI', coeffsfordir, dIp)
+        return dIp
+    
+    @staticmethod
+    @jax_jit
+    def _dI_holomorphic_volume_form_jax(points, j_elim, DQDZB0, DQDZF0, DI_DQZB0, DI_DQZF0, D2QDZ2B0, D2QDZ2F0, QB0, QF0, moduli_space_directions):
+        """JAX implementation of holomorphic volume form computation."""
+        indices = PointGenerator._find_max_dQ_coords_jax(points, DI_DQZB0, DI_DQZF0) if j_elim is None else j_elim
+        
+        # Compute all the derivatives
+        d2q_dz2 = PointGenerator._compute_d2q_dz2_jax(points, indices, D2QDZ2B0, D2QDZ2F0)
+        dq_dz = PointGenerator._compute_dq_dz_jax(points, indices, DQDZB0, DQDZF0)
+        dI_dQZ = PointGenerator._compute_dI_dQZ_jax(points, indices, DI_DQZB0, DI_DQZF0)
+        dIp = PointGenerator._compute_dIp_jax(points, indices, QB0, moduli_space_directions)
+        
+        d_IOmega =  -1*(dI_dQZ - jnp.expand_dims(d2q_dz2/dq_dz, 1) * dIp)*jnp.expand_dims(1/dq_dz**2, 1)
+        return d_IOmega
+        # compute (dQ/dzj)**-1
+        #return 1 / d2q_dz2
     
     def _holomorphic_volume_form_legacy(self, points, j_elim=None):
         """Legacy numpy implementation of holomorphic volume form computation."""
