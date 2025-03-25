@@ -49,7 +49,7 @@ def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10
     second_iter_time = None
     
     # Option to use tf.while_loop for potentially better performance
-    use_tf_loop = kwargs.pop('use_tf_loop', True)
+    use_tf_loop = kwargs.pop('use_tf_loop', False)
     
     if use_tf_loop:
         # Define the loop variables
@@ -66,7 +66,6 @@ def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10
             return i < num_batches
         
         def body(i, results_array):
-            iter_start_time = time.time()
             start_idx = i * batch_size
             end_idx = tf.minimum((i + 1) * batch_size, tf.shape(args[batch_indices[0]])[0])
             
@@ -93,14 +92,10 @@ def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10
             
             # Time tracking
             if print_anything:
-                nonlocal first_iter_time, second_iter_time
                 if i == 0:
-                    first_iter_time = time.time() - iter_start_time
-                    tf.print("    First batch took", first_iter_time, "s")
+                    tf.print("    First batch completed")
                 elif i == 1:
-                    second_iter_time = time.time() - iter_start_time
-                    eta = second_iter_time * tf.cast(num_batches - 2, tf.float32)
-                    tf.print("    Second batch took", second_iter_time, "s. ETA:", eta, "s")
+                    tf.print("    Second batch completed")
                 elif print_progress:
                     tf.print(i)
             
@@ -109,12 +104,12 @@ def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10
         # Run the loop
         _, results_array = tf.while_loop(condition, body, [i, results_list_tensor])
         
-        # Stack results
-        results = results_array.stack()
-        return tf.reshape(results, [-1] + results.shape.as_list()[1:])
+        # Stack and concatenate results
+        stacked_results = results_array.stack()
+        # Reshape to flatten the first dimension properly
+        return tf.concat([stacked_results[i] for i in range(num_batches)], axis=0)
     
     else:
-        # Original implementation with Python for loop
         for i in range(num_batches):
             iter_start_time = time.time()
             start_idx = i * batch_size
