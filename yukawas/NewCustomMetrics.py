@@ -37,7 +37,7 @@ class LaplacianLoss(tfk.metrics.Metric):
 
 
 
-def laplacian_measure_loss(model, validation_data):
+def laplacian_measure_loss(model, validation_data, batch=False):
     r"""Computes the Transition loss measure.
 
     Args:
@@ -58,7 +58,7 @@ def laplacian_measure_loss(model, validation_data):
     #aux=tf.cast(aux, real_dtype)
     #sort out this float32 problem!
     return tf.math.reduce_mean(
-        model.compute_laplacian_loss(X_val,pullbacks,invmetrics,sources))
+        model.compute_laplacian_loss(X_val,pullbacks,invmetrics,sources, batch=batch))
 
 laplacian_measure_tf = tf.function(func=laplacian_measure_loss)
 class LaplacianCallback(tfk.callbacks.Callback):
@@ -83,7 +83,7 @@ class LaplacianCallback(tfk.callbacks.Callback):
             epoch (int): epoch
             logs (dict, optional): history.history. Defaults to None.
         """
-        laplacian = laplacian_measure_tf(self.model, self.data)
+        laplacian = laplacian_measure_tf(self.model, self.data, batch=True)
 
         cb_res = laplacian.numpy().tolist()
         logs['laplacian_val'] = cb_res
