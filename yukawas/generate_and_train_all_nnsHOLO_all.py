@@ -783,14 +783,25 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
 
 
    start=time.time()
-   meanfailuretosolveequation,_,_=HYM_measure_val(betamodel,databeta)
-   #meanfailuretosolveequation= batch_process_helper_func(
-   #     tf.function(lambda x,y,z,w,a: tf.expand_dims(HYM_measure_val_for_batching(betamodel,x,y,z,w,a),axis=0)),
-   #     (databeta['X_val'],databeta['y_val'],databeta['val_pullbacks'],databeta['inv_mets_val'],databeta['sources_val']),
-   #     batch_indices=(0,1,2,3,4),
-   #     batch_size=50
-   # )
-   meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation).numpy()
+   failuretosolveequation= batch_process_helper_func(
+        lambda x,y,z,w,a: tf.expand_dims(HYM_measure_val_for_batching(betamodel,x,y,z,w,a),axis=0),
+        (databeta['X_val'],databeta['y_val'],databeta['val_pullbacks'],databeta['inv_mets_val'],databeta['sources_val']),
+        batch_indices=(0,1,2,3,4),
+        batch_size=10000,
+        compile_func=True
+    )
+   weights = tf.cast(databeta['y_val'][:,0],real_dtype)  
+   meanfailuretosolveequation=tf.reduce_mean(failuretosolveequation*weights)/tf.reduce_mean(weights*tf.math.abs(databeta['sources_val']))
+
+      
+   # Normalize the failure values for histogram
+   normalized_failure = failuretosolveequation*weights/tf.reduce_mean(weights*tf.math.abs(databeta['sources_val']))
+   pointwise_failure = failuretosolveequation/(tf.math.abs(databeta['sources_val']) + 1e-8)
+   
+   # Log histogram to wandb
+   wandb.log({lbstring + "_normalized_failure_histogram_weighted": wandb.Histogram(normalized_failure.numpy())})
+   wandb.log({lbstring + "_pointwise_failure_histogram_weighted": wandb.Histogram(pointwise_failure.numpy())})
+   
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("time to do that: ",time.time()-start)
 
@@ -935,14 +946,23 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,phimode
    print("average section transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
    start=time.time()
    #meanfailuretosolveequation,_,_=HYM_measure_val(betamodel,databeta)
-   meanfailuretosolveequation= batch_process_helper_func(
+   failuretosolveequation= batch_process_helper_func(
         lambda x,y,z,w,a: tf.expand_dims(HYM_measure_val_for_batching(betamodel,x,y,z,w,a),axis=0),
         (databeta['X_val'],databeta['y_val'],databeta['val_pullbacks'],databeta['inv_mets_val'],databeta['sources_val']),
         batch_indices=(0,1,2,3,4),
         batch_size=10000,
         compile_func=True
     )
-   meanfailuretosolveequation=tf.reduce_mean(meanfailuretosolveequation)
+   weights = tf.cast(databeta['y_val'][:,0],real_dtype)  
+   meanfailuretosolveequation=tf.reduce_mean(failuretosolveequation*weights)/tf.reduce_mean(weights*tf.math.abs(databeta['sources_val']))
+   
+   # Normalize the failure values for histogram
+   normalized_failure = failuretosolveequation*weights/tf.reduce_mean(weights*tf.math.abs(databeta['sources_val']))
+   pointwise_failure = failuretosolveequation/(tf.math.abs(databeta['sources_val']) + 1e-8)
+   
+   # Log histogram to wandb
+   wandb.log({lbstring + "_normalized_failure_histogram_weighted": wandb.Histogram(normalized_failure.numpy())})
+   wandb.log({lbstring + "_pointwise_failure_histogram_weighted": wandb.Histogram(pointwise_failure.numpy())})
    
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print(f"time to do mean of difference: {time.time()-start:.2f} seconds")
@@ -1344,13 +1364,15 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
 
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("time to do that: ",time.time()-start)
-   TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model, batch=True)
+   TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS, dataforhistograms = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model, batch=True, data_for_histograms=True)
    print("trained coclosure divided by norm of v: " + str(TrainedDivTrained))
    print("avg/avg trained coclosure divided by norm of trained v: " + str(avgavagTrainedDivTrained))
    print("trained coclosure divided by norm of v_FS: " + str(TrainedDivFS))
    print("avg/avg trained coclosure divided by norm of v_FS: " + str(avgavagTrainedDivFS))
    print("FS coclosure divided by norm of v_FS: " + str(FS_DivFS))
    print("avg/avg FS coclosure divided by norm of v_FS: " + str(avgavagFS_DivFS))
+   wandb.log({f'{metric_model.unique_name}_trained_coclosure_histogram/vFSnorm': wandb.Histogram(dataforhistograms['Trained_DivFS'])})
+   wandb.log({f'{metric_model.unique_name}_FS_coclosure_histogram/vFSnorm': wandb.Histogram(dataforhistograms['FS_DivFS'])})
 
    tf.keras.backend.clear_session()
    del dataHF, dataHF_train, dataHF_val_dict, valfinal,valraw,valzero
@@ -1578,13 +1600,15 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    print("TIME to compute mean failure to solve equation: ", time.time()-start)
    start = time.time()
    print("computing trained coclosure divided by norm of v", time.strftime("%H:%M:%S", time.localtime()))
-   TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model, batch=True)
+   TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS, dataforhistograms = HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF_val_dict,betamodel,metric_model, batch=True, data_for_histograms=True)
    print("trained coclosure divided by norm of v: " + str(TrainedDivTrained))
    print("avg/avg trained coclosure divided by norm of trained v: " + str(avgavagTrainedDivTrained))
    print("trained coclosure divided by norm of v_FS: " + str(TrainedDivFS))
    print("avg/avg trained coclosure divided by norm of v_FS: " + str(avgavagTrainedDivFS))
    print("FS coclosure divided by norm of v_FS: " + str(FS_DivFS))
    print("avg/avg FS coclosure divided by norm of v_FS: " + str(avgavagFS_DivFS))
+   wandb.log({f'{metric_model.unique_name}_trained_coclosure_histogram/vFSnorm': wandb.Histogram(dataforhistograms['Trained_DivFS'])})
+   wandb.log({f'{metric_model.unique_name}_FS_coclosure_histogram/vFSnorm': wandb.Histogram(dataforhistograms['FS_DivFS'])})
    print("TIME to compute trained coclosure divided by norm of v: ", time.time()-start)
    print("\n\n")
    return HFmodel,training_historyHF, meanfailuretosolveequation

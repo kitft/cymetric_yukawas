@@ -503,10 +503,10 @@ def HYM_measure_val(betamodel,databeta):
     # 1: number: sum(w*|laplacian(beta)-rho|)/|sum(w.|rho|)|, where w is the point weight, rho is the source
     # 2: vector: w*|laplacian(beta)-rho|/|sum(w.|rho|)|, where w is the point weight, rho is the source
     # 3: number: w*|laplacian(beta)-rho|)/sum(w.|rho|), where w is the point weight, rho is the source
-    
-    vals=databeta['y_val'][:,0]*tf.math.abs(laplacian(betamodel.model,databeta['X_val'],databeta['val_pullbacks'],databeta['inv_mets_val'])-databeta['sources_val'])
+    weights = tf.cast(databeta['y_val'][:,0],real_dtype)
+    vals=weights*tf.math.abs(laplacian(betamodel.model,databeta['X_val'],databeta['val_pullbacks'],databeta['inv_mets_val'])-databeta['sources_val'])
     val=tf.reduce_mean(vals, axis=-1)
-    absolutevalsofsourcetimesweight=databeta['y_val'][:,0]*tf.math.abs(databeta['sources_val'])
+    absolutevalsofsourcetimesweight=weights*tf.math.abs(databeta['sources_val'])
     mean_ofabsolute_valofsourcetimesweight=tf.reduce_mean(absolutevalsofsourcetimesweight, axis=-1)
     return val/mean_ofabsolute_valofsourcetimesweight, vals/mean_ofabsolute_valofsourcetimesweight,vals/absolutevalsofsourcetimesweight
 
@@ -516,12 +516,12 @@ def HYM_measure_val_for_batching(betamodel, X_val, y_val, val_pullbacks, inv_met
     # 1: number: sum(w*|laplacian(beta)-rho|)/|sum(w.|rho|)|, where w is the point weight, rho is the source
     # 2: vector: w*|laplacian(beta)-rho|/|sum(w.|rho|)|, where w is the point weight, rho is the source
     # 3: number: w*|laplacian(beta)-rho|)/sum(w.|rho|), where w is the point weight, rho is the source
-    
-    vals = y_val[:, 0] * tf.math.abs(laplacian(betamodel.model, X_val, val_pullbacks, inv_mets_val) - sources_val)
-    val = tf.reduce_mean(vals, axis=-1)
-    absolutevalsofsourcetimesweight = y_val[:, 0] * tf.math.abs(sources_val)
-    mean_ofabsolute_valofsourcetimesweight = tf.reduce_mean(absolutevalsofsourcetimesweight, axis=-1)
-    return val/mean_ofabsolute_valofsourcetimesweight#, vals/mean_ofabsolute_valofsourcetimesweight, vals/absolutevalsofsourcetimesweight
+    weights = tf.cast(y_val[:,0],real_dtype)        
+    vals = tf.math.abs(laplacian(betamodel.model, X_val, val_pullbacks, inv_mets_val) - sources_val)
+    #val = tf.reduce_mean(vals, axis=-1)
+    #absolutevalsofsourcetimesweight = weights * tf.math.abs(sources_val)
+    #mean_ofabsolute_valofsourcetimesweight = tf.reduce_mean(absolutevalsofsourcetimesweight, axis=-1)
+    return vals#/mean_ofabsolute_valofsourcetimesweight#, vals/mean_ofabsolute_valofsourcetimesweight, vals/absolutevalsofsourcetimesweight
 
     
 # def measure_laplacian_failure(betamodel,databeta):
@@ -544,6 +544,7 @@ def HYM_measure_val_with_H(HFmodel,dataHF, batch = False):
     #returns ratio means of deldagger V_corrected/deldagger V_FS
     #and returns
     pts = tf.cast(dataHF['X_val'],real_dtype)
+    weights =tf.cast(dataHF['y_val'][:,0],real_dtype)
     # compute the laplacian (withH) acting on the HFmodel
     if batch:
         laplacianvals=laplacianWithH(HFmodel,pts,dataHF['val_pullbacks'],dataHF['inv_mets_val'],HFmodel.HYMmetric, batch=True)
@@ -572,24 +573,26 @@ def HYM_measure_val_with_H(HFmodel,dataHF, batch = False):
         coclosuretrained=coclosure_check(pts,HFmodel.HYMmetric,HFmodel.functionforbaseharmonicform_jbar,HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'])
         coclosureofjustdsigma=coclosure_check(pts,HFmodel.HYMmetric,lambda x: 0*HFmodel.functionforbaseharmonicform_jbar(x),HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'])
     coclosureofvFS = coclosuretrained-coclosureofjustdsigma # by linearity
-    averageoftraineddivaverageofvFS = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(tf.math.abs(coclosureofvFS))
-    traineddivaverageofvFS = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(tf.math.abs(coclosureofvFS))
+    averageoftraineddivaverageofvFS = tf.reduce_mean(tf.math.abs(coclosuretrained)*weights)/tf.reduce_mean(tf.math.abs(coclosureofvFS)*weights)
+    traineddivaverageofvFS = tf.reduce_mean(tf.math.abs(coclosuretrained)*weights)/tf.reduce_mean(tf.math.abs(coclosureofvFS)*weights)
+
 
     #print("check this is tiny: ",tf.math.reduce_std(coclosureofjustdsigma/(laplacianvals)))
     return averageoftraineddivaverageofvFS,traineddivaverageofvFS,tf.math.reduce_std(coclosureofjustdsigma/laplacianvals)
 
-def HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF,HYMmetric_model,metric_model, batch = False):
+def HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF,HYMmetric_model,metric_model, batch = False, data_for_histograms=False):
     #returns ratio means of deldagger V_corrected/deldagger V_FS
     #and returns
     pts = tf.cast(dataHF['X_val'],real_dtype)
+    weights =tf.cast(dataHF['y_val'][:,0],real_dtype)
     # compute the laplacian (withH) acting on the HFmodel
     laplacianvals=laplacianWithH(HFmodel,pts,dataHF['val_pullbacks'],dataHF['inv_mets_val'],HFmodel.HYMmetric, batch=batch)
     coclosuretrained=coclosure_check(pts,HFmodel.HYMmetric,HFmodel.functionforbaseharmonicform_jbar,HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'], batch=batch )
     coclosureofjustdsigma=coclosure_check(pts,HFmodel.HYMmetric,lambda x: 0*HFmodel.functionforbaseharmonicform_jbar(x),HFmodel,dataHF['inv_mets_val'],dataHF['val_pullbacks'], batch=batch)
     coclosureofFSdirect=coclosure_check(pts,HFmodel.HYMmetric,HFmodel.functionforbaseharmonicform_jbar,lambda x: tf.ones(x.shape[0],dtype=complex_dtype),dataHF['inv_mets_val'],dataHF['val_pullbacks'], batch=batch)
     coclosureofvFS = coclosuretrained-coclosureofjustdsigma # by linearity
-    averageoftraineddivaverageofvFS = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(tf.math.abs(coclosureofvFS))
-    traineddivaverageofvFS = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(tf.math.abs(coclosureofvFS))
+    averageoftraineddivaverageofvFS = tf.reduce_mean(tf.math.abs(coclosuretrained)*weights)/tf.reduce_mean(tf.math.abs(coclosureofvFS)*weights)
+    traineddivaverageofvFS = tf.reduce_mean(tf.math.abs(coclosuretrained)*weights)/tf.reduce_mean(tf.math.abs(coclosureofvFS)*weights)
 
     trained_one_form = HFmodel.corrected_harmonicform(pts)
     trained_one_form_conj = tf.math.conj(trained_one_form)
@@ -607,12 +610,18 @@ def HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF,HYMmetric_model,metri
     print('average mean of trained one form: ',tf.reduce_mean(tf.math.abs(trained_one_form_conj_times_metric)).numpy().item())
     print('average mean of FS one form: ',tf.reduce_mean(tf.math.abs(FS_one_form_conj_times_metric)).numpy().item())
     
-    TrainedDivTrained = tf.reduce_mean(tf.math.abs(coclosuretrained)/trained_one_form_conj_times_metric).numpy().item()
-    avgavagTrainedDivTrained = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(trained_one_form_conj_times_metric).numpy().item()
-    TrainedDivFS = tf.reduce_mean(tf.math.abs(coclosuretrained)/FS_one_form_conj_times_metric).numpy().item()
-    avgavagTrainedDivFS = tf.reduce_mean(tf.math.abs(coclosuretrained))/tf.reduce_mean(FS_one_form_conj_times_metric).numpy().item()
-    FS_DivFS = tf.reduce_mean(tf.math.abs(coclosureofvFS)/FS_one_form_conj_times_metric).numpy().item()
-    avgavagFS_DivFS = tf.reduce_mean(tf.math.abs(coclosureofvFS))/tf.reduce_mean(FS_one_form_conj_times_metric).numpy().item()
+    TrainedDivTrained = tf.reduce_mean(tf.math.abs(coclosuretrained)*weights/(trained_one_form_conj_times_metric)).numpy().item()/tf.reduce_mean(weights).numpy().item()
+    avgavagTrainedDivTrained = tf.reduce_mean(tf.math.abs(coclosuretrained)*weights)/tf.reduce_mean(trained_one_form_conj_times_metric*weights).numpy().item()
+    TrainedDivFS = tf.reduce_mean(tf.math.abs(coclosuretrained)*weights/FS_one_form_conj_times_metric).numpy().item()/tf.reduce_mean(weights).numpy().item()
+    avgavagTrainedDivFS = tf.reduce_mean(tf.math.abs(coclosuretrained)*weights)/tf.reduce_mean(FS_one_form_conj_times_metric*weights).numpy().item()
+    FS_DivFS = tf.reduce_mean(tf.math.abs(coclosureofvFS)*weights/FS_one_form_conj_times_metric).numpy().item()/tf.reduce_mean(weights).numpy().item()
+    avgavagFS_DivFS = tf.reduce_mean(tf.math.abs(coclosureofvFS)*weights)/tf.reduce_mean(FS_one_form_conj_times_metric*weights).numpy().item()
+    if data_for_histograms:
+        dataforhistograms = {
+            'Trained_DivFS': (tf.math.abs(coclosuretrained)*weights)/tf.reduce_mean(FS_one_form_conj_times_metric*weights).numpy().item(),
+            'FS_DivFS': (tf.math.abs(coclosureofvFS)*weights)/tf.reduce_mean(FS_one_form_conj_times_metric*weights).numpy().item(),
+        }
+        return TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS, dataforhistograms
     #print("check this is tiny: ",tf.math.reduce_std(coclosureofjustdsigma/(laplacianvals)))
     return TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS
 
