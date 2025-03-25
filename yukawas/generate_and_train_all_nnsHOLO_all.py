@@ -996,7 +996,7 @@ def generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundlef
 def getcallbacksandmetricsHF(dataHF, prefix, wandb = True, batchsize = 64):
    dataHF_val_dict=dict(list(dict(dataHF).items())[len(dict(dataHF))//2:])
 
-   tcbHF = TransitionCallback((dataHF['X_val'], dataHF['y_val']))
+   #tcbHF = TransitionCallback((dataHF['X_val'], dataHF['y_val']))
    lplcbHF = LaplacianCallback(dataHF_val_dict)
    if wandb:
       wandbcbHF = PrefixedWandbMetricsLogger(prefix, log_freq=log_freq, n_batches_in_epoch=len(dataHF['X_train'])//batchsize)
@@ -1004,8 +1004,8 @@ def getcallbacksandmetricsHF(dataHF, prefix, wandb = True, batchsize = 64):
       wandbcbHF = None
    NaNcbHF = NaNCallback()
    # lplcb = LaplacianCallback(dataHF_val)
-   cb_listHF = [lplcbHF,tcbHF, NaNcbHF, wandbcbHF] if wandb else [lplcbHF,tcbHF, NaNcbHF]
-   cmetricsHF = [TotalLoss(), LaplacianLoss(), TransitionLoss()]
+   cb_listHF = [lplcbHF, NaNcbHF, wandbcbHF] if wandb else [lplcbHF, NaNcbHF]#tcbHF
+   cmetricsHF = [TotalLoss(), LaplacianLoss()]#TransitionLoss()]
    return cb_listHF, cmetricsHF
 
    
