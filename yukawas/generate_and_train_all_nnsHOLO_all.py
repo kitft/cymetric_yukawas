@@ -239,9 +239,9 @@ def generate_points_and_save_using_defaults(manifold_name_and_data,number_points
 def getcallbacksandmetrics(data, prefix, wandb = True, batchsize = 64):
    #rcb = RicciCallback((data['X_val'], data['y_val']), data['val_pullbacks'])
    scb = SigmaCallback((data['X_val'], data['y_val']))
-   volkcb = VolkCallback((data['X_val'], data['y_val']))
-   kcb = KaehlerCallback((data['X_val'], data['y_val']))
-   tcb = TransitionCallback((data['X_val'], data['y_val']))
+   #volkcb = VolkCallback((data['X_val'], data['y_val']))
+   #kcb = KaehlerCallback((data['X_val'], data['y_val']))
+   #tcb = TransitionCallback((data['X_val'], data['y_val']))
    if wandb:
       wandbcb = PrefixedWandbMetricsLogger(prefix, log_freq=log_freq, n_batches_in_epoch=len(data['X_train'])//batchsize)
    else:
@@ -1214,14 +1214,15 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
                  nEpochs=nEpochs*((len(dataHF['X_train'])//bSizes[0])+1),
                  final_lr_factor=2  # This will decay to lRate/10
                  )
-         #cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF)
-         #HFmodel2.compile(custom_metrics=cmetricsHF)
-         ##HFmodel=HFmodel2
-         ##opt=opt2
-         #HFmodel2, training_historyHF= train_modelHF(HFmodel2, dataHF_train, optimizer=opt2, epochs=nEpochs, batch_sizes=bSizes, 
-                 #verbose=1, custom_metrics=cmetricsHF, callbacks=cb_listHF)
-         HFmodel.model = nn_HF
-         valraw=batched_test_step(HFmodel, dataHF_val_dict)
+               #cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF)
+               #HFmodel2.compile(custom_metrics=cmetricsHF)
+               ##HFmodel=HFmodel2
+               ##opt=opt2
+               #HFmodel2, training_historyHF= train_modelHF(HFmodel2, dataHF_train, optimizer=opt2, epochs=nEpochs, batch_sizes=bSizes, 
+               #verbose=1, custom_metrics=cmetricsHF, callbacks=cb_listHF)
+         HFmodel = HarmonicFormModel(nn_HF,BASIS,betamodel, linebundleforHYM,functionforbaseharmonicform_jbar,alpha=alpha,norm = [1. for _ in range(2)], unique_name=unique_name)
+         HFmodel.compile(custom_metrics=cmetricsHF)
+         valraw= batched_test_step(  HFmodel, dataHF_val_dict)
          valraw = {key: float(value.numpy()) for key, value in valraw.items()}
       HFmodel, training_historyHF= train_modelHF(HFmodel, dataHF_train, optimizer=opt, epochs=nEpochs, batch_sizes=bSizes, 
                                        verbose=1, custom_metrics=cmetricsHF, callbacks=cb_listHF)
