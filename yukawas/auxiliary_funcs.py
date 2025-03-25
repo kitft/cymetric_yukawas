@@ -49,7 +49,7 @@ def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10
     second_iter_time = None
     
     # Option to use tf.while_loop for potentially better performance
-    use_tf_loop = kwargs.pop('use_tf_loop', False)
+    use_tf_loop = kwargs.pop('use_tf_loop', True)
     
     if use_tf_loop:
         # Define the loop variables
