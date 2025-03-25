@@ -2064,7 +2064,7 @@ class BiholoModelFuncGENERALforSigma2_m13(tf.keras.Model):
         else:
             print("using normal network, not scaling or fixing to zero")
 
-        print("SETTING ALL SECTIONS TO 1")
+        #print("SETTING ALL SECTIONS TO 1")
 
     def call(self, inputs):
         complex_inputs = tf.complex(inputs[:, :self.nCoords], inputs[:, self.nCoords:])
@@ -2073,7 +2073,7 @@ class BiholoModelFuncGENERALforSigma2_m13(tf.keras.Model):
         bihom =self.bihom_func(complex_inputs)
         #tf.print('inp shape')
         #tf.print(tf.shape(inputs))
-        ########sectionsbasis=self.get_deg_kphi_and_mons(complex_inputs)
+        sectionsbasis=self.get_deg_kphi_and_mons(complex_inputs)
         inputs= bihom
         inputs2=inputs
         for layer in self.layers_list[:-1]:
@@ -2093,7 +2093,7 @@ class BiholoModelFuncGENERALforSigma2_m13(tf.keras.Model):
             to_multiply_sections_complex = 0.1*tf.ones_like(to_multiply_sections_complex) +0*to_multiply_sections_complex
         elif not self.use_zero_network and not self.fix_to_0p1x:
             to_multiply_sections_complex = to_multiply_sections_complex
-        sectionsbasis = tf.ones_like(to_multiply_sections_complex)  
+        #sectionsbasis = tf.ones_like(to_multiply_sections_complex)  
         out=tf.einsum('xi,xi->x',sectionsbasis,to_multiply_sections_complex)
         return out
     
