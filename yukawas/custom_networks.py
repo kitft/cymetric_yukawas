@@ -1274,15 +1274,16 @@ class BiholoModelFuncGENERALforHYMinv3(tf.keras.Model):
         
         # Compute model outputs without the bias
         outputs = self(points)
+        if len(outputs.shape) > 1:
+            outputs = tf.squeeze(outputs)
         
         # Calculate the weighted average
-        weighted_sum = tf.reduce_mean(outputs * weights)
-        total_weight = tf.reduce_mean(weights)
+        weighted_sum = tf.reduce_sum(outputs * weights)
+        total_weight = tf.reduce_sum(weights)
         weighted_avg = weighted_sum / total_weight
         
         # Set the bias to the negative of the weighted average to make integral zero
         self.final_bias.assign(-weighted_avg)
-        
         return -weighted_avg
 
 
