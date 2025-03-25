@@ -57,6 +57,34 @@ class PrefixedWandbMetricsLogger(WandbMetricsLogger):
             
             self.global_batch += self.log_freq
 
+
+def batched_test_step(model, data_dict, batch_size=1000):
+    """Run test_step in batches to avoid memory issues."""
+    results = {}
+    n_samples = len(data_dict['X_val'])
+    n_batches = (n_samples + batch_size - 1) // batch_size  # Ceiling division
+    
+    for i in range(n_batches):
+        start_idx = i * batch_size
+        end_idx = min((i + 1) * batch_size, n_samples)
+        
+        # Create batch dictionary
+        batch_dict = {k: v[start_idx:end_idx] for k, v in data_dict.items()}
+        
+        # Run test step on batch
+        batch_results = model.test_step(batch_dict)
+        
+        # Initialize or accumulate results
+        if not results:
+            results = {k: v * (end_idx - start_idx) for k, v in batch_results.items()}
+        else:
+            for k, v in batch_results.items():
+                results[k] += v * (end_idx - start_idx)
+    
+    # Normalize by total number of samples
+    results = {k: v / n_samples for k, v in results.items()}
+    return results
+
 import os
 import numpy as np
 
@@ -1131,32 +1159,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    print("Check eager execution enabled:", tf.executing_eagerly())
    print("batched calls")
 
-   def batched_test_step(model, data_dict, batch_size=1000):
-       """Run test_step in batches to avoid memory issues."""
-       results = {}
-       n_samples = len(data_dict['X_val'])
-       n_batches = (n_samples + batch_size - 1) // batch_size  # Ceiling division
-       
-       for i in range(n_batches):
-           start_idx = i * batch_size
-           end_idx = min((i + 1) * batch_size, n_samples)
-           
-           # Create batch dictionary
-           batch_dict = {k: v[start_idx:end_idx] for k, v in data_dict.items()}
-           
-           # Run test step on batch
-           batch_results = model.test_step(batch_dict)
-           
-           # Initialize or accumulate results
-           if not results:
-               results = {k: v * (end_idx - start_idx) for k, v in batch_results.items()}
-           else:
-               for k, v in batch_results.items():
-                   results[k] += v * (end_idx - start_idx)
-       
-       # Normalize by total number of samples
-       results = {k: v / n_samples for k, v in results.items()}
-       return results
+
    
    valzero = batched_test_step(HFmodelzero, dataHF_val_dict)
    tf.keras.backend.clear_session()   
@@ -1217,7 +1220,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
          #HFmodel2, training_historyHF= train_modelHF(HFmodel2, dataHF_train, optimizer=opt2, epochs=nEpochs, batch_sizes=bSizes, 
                  #verbose=1, custom_metrics=cmetricsHF, callbacks=cb_listHF)
          HFmodel.model = nn_HF
-         valraw=HFmodel.test_step(dataHF_val_dict)
+         valraw=batched_test_step(HFmodel, dataHF_val_dict)
          valraw = {key: float(value.numpy()) for key, value in valraw.items()}
       HFmodel, training_historyHF= train_modelHF(HFmodel, dataHF_train, optimizer=opt, epochs=nEpochs, batch_sizes=bSizes, 
                                        verbose=1, custom_metrics=cmetricsHF, callbacks=cb_listHF)
@@ -1282,7 +1285,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    except Exception as e:
       print("Error in large objects: ", e)
 
-   valfinal =HFmodel.test_step(dataHF_val_dict)
+   valfinal = batched_test_step(HFmodel, dataHF_val_dict)
    valfinal = {key: float(value.numpy()) for key, value in valfinal.items()}
 
    #print("perm9")
@@ -1515,8 +1518,8 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
 
 
 
-   valzero=HFmodelzero.test_step(dataHF_val_dict)
-   valtrained=HFmodel.test_step(dataHF_val_dict)
+   valzero=batched_test_step(HFmodelzero, dataHF_val_dict)
+   valtrained=batched_test_step(HFmodel, dataHF_val_dict)
    valzero = {key: float(value.numpy()) for key, value in valzero.items()}
    valtrained = {key: float(value.numpy()) for key, value in valtrained.items()}
 

@@ -198,7 +198,7 @@ class HarmonicFormModel(FSModel):
 
 
 
-    def compute_laplacian_loss(self,x,pullbacks,invmetrics,sources,training=False):
+    def compute_laplacian_loss(self,x,pullbacks,invmetrics,sources,batch=False,training=False):
         r"""Computes transition loss at each point. In the case of the Phi model, we demand that \phi(\lambda^q_i z_i)=\phi(z_i)
 
         Args:
@@ -257,7 +257,7 @@ class HarmonicFormModel(FSModel):
 
         ##print("fixed now????")
         ##lpl_losses=tf.mth.abs(laplacian(self,x,pullbacks,invmetrics)-(sources))
-        lpl_losses=tf.math.abs(laplacianWithH(self,x,pullbacks,invmetrics,self.HYMmetric,training=training)-(sources))
+        lpl_losses=tf.math.abs(laplacianWithH(self,x,pullbacks,invmetrics,self.HYMmetric,training=training,batch=batch)-(sources))
         #complex_pt = point_vec_to_complex(x)
         ##kappa_3 = tf.reduce_sum(complex_pt[:,4:6]*tf.math.conj(complex_pt[:,4:6]),axis=-1)
         ##kappa_4 = tf.reduce_sum(complex_pt[:,6:8]*tf.math.conj(complex_pt[:,6:8]),axis=-1)

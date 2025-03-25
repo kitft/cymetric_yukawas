@@ -161,7 +161,7 @@ class BetaModel(FSModel):
         return all_t_loss/(self.nTransitions)
 
 
-    def compute_laplacian_loss(self,x,pullbacks,invmetrics,sources):
+    def compute_laplacian_loss(self,x,pullbacks,invmetrics,sources,batch=False):
         r"""Computes transition loss at each point. In the case of the Phi model, we demand that \phi(\lambda^q_i z_i)=\phi(z_i)
 
         Args:
@@ -170,7 +170,7 @@ class BetaModel(FSModel):
         Returns:
             tf.tensor([bSize], real_dtype): Transition loss at each point.
         """
-        lpl_losses=tf.math.abs(laplacian(self.model,x,pullbacks,invmetrics)-(sources))
+        lpl_losses=tf.math.abs(laplacian(self.model,x,pullbacks,invmetrics,batch=batch)-(sources))
         all_lpl_loss = lpl_losses**self.n[0]
         return all_lpl_loss
 

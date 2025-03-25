@@ -12,7 +12,7 @@ def point_vec_to_complex(p):
     plen = tf.shape(p)[-1] // 2
     return tf.complex(p[..., :plen], p[..., plen:])
 
-def batch_helper(batch_indices=None):
+def batch_helper(batch_indices=None, print_progress = False):
     """
     A decorator that adds batching capability to any function.
     
@@ -53,7 +53,8 @@ def batch_helper(batch_indices=None):
                     args,
                     batch_indices=indices_to_batch,
                     batch_size=10000,  # Default batch size
-                    compile_func=True
+                    compile_func=True,
+                    print_progress=print_progress
                 )
             except Exception as e:
                 print(f"Compiled batch processing failed: {e}. Falling back to non-compiled execution.")
@@ -62,7 +63,8 @@ def batch_helper(batch_indices=None):
                     args,
                     batch_indices=indices_to_batch,
                     batch_size=10000,
-                    compile_func=False
+                    compile_func=False,
+                    print_progress=print_progress
                 )
             return result
         
@@ -71,6 +73,7 @@ def batch_helper(batch_indices=None):
     return decorator
 
 
+@batch_helper(batch_indices=(1,2,3))
 @tf.function
 def laplacian(betamodel,points,pullbacks,invmetrics, training=False):
     r"""Computes the Laplacian of a real function on a complex manifold.
