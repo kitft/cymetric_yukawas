@@ -890,7 +890,7 @@ def train_modelHF(HFmodel, data_train, optimizer=None, epochs=50, batch_sizes=[6
     
     # Store original learning flags
     learn_laplacian = HFmodel.learn_laplacian
-    learn_transition = HFmodel.learn_transition
+    learn_transition = False#HFmodel.learn_transition
     
     # Set up sample weights if needed
     sample_weights = data_train['y_train'][:, -2] if sw else None

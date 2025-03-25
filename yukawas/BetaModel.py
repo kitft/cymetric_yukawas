@@ -791,7 +791,7 @@ def train_modelbeta(betamodel, data_train, optimizer=None, epochs=50, batch_size
     
     # Store original learning flags
     learn_laplacian = betamodel.learn_laplacian
-    learn_transition = betamodel.learn_transition
+    learn_transition = False#betamodel.learn_transition
     
     # Set up sample weights if needed
     sample_weights = None  # Disabled sample weights as per commented code
