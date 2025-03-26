@@ -139,6 +139,8 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     use_trained = False
     holomorphic_Yukawas_trained_and_ref=[]
     holomorphic_Yukawas_trained_and_ref_errors=[]
+    woHholomorphic_Yukawas_trained_and_ref = []
+    woHholomorphic_Yukawas_trained_and_ref_errors= []
     topological_data={}
     for use_trained in [True,False]:
         prefix = "trained" if use_trained else "ref"
@@ -995,6 +997,8 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
 
         holomorphic_Yukawas_trained_and_ref.append(m)
         holomorphic_Yukawas_trained_and_ref_errors.append(m_errors)
+        woHholomorphic_Yukawas_trained_and_ref.append(mwoH)
+        woHholomorphic_Yukawas_trained_and_ref_errors.append(m_errorswoH)
         print("without H * 10**6")
         print(np.round(np.array(mwoH)*10**6,1))
         print("holomorphic Yukawa errors *10**6 (absolute value)")
@@ -1086,13 +1090,19 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                     holo_log_data[f"{prefix}_holomorphic_yukawa_matrix_{i}{j}_real"] = np.real(holomorphic_Yukawas_trained_and_ref[-1][i,j])
                     holo_log_data[f"{prefix}_holomorphic_yukawa_matrix_{i}{j}_imag"] = np.imag(holomorphic_Yukawas_trained_and_ref[-1][i,j])
                     holo_log_data[f"{prefix}_holomorphic_yukawa_matrix_{i}{j}_error"] = np.abs(holomorphic_Yukawas_trained_and_ref_errors[-1][i,j])
+                    holo_log_data[f"{prefix}_woH_holomorphic_yukawa_matrix_{i}{j}_real"] = np.real(woHholomorphic_Yukawas_trained_and_ref[-1][i,j])
+                    holo_log_data[f"{prefix}_woH_holomorphic_yukawa_matrix_{i}{j}_imag"] = np.imag(woHholomorphic_Yukawas_trained_and_ref[-1][i,j])
+                    holo_log_data[f"{prefix}_woH_holomorphic_yukawa_matrix_{i}{j}_error"] = np.abs(woHholomorphic_Yukawas_trained_and_ref_errors[-1][i,j])
                     
                     # Also add to table format for visualization
                     holomorphic_yukawa_data.append([
                         i, j, prefix, 
                         np.real(holomorphic_Yukawas_trained_and_ref[-1][i,j]),
                         np.imag(holomorphic_Yukawas_trained_and_ref[-1][i,j]), 
-                        np.abs(holomorphic_Yukawas_trained_and_ref_errors[-1][i,j])
+                        np.abs(holomorphic_Yukawas_trained_and_ref_errors[-1][i,j]),
+                        np.real(woHholomorphic_Yukawas_trained_and_ref[-1][i,j]),
+                        np.imag(woHholomorphic_Yukawas_trained_and_ref[-1][i,j]), 
+                        np.abs(woHholomorphic_Yukawas_trained_and_ref_errors[-1][i,j])
                     ])
             
             # Log holomorphic yukawa data
@@ -1102,7 +1112,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             wandb.log({
                 "holomorphic_yukawa_matrix": wandb.Table(
                     data=holomorphic_yukawa_data,
-                    columns=["row", "col", "type", "real_value", "imag_value", "abs_error"]
+                    columns=["row", "col", "type", "real_value", "imag_value", "abs_error","real_value_woH","imag_value_woH","abs_error_woH"]
                 )
             })
 
