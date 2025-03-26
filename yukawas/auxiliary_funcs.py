@@ -1322,7 +1322,7 @@ def check_network_invariance(modelclass, real_vectors, charges = [0,0], takes_re
     else:
         outputs = modelclass.model(transformed_reshaped)
 
-    chargesmask = tf.pow(-1, tf.convert_to_tensor(charges, dtype= complex_dtype))
+    chargesmask = tf.pow(-1, tf.convert_to_tensor(charges, dtype= outputs.dtype))
     
     # Apply charges to outputs
     # Original output stays the same
@@ -1330,7 +1330,7 @@ def check_network_invariance(modelclass, real_vectors, charges = [0,0], takes_re
     # g2 output gets multiplied by second charge
     # g1g2 output gets multiplied by both charges
     charge_factors = tf.concat([
-        tf.ones([1], dtype=complex_dtype),
+        tf.ones([1], dtype=outputs.dtype),
         tf.expand_dims(chargesmask[0], 0),
         tf.expand_dims(chargesmask[1], 0),
         tf.expand_dims(chargesmask[0] * chargesmask[1], 0)
