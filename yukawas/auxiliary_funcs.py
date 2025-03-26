@@ -1303,7 +1303,7 @@ def create_transformation_array(model,vectors):
     
     return stacked
 
-def check_network_invariance(model, real_vectors, charges = [0,0], takes_real = True):
+def check_network_invariance(modelclass, real_vectors, charges = [0,0], takes_real = True):
     """Calculate mean difference between network outputs for different transformations."""
     # Ensure vectors are complex
     if real_vectors.shape[-1]==8:
@@ -1312,15 +1312,15 @@ def check_network_invariance(model, real_vectors, charges = [0,0], takes_real = 
         vectors = point_vec_to_complex(tf.convert_to_tensor(real_vectors))
     else:
         raise ValueError("Input vectors must have 8 or 16 elements/ (real/complex)")
-    transformed = create_transformation_array(model,vectors)
+    transformed = create_transformation_array(modelclass.model,vectors)
     N = tf.shape(vectors)[0]
     # Reshape if needed to ensure proper batch dimension
     transformed_reshaped = tf.reshape(transformed, [N*4, 8])
     # Apply model to each vector in the batch
     if takes_real:
-        outputs = model(point_vec_to_real(transformed_reshaped))
+        outputs = modelclass.model(point_vec_to_real(transformed_reshaped))
     else:
-        outputs = model(transformed_reshaped)
+        outputs = modelclass.model(transformed_reshaped)
 
     chargesmask = tf.pow(-1, tf.convert_to_tensor(charges, dtype= complex_dtype))
     
