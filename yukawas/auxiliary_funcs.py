@@ -1312,7 +1312,7 @@ def check_network_invariance(modelclass, real_vectors, charges = [0,0], takes_re
         vectors = point_vec_to_complex(tf.convert_to_tensor(real_vectors))
     else:
         raise ValueError("Input vectors must have 8 or 16 elements/ (real/complex)")
-    transformed = create_transformation_array(modelclass.model,vectors)
+    transformed = create_transformation_array(modelclass,vectors)
     N = tf.shape(vectors)[0]
     # Reshape if needed to ensure proper batch dimension
     transformed_reshaped = tf.reshape(transformed, [N*4, 8])
