@@ -172,6 +172,7 @@ def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,numb
    dirname = os.path.join(data_path, type_folder, manifold_name+'_pg_for_eval_with_'+str(unique_id_or_coeff)) 
    print("dirname: " + dirname)
    #test if the directory exists, if not, create it
+   kappa = None
    if force_generate or (not os.path.exists(dirname)):
       print("Generating: forced? " + str(force_generate))
       kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
@@ -195,7 +196,8 @@ def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,numb
          print("error loading - generating anyway")
          kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
          pg.prepare_basis(dirname, kappa=kappa)
-   print("Kappa: " + str(kappa))
+   if kappa is not None:
+      print("Kappa: " + str(kappa))
    return pg,kmoduli
 
 
@@ -211,6 +213,7 @@ def generate_points_and_save_using_defaults(manifold_name_and_data,number_points
    else:
       print("Using particular selected_t: " + str(average_selected_t))
    #test if the directory exists, if not, create it
+   kappa = None   
    if force_generate or (not os.path.exists(dirname)):
       print("Generating: forced? " + str(force_generate))
       kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
@@ -235,7 +238,8 @@ def generate_points_and_save_using_defaults(manifold_name_and_data,number_points
          print(f"error loading - generating anyway  {e}")
          kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
          pg.prepare_basis(dirname, kappa=kappa)
-   print("Kappa: " + str(kappa))
+   if kappa is not None:
+      print("Kappa: " + str(kappa))
    
 
 def getcallbacksandmetrics(data, prefix, wandb = True, batchsize = 64):
