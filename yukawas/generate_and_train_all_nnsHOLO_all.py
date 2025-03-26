@@ -1396,7 +1396,22 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero, pts_check, weights=weights_check)
    print("1-form transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()))
 
-   mean_over_stdev, std_dev, mean_diff, direction_stats = check_network_invariance(HFmodel, dataHF_val_dict["X_val"], charges = [0,0], takes_real = True)
+   if unique_name=='vH':
+      charges = [0,1]
+   elif unique_name=='vQ3':
+      charges = [0,0]
+   elif unique_name=='vU3':
+      charges = [0,1]
+   elif unique_name=='vQ1':
+      charges = [0,1]
+   elif unique_name=='vQ2':
+      charges = [0,1]
+   elif unique_name=='vU1':
+      charges = [0,0]
+   elif unique_name=='vU2':
+      charges = [0,0]
+
+   mean_over_stdev, std_dev, mean_diff, direction_stats = check_network_invariance(HFmodel, dataHF_val_dict["X_val"], charges = charges, takes_real = True)
    print(f"Verifying approximate network symmetry, mean_over_stdev: {mean_over_stdev} for std_dev: {std_dev}")
    print(f"each direction's mean_over_stdev (g1, g2, g1g2): {direction_stats['g1_norm']}, {direction_stats['g2_norm']}, {direction_stats['g1g2_norm']}")
    wandb.log({f"{unique_name}_mean_over_stdev": mean_over_stdev,
