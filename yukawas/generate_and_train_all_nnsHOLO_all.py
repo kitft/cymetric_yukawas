@@ -1640,19 +1640,19 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    print("1-form transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()))
 
    if unique_name=='vH':
-      charges = [0,0]
-   elif unique_name=='vQ3':
       charges = [0,1]
+   elif unique_name=='vQ3':
+      charges = [0,0]
    elif unique_name=='vU3':
-      charges = [0,2]
+      charges = [0,1]
    elif unique_name=='vQ1':
-      charges = [1,0]
+      charges = [0,1]
    elif unique_name=='vQ2':
-      charges = [2,0]
+      charges = [0,1]
    elif unique_name=='vU1':
-      charges = [1,1]
+      charges = [0,0]
    elif unique_name=='vU2':
-      charges = [2,1]
+      charges = [0,0]
       
       
    mean_over_stdev, std_dev, mean_diff, direction_stats = check_network_invariance(HFmodel, dataHF_val_dict["X_val"], charges = charges, takes_real = True)

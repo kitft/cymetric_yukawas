@@ -402,7 +402,7 @@ if __name__ == '__main__':
             skip_measuresHF=True
         #skip_measuresHF
 
-    if  run_or_integrate == 'integrate' or 'zerophibeta' in sys.argv[1:]:
+    if integrate_or_run == 'integrate' or 'zerophibeta' in sys.argv[1:]:
         return_zero_phi= True
         return_zero_beta = True
         return_zero_HYM = True
