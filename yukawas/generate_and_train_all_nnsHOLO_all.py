@@ -1397,7 +1397,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    print("1-form transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()))
 
    if unique_name=='vH':
-      charges = [0,1]
+      charges = [0,0]
    elif unique_name=='vQ3':
       charges = [0,0]
    elif unique_name=='vU3':
@@ -1655,7 +1655,7 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    print("1-form transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()))
 
    if unique_name=='vH':
-      charges = [0,1]
+      charges = [0,0]
    elif unique_name=='vQ3':
       charges = [0,0]
    elif unique_name=='vU3':
