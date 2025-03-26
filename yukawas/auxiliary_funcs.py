@@ -1337,10 +1337,10 @@ def check_network_invariance(modelclass, real_vectors, charges = [0,0], takes_re
     ], axis=0)
     
     # Reshape to (N, 4)
-    outputs = tf.reshape(outputs, [N, 4]) * charge_factors
+    outputs = tf.reshape(outputs, [N, 4]) 
     
     # Calculate differences between outputs for each input
-    diffs = tf.abs(outputs - tf.expand_dims(outputs[:, 0], axis=1))
+    diffs = tf.abs(outputs - charge_factors * tf.expand_dims(outputs[:, 0], axis=1))
     
     # Calculate mean difference
     mean_diff = tf.reduce_mean(diffs[:,1:])
