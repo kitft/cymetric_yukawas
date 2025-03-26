@@ -402,13 +402,14 @@ if __name__ == '__main__':
             skip_measuresHF=True
         #skip_measuresHF
 
-
-    return_zero_phi= True
-    return_zero_HYM = True
-    return_zero_HF = False
-    return_zero_HF_2 = False
-    print("RETURNING ZERO PHI AND HYM")
-    
+    if  run_or_integrate == 'integrate' or 'zerophibeta' in sys.argv[1:]:
+        return_zero_phi= True
+        return_zero_beta = True
+        return_zero_HYM = True
+        return_zero_HF = False
+        return_zero_HF_2 = False
+        print("RETURNING ZERO PHI AND HYM")
+        
     SecondBSize=1000
     n_to_integrate=1000000
     #n_to_integrate=100000

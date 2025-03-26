@@ -1287,12 +1287,12 @@ def rescale_back(vectors):
     return tf.reshape(scaled, shape)
 
 def create_transformation_array(model,vectors):
-    """Create array with original vectors, g1(vectors), and g1(g2(vectors))."""
+    """Create array with original vectors, g1(vectors), and g1(g2(vectors)). g1 is the negation, g2 swapping"""
     # Input shape: (N, 8)
     vectors = model._rescale_points(tf.convert_to_tensor(vectors))# just double check
-    g1 = rescale_back(swap_pairs(vectors))                              # this will change patch, guaranteed. # this will change the section!
-    g2 = model._rescale_points(negate_odd_indices(vectors)) # rescale to take -1 ->1 again. THis will not change patch.   
-    g1g2 = rescale_back(swap_pairs(g2))# this will change patch, guaranteed, so we rescale back
+    g1 = model._rescale_points(negate_odd_indices(vectors)) # rescale to take -1 ->1 again. THis will not change patch.   
+    g2 = rescale_back(swap_pairs(vectors))                              # this will change patch, guaranteed. # this will change the section!
+    g1g2 = rescale_back(swap_pairs(g1))# this will change patch, guaranteed, so we rescale back
 
     # g1 = model._rescale_points(g1)
     # g2 = model._rescale_points(g2)
