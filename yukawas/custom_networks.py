@@ -1263,6 +1263,8 @@ class BiholoModelFuncGENERALforHYMinv3(tf.keras.Model):
     
     def set_zero_integral(self, points, weights):
         """Sets the final_bias parameter such that the weighted integral of the model is zero.
+        only a matter of numerical stability/normalisation of holomorphic yukawas.
+        doesn't affect physics.
         
         Args:
             points: Tensor of points to evaluate the model at
