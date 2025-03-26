@@ -409,6 +409,13 @@ if __name__ == '__main__':
         return_zero_HF = False
         return_zero_HF_2 = False
         print("RETURNING ZERO PHI AND HYM")
+    else:
+        return_zero_phi= False
+        return_zero_beta = False
+        return_zero_HYM = False
+        return_zero_HF = True
+        return_zero_HF_2 = True
+        print("RETURNING NON-ZERO PHI AND HYM")
         
     SecondBSize=1000
     n_to_integrate=1000000
