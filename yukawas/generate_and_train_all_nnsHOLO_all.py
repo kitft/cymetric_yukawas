@@ -859,7 +859,7 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,phimode
    lbstring = ''.join(str(e) for e in linebundleforHYM)
    dirnameHYM = os.path.join(data_path, type_folder, manifold_name+'HYM_pg_with_'+str(unique_id_or_coeff)+'forLB_'+lbstring+'_using_'+phimodel.unique_name)
    dirnameForMetric = os.path.join(data_path, type_folder, manifold_name+'_pg_with_'+str(unique_id_or_coeff))
-   name = 'betamodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(nlayer) + 'x' +str(nHidden)
+   name = 'betamodel_for_' + str(nEpochs) + '_' + str(bSizes[0]) + '_'+ str(nlayer) + 'x' +str(nHidden)+'_'+unique_name
    print("name of network of line bundle: " + name)
 
    #data = np.load(os.path.join(dirname, 'dataset.npz'))
