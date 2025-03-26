@@ -1315,7 +1315,7 @@ def check_network_invariance(model, real_vectors, charges = [0,0], takes_real = 
     transformed = create_transformation_array(model,vectors)
     N = tf.shape(vectors)[0]
     # Reshape if needed to ensure proper batch dimension
-    transformed_reshaped = tf.reshape(transformed, [N,4, 8])
+    transformed_reshaped = tf.reshape(transformed, [N*4, 8])
     # Apply model to each vector in the batch
     if takes_real:
         outputs = model(point_vec_to_real(transformed_reshaped))
