@@ -1399,9 +1399,9 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    if unique_name=='vH':
       charges = [0,0]
    elif unique_name=='vQ3':
-      charges = [0,0]
-   elif unique_name=='vU3':
       charges = [0,1]
+   elif unique_name=='vU3':
+      charges = [0,0]
    elif unique_name=='vQ1':
       charges = [0,1]
    elif unique_name=='vQ2':
@@ -1657,9 +1657,9 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    if unique_name=='vH':
       charges = [0,0]
    elif unique_name=='vQ3':
-      charges = [0,0]
-   elif unique_name=='vU3':
       charges = [0,1]
+   elif unique_name=='vU3':
+      charges = [0,0]
    elif unique_name=='vQ1':
       charges = [0,1]
    elif unique_name=='vQ2':
