@@ -420,7 +420,7 @@ class FSModel(tfk.Model):
             cpoints = points
             
         # iterate over all projective spaces and rescale in each
-        for i in range(len(self.ambient)):
+        for i in range(len(self.BASIS['AMBIENT'])):
             s = tf.reduce_sum(self.degrees[0:i])
             e = tf.reduce_sum(self.degrees[0:i+1])
             
