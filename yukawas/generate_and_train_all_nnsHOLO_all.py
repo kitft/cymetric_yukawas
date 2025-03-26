@@ -799,14 +799,14 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
    pointwise_failure = failuretosolveequation/(tf.math.abs(databeta['sources_val']) + 1e-8)
    
    # Log histogram to wandb
-   wandb.log({lbstring + "_normalized_failure_histogram_weighted": wandb.Histogram(normalized_failure.numpy())})
-   wandb.log({lbstring + "_pointwise_failure_histogram_weighted": wandb.Histogram(pointwise_failure.numpy())})
+   wandb.run.summary.update({lbstring + "_normalized_failure_histogram_weighted": wandb.Histogram(normalized_failure.numpy())})
+   wandb.run.summary.update({lbstring + "_pointwise_failure_histogram_weighted": wandb.Histogram(pointwise_failure.numpy())})
    
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("time to do that: ",time.time()-start)
 
    tf.keras.backend.clear_session()
-   wandb.log({lbstring + "MeanFailure": meanfailuretosolveequation})
+   wandb.run.summary.update({lbstring + "MeanFailure": meanfailuretosolveequation})
    return betamodel,training_historyBeta, meanfailuretosolveequation
 
 def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,phimodel,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False, unique_name='LB'):
@@ -961,11 +961,12 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,phimode
    pointwise_failure = failuretosolveequation/(tf.math.abs(databeta['sources_val']) + 1e-8)
    
    # Log histogram to wandb
-   wandb.log({lbstring + "_normalized_failure_histogram_weighted": wandb.Histogram(normalized_failure.numpy())})
-   wandb.log({lbstring + "_pointwise_failure_histogram_weighted": wandb.Histogram(pointwise_failure.numpy())})
+   wandb.run.summary.update({lbstring + "_normalized_failure_histogram_weighted": wandb.Histogram(normalized_failure.numpy())})
+   wandb.run.summary.update({lbstring + "_pointwise_failure_histogram_weighted": wandb.Histogram(pointwise_failure.numpy())})
    
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print(f"time to do mean of difference: {time.time()-start:.2f} seconds")
+   wandb.run.summary.update({lbstring + "MeanFailure": meanfailuretosolveequation})
    print("\n\n")
    return betamodel,training_historyBeta, meanfailuretosolveequation
 
@@ -1371,14 +1372,14 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    print("avg/avg trained coclosure divided by norm of v_FS: " + str(avgavagTrainedDivFS))
    print("FS coclosure divided by norm of v_FS: " + str(FS_DivFS))
    print("avg/avg FS coclosure divided by norm of v_FS: " + str(avgavagFS_DivFS))
-   wandb.log({f'{metric_model.unique_name}traineddivtrained,':TrainedDivTrained})
-   wandb.log({f'{metric_model.unique_name}traineddivFS,':TrainedDivFS})
-   wandb.log({f'{metric_model.unique_name}FSdivFS,':FS_DivFS})
-   wandb.log({f'{metric_model.unique_name}avgavagTrainedDivTrained,':avgavagTrainedDivTrained})
-   wandb.log({f'{metric_model.unique_name}avgavagTrainedDivFS,':avgavagTrainedDivFS})
-   wandb.log({f'{metric_model.unique_name}avgavagFS_DivFS,':avgavagFS_DivFS})
-   wandb.log({f'{metric_model.unique_name}_trained_coclosure_histogram/vFSnorm': wandb.Histogram(dataforhistograms['Trained_DivFS'])})
-   wandb.log({f'{metric_model.unique_name}_FS_coclosure_histogram/vFSnorm': wandb.Histogram(dataforhistograms['FS_DivFS'])})
+   wandb.run.summary.update({f'{prefix}_traineddivtrained,':TrainedDivTrained})
+   wandb.run.summary.update({f'{prefix}_traineddivFS,':TrainedDivFS})
+   wandb.run.summary.update({f'{prefix}_FSdivFS,':FS_DivFS})
+   wandb.run.summary.update({f'{prefix}_avgavagTrainedDivTrained,':avgavagTrainedDivTrained})
+   wandb.run.summary.update({f'{prefix}_avgavagTrainedDivFS,':avgavagTrainedDivFS})
+   wandb.run.summary.update({f'{prefix}_avgavagFS_DivFS,':avgavagFS_DivFS})
+   wandb.run.summary.update({f'{prefix}_trained_coclosure_histogram/vFSnorm': wandb.Histogram(dataforhistograms['Trained_DivFS'])})
+   wandb.run.summary.update({f'{prefix}_FS_coclosure_histogram/vFSnorm': wandb.Histogram(dataforhistograms['FS_DivFS'])})
 
    tf.keras.backend.clear_session()
    del dataHF, dataHF_train, dataHF_val_dict, valfinal,valraw,valzero
@@ -1386,7 +1387,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    #print(perm.print_diff())
    print("--------------------------------")
    print("\n\n")
-   wandb.log({prefix + "MeanFailure": meanfailuretosolveequation})
+   wandb.run.summary.update({prefix + "MeanFailure": meanfailuretosolveequation})
    return HFmodel,training_historyHF,meanfailuretosolveequation
 
 def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,functionforbaseharmonicform_jbar,sigmamodel_config,set_weights_to_zero=False,set_weights_to_random=False,skip_measures=False, unique_name='v'):
@@ -1613,15 +1614,16 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    print("avg/avg trained coclosure divided by norm of v_FS: " + str(avgavagTrainedDivFS))
    print("FS coclosure divided by norm of v_FS: " + str(FS_DivFS))
    print("avg/avg FS coclosure divided by norm of v_FS: " + str(avgavagFS_DivFS))
-   wandb.log({f'{metric_model.unique_name}traineddivtrained,':TrainedDivTrained})
-   wandb.log({f'{metric_model.unique_name}traineddivFS,':TrainedDivFS})
-   wandb.log({f'{metric_model.unique_name}FSdivFS,':FS_DivFS})
-   wandb.log({f'{metric_model.unique_name}avgavagTrainedDivTrained,':avgavagTrainedDivTrained})
-   wandb.log({f'{metric_model.unique_name}avgavagTrainedDivFS,':avgavagTrainedDivFS})
-   wandb.log({f'{metric_model.unique_name}avgavagFS_DivFS,':avgavagFS_DivFS})
-   wandb.log({f'{metric_model.unique_name}trained_coclosure_histogram/vFSnorm': wandb.Histogram(dataforhistograms['Trained_DivFS'])})
-   wandb.log({f'{metric_model.unique_name}_FS_coclosure_histogram/vFSnorm': wandb.Histogram(dataforhistograms['FS_DivFS'])})
+   wandb.run.summary.update({f'{unique_name}_traineddivtrained,':TrainedDivTrained})
+   wandb.run.summary.update({f'{unique_name}_traineddivFS,':TrainedDivFS})
+   wandb.run.summary.update({f'{unique_name}_FSdivFS,':FS_DivFS})
+   wandb.run.summary.update({f'{unique_name}_avgavagTrainedDivTrained,':avgavagTrainedDivTrained})
+   wandb.run.summary.update({f'{unique_name}_avgavagTrainedDivFS,':avgavagTrainedDivFS})
+   wandb.run.summary.update({f'{unique_name}_avgavagFS_DivFS,':avgavagFS_DivFS})
+   wandb.run.summary.update({f'{unique_name}_trained_coclosure_histogram/vFSnorm': wandb.Histogram(dataforhistograms['Trained_DivFS'])})
+   wandb.run.summary.update({f'{unique_name}_FS_coclosure_histogram/vFSnorm': wandb.Histogram(dataforhistograms['FS_DivFS'])})
    print("TIME to compute trained coclosure divided by norm of v: ", time.time()-start)
+   wandb.run.summary.update({prefix + "MeanFailure": meanfailuretosolveequation})
    print("\n\n")
    return HFmodel,training_historyHF, meanfailuretosolveequation
 
