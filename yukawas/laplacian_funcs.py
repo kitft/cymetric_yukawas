@@ -1,16 +1,7 @@
 from cymetric.config import real_dtype, complex_dtype
 import tensorflow as tf
-from yukawas.auxiliary_funcs import batch_process_helper_func
-def convertcomptoreal(complexvec):
-    # this converts from complex to real
-    return tf.concat([tf.math.real(complexvec),tf.math.imag(complexvec)],-1) 
+from yukawas.auxiliary_funcs import batch_process_helper_func, convertcomptoreal, point_vec_to_real, point_vec_to_complex
 
-def point_vec_to_real(complexvec):
-    # this converts from complex to real
-    return tf.concat([tf.math.real(complexvec),tf.math.imag(complexvec)],-1) 
-def point_vec_to_complex(p):
-    plen = tf.shape(p)[-1] // 2
-    return tf.complex(p[..., :plen], p[..., plen:])
 
 def batch_helper(batch_indices=None, print_progress = False):
     """

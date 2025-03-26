@@ -4,7 +4,20 @@ import time
 from datetime import datetime
 import numpy as np
 from cymetric.config import real_dtype, complex_dtype
-from laplacian_funcs import point_vec_to_real, point_vec_to_complex
+
+
+
+def convertcomptoreal(complexvec):
+    # this converts from complex to real
+    return tf.concat([tf.math.real(complexvec),tf.math.imag(complexvec)],-1) 
+
+def point_vec_to_real(complexvec):
+    # this converts from complex to real
+    return tf.concat([tf.math.real(complexvec),tf.math.imag(complexvec)],-1) 
+def point_vec_to_complex(p):
+    plen = tf.shape(p)[-1] // 2
+    return tf.complex(p[..., :plen], p[..., plen:])
+
 def delete_all_dicts_except(*except_dict_names):
     """
     Deletes all dictionary objects from the global namespace except the specified ones.
