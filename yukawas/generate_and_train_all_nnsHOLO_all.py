@@ -943,6 +943,10 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,phimode
       print(betamodel(databeta_val_dict['X_val'][0:1]))
       print(betamodelzero(databeta_val_dict['X_val'][0:1]))
       betamodel.model.load_weights(os.path.join(dirnameHYM, name) + '.weights.h5')
+      print(f"checking the betamodel thing: {betamodel.model.final_bias}")
+      if betamodel.model.final_bias ==0.0:
+         print('It wasn\'t quite zero; setting to zero:')
+         betamodel.model.set_zero_integral(databeta['X_train'], databeta['y_train'][:,0])
       training_historyBeta=np.load(os.path.join(dirnameHYM, 'trainingHistory-' + name +'.npz'),allow_pickle=True)['arr_0'].item()
       print("second print",betamodel(databeta_val_dict['X_val'][0:1]))
 

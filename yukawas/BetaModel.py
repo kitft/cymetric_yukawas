@@ -833,6 +833,5 @@ def train_modelbeta(betamodel, data_train, optimizer=None, epochs=50, batch_size
         betamodel.model.set_zero_integral(data_train['X_train'], data_train['y_train'][:,0])
     else:
         print("WARNING: No set_zero_integral method found in model")
-        wandb.log({"warning": "No set_zero_integral method found in model"})
     
     return betamodel, training_history
