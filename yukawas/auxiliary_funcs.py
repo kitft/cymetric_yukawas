@@ -1343,7 +1343,7 @@ def check_network_invariance(modelclass, real_vectors, charges = [0,0], takes_re
     diffs = tf.abs(outputs - tf.expand_dims(outputs[:, 0], axis=1))
     
     # Calculate mean difference
-    mean_diff = tf.reduce_mean(diffs)
+    mean_diff = tf.reduce_mean(diffs[:,1:])
     
     # Calculate standard deviation of all outputs for comparison
     std_dev = tf.math.reduce_std(outputs)
