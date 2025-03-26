@@ -1412,7 +1412,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
       charges = [0,0]
 
    mean_over_stdev, std_dev, mean_diff, direction_stats = check_network_invariance(HFmodel, dataHF_val_dict["X_val"], charges = charges, takes_real = True)
-   print(f"Verifying approximate network symmetry, mean_over_stdev: {mean_over_stdev} for std_dev: {std_dev}")
+   print(f"Verifying approximate network symmetry {charges}, mean_over_stdev: {mean_over_stdev} for std_dev: {std_dev}")
    print(f"each direction's mean_over_stdev (g1, g2, g1g2): {direction_stats['g1_norm']}, {direction_stats['g2_norm']}, {direction_stats['g1g2_norm']}")
    wandb.log({f"{unique_name}_mean_over_stdev": mean_over_stdev,
                f"{unique_name}_std_dev": std_dev,
@@ -1671,7 +1671,7 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
       
       
    mean_over_stdev, std_dev, mean_diff, direction_stats = check_network_invariance(HFmodel, dataHF_val_dict["X_val"], charges = charges, takes_real = True)
-   print(f"Verifying approximate network symmetry, mean_over_stdev: {mean_over_stdev} for std_dev: {std_dev}")
+   print(f"Verifying approximate network symmetry {charges}, mean_over_stdev: {mean_over_stdev} for std_dev: {std_dev}")
    print(f"each direction's mean_over_stdev (g1, g2, g1g2): {direction_stats['g1_norm']}, {direction_stats['g2_norm']}, {direction_stats['g1g2_norm']}")
    wandb.log({f"{unique_name}_mean_over_stdev": mean_over_stdev,
                f"{unique_name}_std_dev": std_dev,
