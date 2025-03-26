@@ -1692,7 +1692,7 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    print("start time:", time.strftime("%H:%M:%S", time.localtime()))
    check_vals_again, check_vals_again_2 = closure_check(pts_check, HFmodel.functionforbaseharmonicform_jbar, HFmodel, pullbacks_check, return_both = True)
    print("closure_check on base form again:",tf.reduce_mean(tf.math.abs(check_vals_again)).numpy().item(), tf.reduce_max(tf.math.abs(check_vals_again)).numpy().item(), "took " + str(time.time()-start) + " seconds")
-   print("closure_check on base form (not asym) again:",tf.reduce_mean(tf.math.abs(check_vals_again_2)).numpy().item(),tf.reduce_max(tf.math.abs(check_vals_again_2)).numpy().item(), "took " + str(time.time()-start) + " seconds")
+   print("second derivative of base form (ie not asym) again:",tf.reduce_mean(tf.math.abs(check_vals_again_2)).numpy().item(),tf.reduce_max(tf.math.abs(check_vals_again_2)).numpy().item(), "took " + str(time.time()-start) + " seconds")
    #return HFmodel,training_historyHF, 0 
    start = time.time()
    print("computing mean failure to solve equation", time.strftime("%H:%M:%S", time.localtime()))
