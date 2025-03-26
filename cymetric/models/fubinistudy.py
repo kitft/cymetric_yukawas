@@ -403,6 +403,48 @@ class FSModel(tfk.Model):
         # return tf.math.logical_not(inv_mask)
 
     @tf.function
+    def _rescale_points(self, points):
+        r"""Rescales points in place such that for every P_i^n
+        max(abs(coords_i)) == 1 + 0j.
+
+        Args:
+            points (tf.Tensor[(n_p, ncoords), complex]): Points.
+
+        Returns:
+            tf.Tensor[(n_p, ncoords), complex]: rescaled points
+        """
+        # Convert to complex if not already
+        if points.dtype != tf.complex64 and points.dtype != tf.complex128:
+            cpoints = tf.complex(points[:, :self.ncoords], points[:, self.ncoords:])
+        else:
+            cpoints = points
+            
+        # iterate over all projective spaces and rescale in each
+        for i in range(len(self.ambient)):
+            s = tf.reduce_sum(self.degrees[0:i])
+            e = tf.reduce_sum(self.degrees[0:i+1])
+            
+            # Get the max absolute value index for each point in this projective space
+            abs_values = tf.abs(cpoints[:, s:e])
+            max_indices = tf.argmax(abs_values, axis=1)
+            
+            # Get the corresponding complex values at max positions
+            batch_indices = tf.range(tf.shape(cpoints)[0], dtype=tf.int64)
+            max_coords = tf.gather_nd(cpoints[:, s:e], 
+                                     tf.stack([batch_indices, max_indices], axis=1))
+            
+            # Compute scaling factors (inverse of max values)
+            scaling_factors = tf.math.reciprocal(max_coords)
+            
+            # Apply scaling
+            scaled_section = cpoints[:, s:e] * tf.expand_dims(scaling_factors, 1)
+            
+            # Update the points tensor with scaled values
+            cpoints = tf.concat([cpoints[:, :s], scaled_section, cpoints[:, e:]], axis=1)
+            
+        return cpoints
+
+    @tf.function
     def _indices_to_mask(self, indices):
         r"""Takes indices ([bSize,nTrue], int) and creates a faux coordinates
         mask. NOTE: the output is *not* of boolean type.

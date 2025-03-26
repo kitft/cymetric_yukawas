@@ -16,7 +16,6 @@ from cymetric.models.metrics import SigmaLoss, KaehlerLoss, TransitionLoss, Ricc
 from wandb.integration.keras import WandbMetricsLogger
 import wandb
 import gc
-
 # Extend WandbMetricsLogger to add prefixes
 class PrefixedWandbMetricsLogger(WandbMetricsLogger):
     def __init__(self, prefix, n_batches_in_epoch=None, **kwargs):
@@ -26,8 +25,10 @@ class PrefixedWandbMetricsLogger(WandbMetricsLogger):
         # Reset counters for each new logger
         self.global_step = 0
         self.global_batch = 0
+        self.current_epoch = 0
 
     def on_epoch_end(self, epoch, logs=None):
+        self.current_epoch = epoch + 1  # Update epoch counter for next epoch
         logs = dict() if logs is None else {f"{self.prefix}/{k}": v for k, v in logs.items()}
         logs[f"{self.prefix}/epoch"] = epoch
         
@@ -44,7 +45,8 @@ class PrefixedWandbMetricsLogger(WandbMetricsLogger):
             
             # Log as fraction of epoch if batch_size is provided
             if self.n_batches_in_epoch:
-                epoch_fraction = batch / self.n_batches_in_epoch
+                # Include the current epoch number to make epoch_fraction monotonically increasing
+                epoch_fraction = self.current_epoch + (batch / self.n_batches_in_epoch)
                 logs[f"{self.prefix}/epoch_fraction"] = epoch_fraction
             else:
                 logs[f"{self.prefix}/batch_step"] = self.global_batch
@@ -372,6 +374,16 @@ def train_and_save_nn(manifold_name_and_data, phimodel_config=None,use_zero_netw
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
    #IMPLEMENT THE FOLLOWING
    #meanfailuretosolveequation,_,_=measure_laplacian_failure(phimodel,data)
+   mean_over_stdev, std_dev, mean_diff, direction_stats = check_network_invariance(phimodel, data["X_val"], charges = [0,0], takes_real = True)
+   print(f"Verifying approximate network symmetry, mean_over_stdev: {mean_over_stdev} for std_dev: {std_dev}")
+   print(f"each direction's mean_over_stdev (g1, g2, g1g2): {direction_stats['g1_norm']}, {direction_stats['g2_norm']}, {direction_stats['g1g2_norm']}")
+   wandb.log({f"{unique_name}_mean_over_stdev": mean_over_stdev,
+               f"{unique_name}_std_dev": std_dev,
+                 f"{unique_name}_mean_diff": mean_diff})
+   wandb.log({f"{unique_name}_mean_over_stddev_g1": direction_stats['g1_norm'],
+              f"{unique_name}_mean_over_stddev_g2": direction_stats['g2_norm'],
+              f"{unique_name}_mean_over_stddev_g1g2": direction_stats['g1g2_norm']})
+
    print("\n\n")
    return phimodel,training_history, None
 
@@ -517,6 +529,15 @@ def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=
    print("ratio of trained to zero: " + str({key + " ratio": value/(valzero[key]+1e-8) for key, value in valtrained.items()}))
    averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure(phimodel,data["X_val"])
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs), " mean discrepancy: ", mean_t_discrepancy)
+   mean_over_stdev, std_dev, mean_diff, direction_stats = check_network_invariance(phimodel, data["X_val"], charges = [0,0], takes_real = True)
+   print(f"Verifying approximate network symmetry, mean_over_stdev: {mean_over_stdev} for std_dev: {std_dev}")
+   print(f"each direction's mean_over_stdev (g1, g2, g1g2): {direction_stats['g1_norm']}, {direction_stats['g2_norm']}, {direction_stats['g1g2_norm']}")
+   wandb.log({f"{unique_name}_mean_over_stdev": mean_over_stdev,
+               f"{unique_name}_std_dev": std_dev,
+                 f"{unique_name}_mean_diff": mean_diff})
+   wandb.log({f"{unique_name}_mean_over_stddev_g1": direction_stats['g1_norm'],
+              f"{unique_name}_mean_over_stddev_g2": direction_stats['g2_norm'],
+              f"{unique_name}_mean_over_stddev_g1g2": direction_stats['g1g2_norm']})
    print("\n\n")
    #IMPLEMENT THE FOLLOWING
    #meanfailuretosolveequation,_,_=measure_laplacian_failure(phimodel,data)
@@ -780,6 +801,15 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
 
    averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure(betamodel,databeta["X_val"])
    print("average transition discrepancy in standard deviations: " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
+   mean_over_stdev, std_dev, mean_diff, direction_stats = check_network_invariance(betamodel, databeta["X_val"], charges = [0,0], takes_real = True)
+   print(f"Verifying approximate network symmetry, mean_over_stdev: {mean_over_stdev} for std_dev: {std_dev}")
+   print(f"each direction's mean_over_stdev (g1, g2, g1g2): {direction_stats['g1_norm']}, {direction_stats['g2_norm']}, {direction_stats['g1g2_norm']}")
+   wandb.log({f"{unique_name}_mean_over_stdev": mean_over_stdev,
+               f"{unique_name}_std_dev": std_dev,
+                 f"{unique_name}_mean_diff": mean_diff})
+   wandb.log({f"{unique_name}_mean_over_stddev_g1": direction_stats['g1_norm'],
+              f"{unique_name}_mean_over_stddev_g2": direction_stats['g2_norm'],
+              f"{unique_name}_mean_over_stddev_g1g2": direction_stats['g1g2_norm']})
 
 
    start=time.time()
@@ -804,6 +834,7 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
    
    print("mean of difference/mean of absolute value of source, weighted by sqrt(g): " + str(meanfailuretosolveequation))
    print("time to do that: ",time.time()-start)
+   
 
    tf.keras.backend.clear_session()
    wandb.run.summary.update({lbstring + "MeanFailure": meanfailuretosolveequation})
@@ -944,6 +975,15 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,phimode
 
    averagediscrepancyinstdevs,_,mean_t_discrepancy=compute_transition_pointwise_measure(betamodel,databeta["X_val"])
    print("average section transition discrepancy in standard deviations (note, underestimate as our std.dev. ignores variation in phase): " + str(averagediscrepancyinstdevs.numpy().item()), " mean discrepancy: ", mean_t_discrepancy.numpy().item())
+   mean_over_stdev, std_dev, mean_diff, direction_stats = check_network_invariance(betamodel, databeta["X_val"], charges = [0,0], takes_real = True)
+   print(f"Verifying approximate network symmetry, mean_over_stdev: {mean_over_stdev} for std_dev: {std_dev}")
+   print(f"each direction's mean_over_stdev (g1, g2, g1g2): {direction_stats['g1_norm']}, {direction_stats['g2_norm']}, {direction_stats['g1g2_norm']}")
+   wandb.log({f"{unique_name}_mean_over_stdev": mean_over_stdev,
+               f"{unique_name}_std_dev": std_dev,
+                 f"{unique_name}_mean_diff": mean_diff})
+   wandb.log({f"{unique_name}_mean_over_stddev_g1": direction_stats['g1_norm'],
+              f"{unique_name}_mean_over_stddev_g2": direction_stats['g2_norm'],
+              f"{unique_name}_mean_over_stddev_g1g2": direction_stats['g1g2_norm']})
    start=time.time()
    #meanfailuretosolveequation,_,_=HYM_measure_val(betamodel,databeta)
    failuretosolveequation= batch_process_helper_func(
@@ -1352,6 +1392,16 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero, pts_check, weights=weights_check)
    print("1-form transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()))
 
+   mean_over_stdev, std_dev, mean_diff, direction_stats = check_network_invariance(HFmodel, dataHF_val_dict["X_val"], charges = [0,0], takes_real = True)
+   print(f"Verifying approximate network symmetry, mean_over_stdev: {mean_over_stdev} for std_dev: {std_dev}")
+   print(f"each direction's mean_over_stdev (g1, g2, g1g2): {direction_stats['g1_norm']}, {direction_stats['g2_norm']}, {direction_stats['g1g2_norm']}")
+   wandb.log({f"{unique_name}_mean_over_stdev": mean_over_stdev,
+               f"{unique_name}_std_dev": std_dev,
+                 f"{unique_name}_mean_diff": mean_diff})
+   wandb.log({f"{unique_name}_mean_over_stddev_g1": direction_stats['g1_norm'],
+              f"{unique_name}_mean_over_stddev_g2": direction_stats['g2_norm'],
+              f"{unique_name}_mean_over_stddev_g1g2": direction_stats['g1g2_norm']})
+
    start=time.time()
    meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF, batch=True)
    # meanfailuretosolveequation= batch_process_helper_func(
@@ -1584,6 +1634,16 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    print("1-form transition loss for uncorrected HF: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF).numpy()))
    transition_loss_for_uncorrected_HF_zero = compute_transition_loss_for_uncorrected_HF_model(HFmodelzero, pts_check, weights=weights_check)
    print("1-form transition loss for uncorrected HF zero network: " + str(tf.reduce_mean(transition_loss_for_uncorrected_HF_zero).numpy()))
+
+   mean_over_stdev, std_dev, mean_diff, direction_stats = check_network_invariance(HFmodel, dataHF_val_dict["X_val"], charges = [0,0], takes_real = True)
+   print(f"Verifying approximate network symmetry, mean_over_stdev: {mean_over_stdev} for std_dev: {std_dev}")
+   print(f"each direction's mean_over_stdev (g1, g2, g1g2): {direction_stats['g1_norm']}, {direction_stats['g2_norm']}, {direction_stats['g1g2_norm']}")
+   wandb.log({f"{unique_name}_mean_over_stdev": mean_over_stdev,
+               f"{unique_name}_std_dev": std_dev,
+                 f"{unique_name}_mean_diff": mean_diff})
+   wandb.log({f"{unique_name}_mean_over_stddev_g1": direction_stats['g1_norm'],
+              f"{unique_name}_mean_over_stddev_g2": direction_stats['g2_norm'],
+              f"{unique_name}_mean_over_stddev_g1g2": direction_stats['g1g2_norm']})
 
    #meanfailuretosolveequation,_,_=HYM_measure_val_with_H(HFmodel,dataHF)
 

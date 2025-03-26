@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 import numpy as np
 from cymetric.config import real_dtype, complex_dtype
+from laplacian_funcs import point_vec_to_real, point_vec_to_complex
 def delete_all_dicts_except(*except_dict_names):
     """
     Deletes all dictionary objects from the global namespace except the specified ones.
@@ -1217,6 +1218,127 @@ def test_normalization_error_propagation_monte_carlo(Hmat, Hmat_errors, Qmat, Qm
         'Q_real': ratioQ_real, 'Q_imag': ratioQ_imag,
         'U_real': ratioU_real, 'U_imag': ratioU_imag
     }
+
+
+def swap_pairs(vectors):
+    """Swap each pair of elements in vectors of 8 complex numbers."""
+    # Input shape: (N, 8)
+    x = tf.convert_to_tensor(vectors)
+    indices = tf.constant([1, 0, 3, 2, 5, 4, 7, 6])
+    return tf.gather(x, indices, axis=1)
+
+def negate_odd_indices(vectors):
+    """Multiply elements at indices 1, 3, 5, 7 by -1."""
+    # Input shape: (N, 8)
+    x = tf.convert_to_tensor(vectors)
+    mask = tf.constant([1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0], dtype=x.dtype)
+    return x * mask
+def rescale_back(vectors):
+    """Rescale back to the original patch."""
+    # Convert to tensor if not already
+    x = tf.convert_to_tensor(vectors)
+    
+    # Reshape to handle pairs
+    shape = tf.shape(x)
+    reshaped = tf.reshape(x, [-1, 4, 2])
+    
+    # Find the index with minimum absolute value in each pair
+    abs_vals = tf.abs(reshaped)
+    min_indices = tf.argmin(abs_vals, axis=2)
+    
+    # Create scaling factors
+    batch_indices = tf.range(shape[0], dtype=tf.int64)[:, tf.newaxis]
+    pair_indices = tf.range(4, dtype=tf.int64)[tf.newaxis, :]
+    min_indices = tf.cast(min_indices, tf.int64)
+    
+    # Ensure all tensors have compatible shapes before stacking
+    batch_indices_expanded = tf.broadcast_to(batch_indices, [shape[0], 4])
+    
+    # Fix the shape mismatch in the stack operation
+    batch_indices_reshaped = tf.reshape(batch_indices_expanded, [-1, 4])
+    pair_indices_reshaped = tf.broadcast_to(pair_indices, [shape[0], 4])
+    min_indices_reshaped = tf.reshape(min_indices, [-1, 4])
+    
+    # Create indices for gather_nd with consistent shapes
+    gather_indices = tf.stack([
+        batch_indices_reshaped,
+        pair_indices_reshaped,
+        min_indices_reshaped
+    ], axis=2)
+    
+    min_values = tf.gather_nd(reshaped, gather_indices)
+    
+    # Scale each pair so minimum absolute value element becomes 1+0j
+    scaling_factors = 1.0 / min_values
+    scaled = reshaped * scaling_factors[:, :, tf.newaxis]
+    return tf.reshape(scaled, shape)
+
+def create_transformation_array(model,vectors):
+    """Create array with original vectors, g1(vectors), and g1(g2(vectors))."""
+    # Input shape: (N, 8)
+    vectors = model._rescale_points(tf.convert_to_tensor(vectors))# just double check
+    g1 = rescale_back(swap_pairs(vectors))                              # this will change patch, guaranteed. # this will change the section!
+    g2 = model._rescale_points(negate_odd_indices(vectors)) # rescale to take -1 ->1 again. THis will not change patch.   
+    g1g2 = rescale_back(swap_pairs(g2))# this will change patch, guaranteed, so we rescale back
+
+    # g1 = model._rescale_points(g1)
+    # g2 = model._rescale_points(g2)
+    # g1g2 = model._rescale_points(g1g2)
+    
+    # Stack to create shape (N, 4, 8)
+    stacked = tf.stack([vectors, g1,g2, g1g2], axis=1)
+    
+    return stacked
+
+def check_network_invariance(model, vectors, charges = [0,0], takes_real = True):
+    """Calculate mean difference between network outputs for different transformations."""
+    transformed = create_transformation_array(model,vectors)
+    N = tf.shape(vectors)[0]
+    # Reshape if needed to ensure proper batch dimension
+    transformed_reshaped = tf.reshape(transformed, [N,4, 8])
+    # Apply model to each vector in the batch
+    if takes_real:
+        outputs = model(point_vec_to_real(transformed_reshaped))
+    else:
+        outputs = model(transformed_reshaped)
+
+    chargesmask = tf.pow(-1, tf.convert_to_tensor(charges, dtype= complex_dtype))
+    
+    # Apply charges to outputs
+    # Original output stays the same
+    # g1 output gets multiplied by first charge
+    # g2 output gets multiplied by second charge
+    # g1g2 output gets multiplied by both charges
+    charge_factors = tf.concat([
+        tf.ones([1], dtype=complex_dtype),
+        tf.expand_dims(chargesmask[0], 0),
+        tf.expand_dims(chargesmask[1], 0),
+        tf.expand_dims(chargesmask[0] * chargesmask[1], 0)
+    ], axis=0)
+    
+    # Reshape to (N, 4)
+    outputs = tf.reshape(outputs, [N, 4]) * charge_factors
+    
+    # Calculate differences between outputs for each input
+    diffs = tf.abs(outputs - tf.expand_dims(outputs[:, 0], axis=1))
+    
+    # Calculate mean difference
+    mean_diff = tf.reduce_mean(diffs)
+    
+    # Calculate standard deviation of all outputs for comparison
+    std_dev = tf.math.reduce_std(outputs)
+    
+    # Calculate means for each transformation direction separately
+    direction_stats = {
+        'g1_mean': tf.reduce_mean(diffs[:, 1]).numpy().item(),
+        'g2_mean': tf.reduce_mean(diffs[:, 2]).numpy().item(),
+        'g1g2_mean': tf.reduce_mean(diffs[:, 3]).numpy().item(),
+        'g1_norm': (tf.reduce_mean(diffs[:, 1]) / (std_dev + 1e-10)).numpy().item(),
+        'g2_norm': (tf.reduce_mean(diffs[:, 2]) / (std_dev + 1e-10)).numpy().item(),
+        'g1g2_norm': (tf.reduce_mean(diffs[:, 3]) / (std_dev + 1e-10)).numpy().item()
+    }
+    
+    return (mean_diff/(std_dev + 1e-10)).numpy().item(), std_dev.numpy().item(), mean_diff.numpy().item(), direction_stats
 
 # Test the normalization error propagation
 if __name__ == "__main__":

@@ -699,11 +699,15 @@ if __name__ ==  '__main__':
     unique_id_or_coeff = free_coefficient_str
     coefficientsTQ = get_coefficients_here(free_coefficient)
     manifold_name_and_data = (coefficientsTQ, kmoduliTQ, ambientTQ, monomialsTQ, type_folder, unique_id_or_coeff, manifold_name, data_path)
-    
+    try:
+        unique_id_or_coeff_float = float(unique_id_or_coeff)
+    except:
+        unique_id_or_coeff_float = None
     #if start_from != 'end':
     wandb.init(project = type_folder,
             name = f'{modeltype}_fc_{unique_id_or_coeff}_{addtofilename}_{job_id}',
             config = {'unique_id_or_coeff': unique_id_or_coeff,
+                      'unique_id_or_coeff_float': unique_id_or_coeff_float,
                       'phimodel_config': phimodel_config,
                       'betamodel_config': betamodel_config,
                       'sigmamodel_config': sigmamodel_config,
