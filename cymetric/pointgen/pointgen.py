@@ -64,7 +64,7 @@ class PointGenerator:
         >>> pg.prepare_basis(dir_name)
     """
 
-    def __init__(self, monomials, coefficients, kmoduli, ambient, vol_j_norm=None, verbose=2, backend='multiprocessing', use_jax=True, use_quadratic_method = False, do_multiprocessing = False, max_iter = 10, tol = 1e-20):
+    def __init__(self, monomials, coefficients, kmoduli, ambient, vol_j_norm=None, verbose=2, backend='multiprocessing', use_jax=True, use_quadratic_method = False, do_multiprocessing = False, max_iter = 10, tol = 1e-20, get_moduli_space_metric=False):
         r"""The PointGenerator uses the *joblib* module to parallelize 
         computations. 
 
@@ -86,7 +86,7 @@ class PointGenerator:
             backend (str, optional): Backend for Parallel. Defaults to
                 'multiprocessing'. 'loky' makes issues with pickle5.
         """
-        self.get_moduli_space_metric = False
+        self.get_moduli_space_metric = get_moduli_space_metric
         if use_jax and use_quadratic_method:
             print("use_jax and use_quadratic_method cannot both be True")
             print("setting use_jax to False")
@@ -287,17 +287,17 @@ class PointGenerator:
             self.root_monomials_Q += [(p_monomials[indi], q_monomials[indi])]
             self.root_factors_Q += [factors[indi]]
 
-    def _generate_dQdz_basis(self):
-        r"""Generates a monomial basis for dQ/dz_j."""
-        self.dQdz_basis = []
-        self.dQdz_factors = []
-        for i, m in enumerate(np.eye(self.ncoords, dtype=int)):
-            basis = self.monomials - m
-            factors = self.monomials[:, i] * self.coefficients
-            good = np.ones(len(basis), dtype=bool)
-            good[np.where(basis < 0)[0]] = False
-            self.dQdz_basis += [basis[good]]
-            self.dQdz_factors += [factors[good]]
+    # def _generate_dQdz_basis(self):
+    #     r"""Generates a monomial basis for dQ/dz_j."""
+    #     self.dQdz_basis = []
+    #     self.dQdz_factors = []
+    #     for i, m in enumerate(np.eye(self.ncoords, dtype=int)):
+    #         basis = self.monomials - m
+    #         factors = self.monomials[:, i] * self.coefficients
+    #         good = np.ones(len(basis), dtype=bool)
+    #         good[np.where(basis < 0)[0]] = False
+    #         self.dQdz_basis += [basis[good]]
+    #         self.dQdz_factors += [factors[good]]
 
     def _generate_dQdz_basis(self):
         r"""Generates a monomial basis for dQ/dz_j."""
@@ -952,7 +952,7 @@ class PointGenerator:
         self.BASIS['D2QDZ2F0'] = D2QDZ2F
 
         #DI_DQZB
-        #n_moduli_directions = len(self.n_moduli_directions)
+        #n_moduli_directions = len(self.n_moduli_directions_d)
         #for
     def _generate_padded_dIdQZ_basis(self):
         """Generates padded basis for moduli space derivatives.
@@ -1302,7 +1302,7 @@ class PointGenerator:
     @staticmethod
     @jax_jit
     def _compute_d2q_dz2_jax(points, indices, D2QDZ2B0, D2QDZ2F0):
-        """Compute second derivatives of Q with respect to z."""
+        """Compute second derivatives of Q with respect to z.  D2QDZ2B0 has shape(8, 27, 8)"""
         d2q_dz2 = jnp.power(jnp.expand_dims(points, 1), D2QDZ2B0[:,indices])
         d2q_dz2 = jnp.multiply.reduce(d2q_dz2, axis=-1)
         d2q_dz2 = jnp.add.reduce(D2QDZ2F0[:,indices] * d2q_dz2, axis=-1)
@@ -1311,7 +1311,7 @@ class PointGenerator:
     @staticmethod
     @jax_jit
     def _compute_dq_dz_jax(points, indices, DQDZB0, DQDZF0):
-        """Compute first derivatives of Q with respect to z."""
+        """Compute first derivatives of Q with respect to z.  DQDZB0 has shape (8, 54, 8)"""
         dq_dz = jnp.power(jnp.expand_dims(points, 1), DQDZB0[:,indices])
         dq_dz = jnp.multiply.reduce(dq_dz, axis=-1)
         dq_dz = jnp.add.reduce(DQDZF0[:,indices] * dq_dz, axis=-1)
@@ -1319,9 +1319,12 @@ class PointGenerator:
     
     @staticmethod
     @jax_jit
-    def _compute_dI_dQZ_jax(points, indices, DI_DQZB0, DI_DQZF0):
+    def _compute_dI_dQZ_jax(points, indices, DI_DQZB0, DI_DQZF0, moduli_space_directions):
         """Compute derivatives of I with respect to Q and Z."""
-        dI_dQZ = jnp.power(jnp.expand_dims(points, 1), DI_DQZB0[:,indices])
+        # Expand points to match DI_DQZB0 shape which is (81, 8, 54, 8)
+        dotDI_DQZB0 = jnp.einsum('Ii,i...->I...', moduli_space_directions, DI_DQZB0)
+        expanded_points = jnp.expand_dims(jnp.expand_dims(points, 1), 1)
+        dI_dQZ = jnp.power(expanded_points, dotDI_DQZB0[:,indices])
         dI_dQZ = jnp.multiply.reduce(dI_dQZ, axis=-1)
         dI_dQZ = jnp.add.reduce(DI_DQZF0[:,indices] * dI_dQZ, axis=-1)
         return dI_dQZ
@@ -1334,7 +1337,33 @@ class PointGenerator:
         dIp = jnp.multiply.reduce(dIp, axis=-1)
         dIp = jnp.einsum('Ii,xi->xI', coeffsfordir, dIp)
         return dIp
-    
+
+    def dI_holomorphic_volume_form(self, points, j_elim=None, use_jax=True):
+        """Wrapper for holomorphic volume form computation with moduli space derivatives."""
+        if use_jax:
+            try:
+                import jax.numpy as jnp
+                return PointGenerator._dI_holomorphic_volume_form_jax(
+                    points, 
+                    j_elim, 
+                    self.BASIS['DQDZB0'], 
+                    self.BASIS['DQDZF0'], 
+                    self.BASIS['DI_DQZB0'], 
+                    self.BASIS['DI_DQZF0'], 
+                    self.BASIS['D2QDZ2B0'], 
+                    self.BASIS['D2QDZ2F0'], 
+                    self.BASIS['QB0'], 
+                    self.BASIS['QF0'], 
+                    self.moduli_space_directions
+                )
+            except (ImportError, AttributeError) as e:
+                print(f"JAX implementation failed: {e}, falling back to legacy")
+                use_jax = False
+        
+        if not use_jax:
+            # Legacy implementation would go here
+            raise NotImplementedError("Legacy implementation for dI_holomorphic_volume_form not available")
+     
     @staticmethod
     @jax_jit
     def _dI_holomorphic_volume_form_jax(points, j_elim, DQDZB0, DQDZF0, DI_DQZB0, DI_DQZF0, D2QDZ2B0, D2QDZ2F0, QB0, QF0, moduli_space_directions):

@@ -257,7 +257,7 @@ class HarmonicFormModel(FSModel):
 
         ##print("fixed now????")
         ##lpl_losses=tf.mth.abs(laplacian(self,x,pullbacks,invmetrics)-(sources))
-        lpl_losses=tf.math.abs(laplacianWithH(self,x,pullbacks,invmetrics,self.HYMmetric,training=training)-(sources))
+        lpl_losses=tf.math.abs(laplacianWithH(self,x,pullbacks,invmetrics,self.HYMmetric,training=training)-(sources))*tf.math.sqrt(self.HYMmetric(x))
         #complex_pt = point_vec_to_complex(x)
         ##kappa_3 = tf.reduce_sum(complex_pt[:,4:6]*tf.math.conj(complex_pt[:,4:6]),axis=-1)
         ##kappa_4 = tf.reduce_sum(complex_pt[:,6:8]*tf.math.conj(complex_pt[:,6:8]),axis=-1)
