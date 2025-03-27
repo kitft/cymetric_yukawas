@@ -1304,7 +1304,7 @@ def create_transformation_array(model,vectors):
     
     return stacked
 
-def check_network_invariance(modelclass, real_vectors, charges = [0,0], takes_real = True):
+def check_network_invariance(modelclass, real_vectors, HYMvals = None,charges = [0,0], takes_real = True):
     """Calculate mean difference between network outputs for different transformations."""
     # Ensure vectors are complex
     if real_vectors.shape[-1]==8:
@@ -1341,7 +1341,10 @@ def check_network_invariance(modelclass, real_vectors, charges = [0,0], takes_re
     outputs = tf.reshape(outputs, [N, 4]) 
     
     # Calculate differences between outputs for each input
-    diffs = tf.abs(outputs - charge_factors * tf.expand_dims(outputs[:, 0], axis=1))
+    if HYMvals is not None:
+        diffs = tf.abs(outputs - charge_factors * tf.expand_dims(outputs[:, 0], axis=1))*tf.math.sqrt(tf.expand_dims(HYMvals,axis=1))
+    else:
+        diffs = tf.abs(outputs - charge_factors * tf.expand_dims(outputs[:, 0], axis=1))
     
     # Calculate mean difference
     mean_diff = tf.reduce_mean(diffs[:,1:])
