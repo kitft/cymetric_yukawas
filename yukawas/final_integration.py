@@ -408,6 +408,9 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                 batch_size=10000,
                 compile_func=True
             )
+            print("Compare:")
+            print(np.abs(extra_thing_U2[0:10]-(vU2-vU2_bare)[0:10]))
+            print(np.max(np.abs(extra_thing_U2[0:]+(vU2-vU2_bare)[0:])))
             # Check topological invariance with pure derivatives
             integrand_Q3U2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3_bare,vU2_bare)*omega_normalised_to_one
             integrand_bare_Q3U2_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH-vH_bare,vQ3_bare,vU2_bare)*omega_normalised_to_one
