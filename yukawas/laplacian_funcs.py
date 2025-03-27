@@ -240,7 +240,8 @@ def laplacianWithH(sigmamodel,points,pullbacks,invmetrics,Hfunc,training=False):
         #print('dphi')
         #tf.print(d_phi)
         if Hfunc is not None:
-            dphiH=tf.einsum('xQa,x->xQa',d_phi,Hfunc(points))#hfunc is real, so can just multiply
+            Hfunc_val = Hfunc(points)
+            dphiH=tf.einsum('xQa,x->xQa',d_phi,Hfunc_val)#hfunc is real, so can just multiply
         else:
             dphiH = d_phi
     dd_phi = tape1.batch_jacobian(dphiH, points)
@@ -283,6 +284,8 @@ def laplacianWithH(sigmamodel,points,pullbacks,invmetrics,Hfunc,training=False):
                     #PULLBACKS SHOULD BE GIVEN WITH THIS? Or decide I want to use none?
     #factor of 2 because the laplacian is 2g^ab da db 2gCY∂a∂ ̄b,. pb_dd_phi_Pbbar is just
     gdd_phi = tf.einsum('xba,xai,xji,xbj->x', invmetrics,pullbacks, dd_phi, tf.math.conj(pullbacks))
+    if Hfunc is not None:
+        gdd_phi = gdd_phi*tf.cast(Hfunc_val**(-1),gdd_phi.dtype)
 
     #gdd_phi = tf.einsum('xai,xji,xbj->xab', pullbacks, dd_phi, tf.math.conj(pullbacks))
     return gdd_phi

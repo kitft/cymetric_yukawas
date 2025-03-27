@@ -554,8 +554,9 @@ def compute_source_for_harmonicForm(pg, points, HYMmetric, harmonicform_jbar, in
         with tf.GradientTape(persistent=False) as tape1:
             tape1.watch(pts)
             cpoints = point_vec_to_complex(pts)
+            Hval = tf.cast(HYMmetric(pts), complex_dtype)
             HNu = tf.einsum('x,xb->xb', 
-                           tf.cast(HYMmetric(pts), complex_dtype),
+                           Hval,
                            tf.cast(harmonicform_jbar(tf.cast(cpoints, complex_dtype)), complex_dtype))
             real_part = tf.math.real(HNu)
             imag_part = tf.math.imag(HNu)
@@ -565,7 +566,7 @@ def compute_source_for_harmonicForm(pg, points, HYMmetric, harmonicform_jbar, in
         dx_Hnu, dy_Hnu = 0.5*dHnu[:,:,:, :ncoords], 0.5*dHnu[:,:,:, ncoords:]
         dz_Hnu = tf.complex(dx_Hnu[:,0]+dy_Hnu[:,1], dx_Hnu[:,1]-dy_Hnu[:,0])
         
-        return -tf.einsum('xba,xbj,xai,xji->x', invmet, tf.math.conj(pbs), pbs, dz_Hnu)
+        return -Hval**(-1)*tf.einsum('xba,xbj,xai,xji->x', invmet, tf.math.conj(pbs), pbs, dz_Hnu)
     
     # Process in batches to avoid OOM
     return batch_process_helper_func(
