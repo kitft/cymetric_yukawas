@@ -486,7 +486,7 @@ if __name__ == '__main__':
         nEpochsBeta = 5
         nEpochsSigma = 5
         nEpochsSigma2 = 5
-    if '10epochs' in sys.argv[1:]:
+    elif '10epochs' in sys.argv[1:]:
         nEpochsPhi = 10
         nEpochsBeta = 10
         nEpochsSigma = 10
