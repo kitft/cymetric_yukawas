@@ -354,12 +354,12 @@ class HarmonicFormModel(FSModel):
         return NuCY
 
     @tf.function
-    def uncorrected_FS_harmonicform(self,input_tensor, pullbacks_holo = None):
+    def uncorrected_FS_harmonicform(self,input_tensor, pullbacks_holo = None, j_elim = None):
         cpoints=point_vec_to_complex(input_tensor)
         NuAmbient=self.functionforbaseharmonicform_jbar(cpoints) 
         #self.pullbacks takes real points
         if pullbacks_holo is None:
-            pullbacks_holo = self.pullbacks(input_tensor)
+            pullbacks_holo = self.pullbacks(input_tensor, j_elim=j_elim)
         NuCY=tf.einsum('xbj,xj->xb',tf.math.conj(pullbacks_holo),NuAmbient)
         return NuCY
 

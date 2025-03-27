@@ -1248,6 +1248,7 @@ def negate_odd_indices(vectors):
     return x * mask
 def rescale_back(vectors):
     """Rescale back to the original patch."""
+    return vectors
     # Convert to tensor if not already
     x = tf.convert_to_tensor(vectors)
     
