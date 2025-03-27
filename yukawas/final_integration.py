@@ -413,14 +413,14 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             integrand_bare_Q3U2_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH-vH_bare,vQ3_bare,vU2_bare)*omega_normalised_to_one
             integrand_bare_Q3U2_vQ3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3-vQ3_bare,vU2_bare)*omega_normalised_to_one
             integrand_bare_Q3U2_vU2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3_bare,vU2-vU2_bare)*omega_normalised_to_one
-            extra_thing_U2_integral = tf.einsum('xab,x,xa,xb,xc->x',mets,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3_bare,extra_thing_U2)*omega_normalised_to_one
+            extra_thing_U2_integrand = tf.einsum('xab,x,xa,xb,xc->x',mets,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3_bare,extra_thing_U2)*omega_normalised_to_one
 
 
             integrand_Q3U2_woH = factor * tf.einsum("abc,xa,xb,xc->x",lc_c,vH_bare,vQ3_bare,vU2_bare)*omega_normalised_to_one
             integrand_bare_Q3U2_vH_woH = factor * tf.einsum("abc,xa,xb,xc->x",lc_c,vH-vH_bare,vQ3_bare,vU2_bare)*omega_normalised_to_one
             integrand_bare_Q3U2_vQ3_woH = factor * tf.einsum("abc,xa,xb,xc->x",lc_c,vH_bare,vQ3-vQ3_bare,vU2_bare)*omega_normalised_to_one
             integrand_bare_Q3U2_vU2_woH = factor * tf.einsum("abc,xa,xb,xc->x",lc_c,vH_bare,vQ3_bare,vU2-vU2_bare)*omega_normalised_to_one
-            extra_thing_U2_integral_woH = tf.einsum('xab,xa,xb,xc->x',mets,vH_bare,vQ3_bare,extra_thing_U2)*omega_normalised_to_one
+            extra_thing_U2_integrand_woH = tf.einsum('xab,xa,xb,xc->x',mets,vH_bare,vQ3_bare,extra_thing_U2)*omega_normalised_to_one
 
             # Q1U3 combination
             integrand_Q1U3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ1_bare,vU3_bare)*omega_normalised_to_one
@@ -445,13 +445,13 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             int_bare_Q3U2_vH, int_bare_Q3U2_vH_se, int_bare_Q3U2_vH_eff_n, int_bare_Q3U2_vH_stats = weighted_mean_and_standard_error(integrand_bare_Q3U2_vH, aux_weights, mulweightsby=mulweightsby)
             int_bare_Q3U2_vQ3, int_bare_Q3U2_vQ3_se, int_bare_Q3U2_vQ3_eff_n, int_bare_Q3U2_vQ3_stats = weighted_mean_and_standard_error(integrand_bare_Q3U2_vQ3, aux_weights, mulweightsby=mulweightsby)  
             int_bare_Q3U2_vU2, int_bare_Q3U2_vU2_se, int_bare_Q3U2_vU2_eff_n, int_bare_Q3U2_vU2_stats = weighted_mean_and_standard_error(integrand_bare_Q3U2_vU2, aux_weights, mulweightsby=mulweightsby)
-            int_extra_thing_U2, int_extra_thing_U2_se, int_extra_thing_U2_eff_n, int_extra_thing_U2_stats = weighted_mean_and_standard_error(extra_thing_U2, aux_weights, mulweightsby=mulweightsby)
+            int_extra_thing_U2, int_extra_thing_U2_se, int_extra_thing_U2_eff_n, int_extra_thing_U2_stats = weighted_mean_and_standard_error(extra_thing_U2_integrand, aux_weights, mulweightsby=mulweightsby)
 
             int_Q3U2_woH, int_Q3U2_woH_se, int_Q3U2_woH_eff_n, int_Q3U2_woH_stats = weighted_mean_and_standard_error(integrand_Q3U2_woH, aux_weights, mulweightsby=mulweightsby)
             int_bare_Q3U2_vH_woH, int_bare_Q3U2_vH_woH_se, int_bare_Q3U2_vH_woH_eff_n, int_bare_Q3U2_vH_woH_stats = weighted_mean_and_standard_error(integrand_bare_Q3U2_vH_woH, aux_weights, mulweightsby=mulweightsby)
             int_bare_Q3U2_vQ3_woH, int_bare_Q3U2_vQ3_woH_se, int_bare_Q3U2_vQ3_woH_eff_n, int_bare_Q3U2_vQ3_woH_stats = weighted_mean_and_standard_error(integrand_bare_Q3U2_vQ3_woH, aux_weights, mulweightsby=mulweightsby)
             int_bare_Q3U2_vU2_woH, int_bare_Q3U2_vU2_woH_se, int_bare_Q3U2_vU2_woH_eff_n, int_bare_Q3U2_vU2_woH_stats = weighted_mean_and_standard_error(integrand_bare_Q3U2_vU2_woH, aux_weights, mulweightsby=mulweightsby)
-            int_extra_thing_U2_woH, int_extra_thing_U2_woH_se, int_extra_thing_U2_woH_eff_n, int_extra_thing_U2_woH_stats = weighted_mean_and_standard_error(extra_thing_U2_woH, aux_weights, mulweightsby=mulweightsby)
+            int_extra_thing_U2_woH, int_extra_thing_U2_woH_se, int_extra_thing_U2_woH_eff_n, int_extra_thing_U2_woH_stats = weighted_mean_and_standard_error(extra_thing_U2_integrand_woH, aux_weights, mulweightsby=mulweightsby)
 
             int_Q1U3, int_Q1U3_se, int_Q1U3_eff_n, int_Q1U3_stats = weighted_mean_and_standard_error(integrand_Q1U3, aux_weights, mulweightsby=mulweightsby)
             int_bare_Q1U3_vH, int_bare_Q1U3_vH_se, int_bare_Q1U3_vH_eff_n, int_bare_Q1U3_vH_stats = weighted_mean_and_standard_error(integrand_bare_Q1U3_vH, aux_weights, mulweightsby=mulweightsby)
@@ -472,11 +472,14 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             print(f"int_bare_Q3U2_vH = {int_bare_Q3U2_vH:.6e} ± {int_bare_Q3U2_vH_se:.6e} ({np.round(int_bare_Q3U2_vH_stats['z_score'],2)}σ)")
             print(f"int_bare_Q3U2_vQ3 = {int_bare_Q3U2_vQ3:.6e} ± {int_bare_Q3U2_vQ3_se:.6e} ({np.round(int_bare_Q3U2_vQ3_stats['z_score'],2)}σ)")
             print(f"int_bare_Q3U2_vU2 = {int_bare_Q3U2_vU2:.6e} ± {int_bare_Q3U2_vU2_se:.6e} ({np.round(int_bare_Q3U2_vU2_stats['z_score'],2)}σ)")
+            print(f"int_extra_thing_U2 = {int_extra_thing_U2:.6e} ± {int_extra_thing_U2_se:.6e} ({np.round(int_extra_thing_U2_stats['z_score'],2)}σ)")
+
             print("\n Q3U2_woH:")
             print(f"int_Q3U2_woH = {int_Q3U2_woH:.6e} ± {int_Q3U2_woH_se:.6e} ({np.round(int_Q3U2_woH_stats['z_score'],2)}σ)")
             print(f"int_bare_Q3U2_vH_woH = {int_bare_Q3U2_vH_woH:.6e} ± {int_bare_Q3U2_vH_woH_se:.6e} ({np.round(int_bare_Q3U2_vH_woH_stats['z_score'],2)}σ)")
             print(f"int_bare_Q3U2_vQ3_woH = {int_bare_Q3U2_vQ3_woH:.6e} ± {int_bare_Q3U2_vQ3_woH_se:.6e} ({np.round(int_bare_Q3U2_vQ3_woH_stats['z_score'],2)}σ)")
             print(f"int_bare_Q3U2_vU2_woH = {int_bare_Q3U2_vU2_woH:.6e} ± {int_bare_Q3U2_vU2_woH_se:.6e} ({np.round(int_bare_Q3U2_vU2_woH_stats['z_score'],2)}σ)")
+            print(f"int_extra_thing_U2_woH = {int_extra_thing_U2_woH:.6e} ± {int_extra_thing_U2_woH_se:.6e} ({np.round(int_extra_thing_U2_woH_stats['z_score'],2)}σ)")
             print("\n Q1U3:")
             print(f"int_Q1U3 = {int_Q1U3:.6e} ± {int_Q1U3_se:.6e} ({np.round(int_Q1U3_stats['z_score'],2)}σ)")
             print(f"int_bare_Q1U3_vH = {int_bare_Q1U3_vH:.6e} ± {int_bare_Q1U3_vH_se:.6e} ({np.round(int_bare_Q1U3_vH_stats['z_score'],2)}σ)")
