@@ -43,7 +43,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     #savevecs = not ("nosavevecs" in run_args or "no_save_vecs" in run_args or "no_savevecs" in run_args or "nosave_vecs" in run_args) 
     savevecs =("savevecs" in run_args or "save_vecs" in run_args) 
     loadvecs = ("loadvecs" in run_args or "load_vecs" in run_args)
-    loadpullbacks = ("loadpullbacks" in run_args or "load_pullbacks" in run_args)# default true
+    loadpullbacks = ("loadpullbacks" in run_args or "load_pullbacks" in run_args)# default false
     savepullbacks =  ("savepullbacks" in run_args or "save_pullbacks" in run_args)# default false
     loadextra = False#("loadextra" in run_args or "load_extra" in run_args) and not ("no_extra" in run_args or "noextra" in run_args)
     saveextra = ("saveextra" in run_args or "save_extra" in run_args)
@@ -69,6 +69,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     if not loadvecs:
         omega = tf.cast(batch_process_helper_func(pg.holomorphic_volume_form, [pointsComplex], batch_indices=[0], batch_size=100000),complex_dtype)
     else:
+        print("attempting to load omega")
         filename = os.path.join(data_path,type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{False}.npz")
         if not os.path.exists(filename):
             raise FileNotFoundError(f"File {filename} not found.")
@@ -411,6 +412,17 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             print("Compare:")
             print(np.abs(extra_thing_U2[0:10]-(vU2-vU2_bare)[0:10]))
             print(np.max(np.abs(extra_thing_U2[0:]+(vU2-vU2_bare)[0:])))
+            import jax.numpy as jnp
+
+            pullbacks_jax = pg.pullbacks(jnp.array(pointsComplex))
+            pullbacks_regular = pg.pullbacks(pointsComplex)
+            pullbacks_tf = phimodel.pullbacks(real_pts)
+            print("difference between jax and regular pullbacks:",np.max(np.abs(pullbacks_jax-pullbacks_regular)))
+            print("argmax of difference between jax and regular pullbacks:",np.argmax(np.abs(pullbacks_jax-pullbacks_regular)))
+            print('guilty party: ', pullbacks_jax[np.argmax(np.abs(pullbacks_jax-pullbacks_regular))], pullbacks_regular[np.argmax(np.abs(pullbacks_jax-pullbacks_regular))])
+            print("difference between tf and regular pullbacks:",np.max(np.abs(pullbacks_tf-pullbacks_regular)))
+            print("argmax of difference between tf and regular pullbacks:",np.argmax(np.abs(pullbacks_tf-pullbacks_regular)))
+            print('guilty party: ', pullbacks_tf[np.argmax(np.abs(pullbacks_tf-pullbacks_regular))], pullbacks_regular[np.argmax(np.abs(pullbacks_tf-pullbacks_regular))])
             # Check topological invariance with pure derivatives
             integrand_Q3U2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3_bare,vU2_bare)*omega_normalised_to_one
             integrand_bare_Q3U2_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH-vH_bare,vQ3_bare,vU2_bare)*omega_normalised_to_one
