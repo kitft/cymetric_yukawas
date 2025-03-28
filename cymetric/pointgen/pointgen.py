@@ -334,7 +334,11 @@ class PointGenerator:
             # Create a mask for moduli space directions to consider
             moduli_mask = np.any(self.moduli_space_directions != 0, axis=0)#i.e. if there is a non-zero entry in any of the directions.
             
+            self.DI_DQB0 = []
+            self.DI_DQF0 = []
             for i in range(n_moduli_directions):
+                self.DI_DQB0.append(self.monomials[moduli_mask])
+                self.DI_DQF0.append(self.moduli_space_directions[i][moduli_mask])
                 dI_DQZone = []
                 dI_DQZfactor = []
                 for j, m in enumerate(np.eye(self.ncoords, dtype=int)):
@@ -977,9 +981,14 @@ class PointGenerator:
         # Create padded arrays
         DI_DQZB = np.zeros((n_moduli_directions, self.ncoords, max_shape, self.ncoords), dtype=np.complex128)
         DI_DQZF = np.zeros((n_moduli_directions, self.ncoords, max_shape), dtype=np.complex128)
+        max_shape_2 = max(len(self.DI_DQB0[i]) for i in range(n_moduli_directions))
+        DI_DQB0 = np.zeros((n_moduli_directions, max_shape_2, self.ncoords), dtype=np.complex128)
+        DI_DQF0 = np.zeros((n_moduli_directions, max_shape_2), dtype=np.complex128)
         
         # Fill the padded arrays
         for i in range(n_moduli_directions):
+            DI_DQB0[i] = self.DI_DQB0[i]
+            DI_DQF0[i] = self.DI_DQF0[i]
             for j in range(self.ncoords):
                 basis = self.dI_DQZbasis[i][j]
                 factors = self.dI_DQZfactors[i][j]
@@ -988,6 +997,8 @@ class PointGenerator:
         
         self.BASIS['DI_DQZB0'] = DI_DQZB
         self.BASIS['DI_DQZF0'] = DI_DQZF
+        self.BASIS['DI_DQB0'] = DI_DQB0
+        self.BASIS['DI_DQF0'] = DI_DQF0
     
 
     def generate_points_quadratic(self, n_p):
@@ -1305,39 +1316,39 @@ class PointGenerator:
     @jax_jit
     def _compute_d2q_dz2_jax(points, indices, D2QDZ2B0, D2QDZ2F0):
         """Compute second derivatives of Q with respect to z.  D2QDZ2B0 has shape(8, 27, 8)"""
-        d2q_dz2 = jnp.power(jnp.expand_dims(points, 1), D2QDZ2B0[:,indices])
+        d2q_dz2 = jnp.power(jnp.expand_dims(points, 1), D2QDZ2B0[indices])
         d2q_dz2 = jnp.multiply.reduce(d2q_dz2, axis=-1)
-        d2q_dz2 = jnp.add.reduce(D2QDZ2F0[:,indices] * d2q_dz2, axis=-1)
+        d2q_dz2 = jnp.add.reduce(D2QDZ2F0[indices] * d2q_dz2, axis=-1)
         return d2q_dz2
     
     @staticmethod
     @jax_jit
     def _compute_dq_dz_jax(points, indices, DQDZB0, DQDZF0):
         """Compute first derivatives of Q with respect to z.  DQDZB0 has shape (8, 54, 8)"""
-        dq_dz = jnp.power(jnp.expand_dims(points, 1), DQDZB0[:,indices])
+        dq_dz = jnp.power(jnp.expand_dims(points, 1), DQDZB0[indices])
         dq_dz = jnp.multiply.reduce(dq_dz, axis=-1)
-        dq_dz = jnp.add.reduce(DQDZF0[:,indices] * dq_dz, axis=-1)
+        dq_dz = jnp.add.reduce(DQDZF0[indices] * dq_dz, axis=-1)
         return dq_dz
     
     @staticmethod
     @jax_jit
-    def _compute_dI_dQZ_jax(points, indices, DI_DQZB0, DI_DQZF0, moduli_space_directions):
+    def _compute_dI_dQZ_jax(points, indices, DI_DQZB0, DI_DQZF0):
         """Compute derivatives of I with respect to Q and Z."""
-        # Expand points to match DI_DQZB0 shape which is (81, 8, 54, 8)
-        dotDI_DQZB0 = jnp.einsum('Ii,i...->I...', moduli_space_directions, DI_DQZB0)
-        expanded_points = jnp.expand_dims(jnp.expand_dims(points, 1), 1)
-        dI_dQZ = jnp.power(expanded_points, dotDI_DQZB0[:,indices])
+        # Expand points to match DI_DQZB0 shape which is (81, 8, 54, 8), where 81 can just be the number of directions under consideration
+        #dotDI_DQZB0 = jnp.einsum('Ii,i...->I...', moduli_space_directions, DI_DQZB0)#shape I
+        expanded_points = jnp.expand_dims(jnp.expand_dims(points, 0), 2)# shape 1,N,1, 8
+        dI_dQZ = jnp.power(expanded_points, DI_DQZB0[:,indices])#1, N,1,8 and 81, N,54,8
         dI_dQZ = jnp.multiply.reduce(dI_dQZ, axis=-1)
         dI_dQZ = jnp.add.reduce(DI_DQZF0[:,indices] * dI_dQZ, axis=-1)
         return dI_dQZ
     
     @staticmethod
     @jax_jit
-    def _compute_dIp_jax(points, indices, QB0, coeffsfordir):
+    def _compute_dIp_jax(points, indices, DI_DQB0, DI_DQF0):
         """Compute dIp using the moduli space directions."""
-        dIp = jnp.power(jnp.expand_dims(points, 1), QB0[:,indices])
-        dIp = jnp.multiply.reduce(dIp, axis=-1)
-        dIp = jnp.einsum('Ii,xi->xI', coeffsfordir, dIp)
+        dIp = jnp.power(jnp.expand_dims(points, 0), DI_DQB0[:,indices])# shape is 81, N, 8
+        dIp = jnp.multiply.reduce(dIp, axis=-1) # shape is 81, N
+        dIp = jnp.add.reduce(DI_DQF0[:,indices] * dIp, axis=-1) # shape is N
         return dIp
 
     def dI_holomorphic_volume_form(self, points, j_elim=None, use_jax=True):
