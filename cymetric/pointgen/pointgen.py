@@ -1381,7 +1381,7 @@ class PointGenerator:
     @jax_jit
     def _dI_holomorphic_volume_form_jax(points, j_elim, DQDZB0, DQDZF0, DI_DQZB0, DI_DQZF0, D2QDZ2B0, D2QDZ2F0, DI_DQB0, DI_DQF0, QB0, QF0, moduli_space_directions):
         """JAX implementation of holomorphic volume form computation."""
-        indices = PointGenerator._find_max_dQ_coords_jax(points, DI_DQZB0, DI_DQZF0) if j_elim is None else j_elim
+        indices = PointGenerator._find_max_dQ_coords_jax(points, DQDZB0, DQDZF0) if j_elim is None else j_elim
         
         # Compute all the derivatives
         d2q_dz2 = PointGenerator._compute_d2q_dz2_jax(points, indices, D2QDZ2B0, D2QDZ2F0)
