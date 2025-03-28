@@ -331,20 +331,22 @@ class PointGenerator:
                 #  The first axis is the direction in moduli space, the second is the z coordinate,
                 #  the third axis is the individual monomial contibution (so 4th is the powers of each z).
                 #  As usual, sum over third and exp prod over 4th"""
+            # Create a mask for moduli space directions to consider
+            moduli_mask = np.any(self.moduli_space_directions != 0, axis=0)#i.e. if there is a non-zero entry in any of the directions.
+            
             for i in range(n_moduli_directions):
                 dI_DQZone = []
                 dI_DQZfactor = []
-                for i, m in enumerate(np.eye(self.ncoords, dtype=int)):
+                for j, m in enumerate(np.eye(self.ncoords, dtype=int)):
                     # First derivatives
-                    basis = self.monomials - m
-                    factors = self.monomials[:, i] * self.moduli_space_directions[i]# we actually don't want the coeffs here
+                    basis = self.monomials[moduli_mask] - m
+                    factors = self.monomials[moduli_mask, j] * self.moduli_space_directions[i][moduli_mask]  # we actually don't want the coeffs here
                     good = np.ones(len(basis), dtype=bool)
                     good[np.where(basis < 0)[0]] = False
                     dI_DQZone += [basis[good]]
                     dI_DQZfactor += [factors[good]]
                 self.dI_DQZbasis += [dI_DQZone]
                 self.dI_DQZfactors += [dI_DQZfactor]
-                
 
     def _generate_dzdz_basis(self, nproc=-1):
         r"""Generates a monomial basis for dz_i/dz_j
