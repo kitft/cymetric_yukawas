@@ -46,7 +46,7 @@ def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10
         return func_orig(*args, **kwargs)
 
     # Optionally compile the function for better performance
-    if compile_func:
+    if compile_func and not isinstance(func_orig, tf.types.experimental.GenericFunction):
         func = tf.function(func_orig)
     else:
         func = func_orig
