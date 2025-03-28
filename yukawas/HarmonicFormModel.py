@@ -349,6 +349,7 @@ class HarmonicFormModel(FSModel):
         NuAmbient=self.functionforbaseharmonicform_jbar(cpoints) + dbarsigma
         #self.pullbacks takes real points
         if pullbacks_holo is None:
+            print("SHOULD NOT BE CALLED")
             pullbacks_holo = self.pullbacks(input_tensor)
         NuCY=tf.einsum('xbj,xj->xb',tf.math.conj(pullbacks_holo),NuAmbient)
         return NuCY
@@ -359,6 +360,7 @@ class HarmonicFormModel(FSModel):
         NuAmbient=self.functionforbaseharmonicform_jbar(cpoints) 
         #self.pullbacks takes real points
         if pullbacks_holo is None:
+            print("SHOULD NOT BE CALLED")
             pullbacks_holo = self.pullbacks(input_tensor, j_elim=j_elim)
         NuCY=tf.einsum('xbj,xj->xb',tf.math.conj(pullbacks_holo),NuAmbient)
         return NuCY

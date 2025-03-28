@@ -1379,7 +1379,7 @@ class PointGenerator:
      
     @staticmethod
     @jax_jit
-    def _dI_holomorphic_volume_form_jax(points, j_elim, DQDZB0, DQDZF0, DI_DQZB0, DI_DQZF0, D2QDZ2B0, D2QDZ2F0, QB0, QF0, moduli_space_directions):
+    def _dI_holomorphic_volume_form_jax(points, j_elim, DQDZB0, DQDZF0, DI_DQZB0, DI_DQZF0, D2QDZ2B0, D2QDZ2F0, DI_DQB0, DI_DQF0, QB0, QF0, moduli_space_directions):
         """JAX implementation of holomorphic volume form computation."""
         indices = PointGenerator._find_max_dQ_coords_jax(points, DI_DQZB0, DI_DQZF0) if j_elim is None else j_elim
         
@@ -1387,7 +1387,7 @@ class PointGenerator:
         d2q_dz2 = PointGenerator._compute_d2q_dz2_jax(points, indices, D2QDZ2B0, D2QDZ2F0)
         dq_dz = PointGenerator._compute_dq_dz_jax(points, indices, DQDZB0, DQDZF0)
         dI_dQZ = PointGenerator._compute_dI_dQZ_jax(points, indices, DI_DQZB0, DI_DQZF0)
-        dIp = PointGenerator._compute_dIp_jax(points, indices, QB0, moduli_space_directions)
+        dIp = PointGenerator._compute_dIp_jax(points, indices, DI_DQB0, DI_DQF0)
         
         d_IOmega =  -1*(dI_dQZ - jnp.expand_dims(d2q_dz2/dq_dz, 1) * dIp)*jnp.expand_dims(1/dq_dz**2, 1)
         return d_IOmega

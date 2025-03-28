@@ -407,6 +407,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             extra_thing_U2 = batch_process_helper_func(
                 compute_extra_thing,
                 (real_pts,pullbacks),
+                batch_indices=[0,1]
                 batch_size=10000,
                 compile_func=True
             )
