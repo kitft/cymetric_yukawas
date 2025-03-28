@@ -68,7 +68,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     print("Compute holomorphic Yukawas")
     #consider omega normalisation
     if not loadvecs:
-        omega = tf.cast(batch_process_helper_func(pg.holomorphic_volume_form, [pointsComplex], batch_indices=[0], batch_size=100000),complex_dtype)
+        omega = tf.cast(batch_process_helper_func(pg.holomorphic_volume_form, [jnp.array(pointsComplex)], batch_indices=[0], batch_size=100000),complex_dtype)
     else:
         print("attempting to load omega")
         filename = os.path.join(data_path,type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{False}.npz")
