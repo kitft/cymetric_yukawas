@@ -622,11 +622,12 @@ def HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF,HYMmetric_model,metri
     print('average mean of FS one form: ',tf.reduce_mean(normoflaplacianvals).numpy().item())
     
     TrainedDivTrained = tf.reduce_mean(normofcoclosuretrained*weights/(trained_one_form_conj_times_metric)).numpy().item()/tf.reduce_mean(weights).numpy().item()
-    avgavagTrainedDivTrained = tf.reduce_mean(normofcoclosuretrained*weights)/tf.reduce_mean(normoflaplacianvals*weights).numpy().item()
+    avgavagTrainedDivTrained = tf.reduce_mean(normofcoclosuretrained*weights)/tf.reduce_mean(trained_one_form_conj_times_metric*weights).numpy().item()
     TrainedDivFS = tf.reduce_mean(normofcoclosuretrained*weights/FS_one_form_conj_times_metric).numpy().item()/tf.reduce_mean(weights).numpy().item()
-    avgavagTrainedDivFS = tf.reduce_mean(normofcoclosuretrained*weights)/tf.reduce_mean(normoflaplacianvals*weights).numpy().item()
+    avgavagTrainedDivFS = tf.reduce_mean(normofcoclosuretrained*weights)/tf.reduce_mean(FS_one_form_conj_times_metric*weights).numpy().item()
     FS_DivFS = tf.reduce_mean(normofcoclosureofvFS*weights/FS_one_form_conj_times_metric).numpy().item()/tf.reduce_mean(weights).numpy().item()
-    avgavagFS_DivFS = tf.reduce_mean(normofcoclosureofvFS*weights)/tf.reduce_mean(normoflaplacianvals*weights).numpy().item()
+    avgavagFS_DivFS = tf.reduce_mean(normofcoclosureofvFS*weights)/tf.reduce_mean(FS_one_form_conj_times_metric*weights).numpy().item()
+    normofcoclosuretrained_over_normFS = (tf.reduce_mean(normofcoclosuretrained*weights)/tf.reduce_mean(normofcoclosureofFSdirect*weights)).numpy().item()
     if data_for_histograms:
         dataforhistograms = {
             'Trained_DivFS': (normofcoclosuretrained*weights)/tf.reduce_mean(normoflaplacianvals*weights).numpy().item(),
@@ -634,7 +635,7 @@ def HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF,HYMmetric_model,metri
         }
         return TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS, dataforhistograms
     #print("check this is tiny: ",tf.math.reduce_std(coclosureofjustdsigma/(laplacianvals)))
-    return TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS
+    return TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS, normofcoclosuretrained_over_normFS
 
 # def HYM_measure_val_with_H_for_batching(HFmodel, X_val, y_val, val_pullbacks, inv_mets_val):
 #     #returns ratio means of deldagger V_corrected/deldagger V_FS

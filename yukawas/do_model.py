@@ -872,12 +872,32 @@ if __name__ ==  '__main__':
                                        HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = do_extra_stuff_for_integration,
                                          run_args=sys.argv, dirnameEval=dirnameEval, result_files_path=result_files_path, addtofilename=addtofilename)
 
-print("\nYou ran " + " ".join(sys.argv))
-print("--------------------------------")
-print("Trained masses:")
-for i in range(3):
-    print(f"  m{i+1}: {masses[0,i]:.6e} ± {masserrors[i]:.6e}")
-print("\nReference masses:")
-for i in range(3):
-    print(f"  m{i+1}: {masses[1,i]:.6e} ± {masserrors[i]:.6e}")
-print("--------------------------------")
+    print("\nYou ran " + " ".join(sys.argv))
+    print("--------------------------------")
+    print("Trained masses:")
+    for i in range(3):
+        print(f"  m{i+1}: {masses[0,i]:.6e} ± {masserrors[i]:.6e}")
+    print("\nReference masses:")
+    for i in range(3):
+        print(f"  m{i+1}: {masses[1,i]:.6e} ± {masserrors[i]:.6e}")
+    print("--------------------------------")
+
+    import jax
+    import jax.numpy as jnp
+    all_points = jnp.concatenate([dataEval['X_train'], dataEval['X_val']], axis=0)
+    all_ys = jnp.concatenate([dataEval['y_train'], dataEval['y_val']], axis=0)
+    all_aux_weights = all_ys[:,0]/all_ys[:,1]
+    
+    psivector = jax.nn.one_hot(40, 81)
+
+    pg.moduli_space_directions = np.array([psivector])
+    pg.get_moduli_space_metric = True
+    pg._generate_dQdz_basis()
+    pg._generate_padded_dIdQZ_basis()
+    pg._generate_moduli_space_basis()
+
+    measure_integral = pg._measure_integral(all_points,all_aux_weights,j_elim=None)
+    print("measure val here: ", measure_integral)
+    wandb.log({'measure_integral': measure_integral})
+    
+    

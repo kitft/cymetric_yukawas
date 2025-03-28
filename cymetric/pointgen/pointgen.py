@@ -1346,7 +1346,7 @@ class PointGenerator:
     @jax_jit
     def _compute_dIp_jax(points, DI_DQB0, DI_DQF0):
         """Compute dIp using the moduli space directions."""
-        dIp = jnp.power(jnp.expand_dims(points, 0), jnp.expand_dims(DI_DQB0, 1))# shape is 81, N, monoms, 8
+        dIp = jnp.power(jnp.expand_dims(points, (0,2)), jnp.expand_dims(DI_DQB0, 1))# shape is 81, N, monoms, 8
         dIp = jnp.multiply.reduce(dIp, axis=-1) # shape is 81, N, monoms
         dIp = jnp.add.reduce(jnp.expand_dims(DI_DQF0, 1) * dIp, axis=-1) # shape is 81, N# 81 is a stand-in for the number of moduli space directions
         return dIp
@@ -1379,7 +1379,7 @@ class PointGenerator:
      
     @staticmethod
     @jax_jit
-    def _dI_holomorphic_volume_form_jax(points, j_elim, DQDZB0, DQDZF0, DI_DQZB0, DI_DQZF0, D2QDZ2B0, D2QDZ2F0, DI_DQB0, DI_DQF0, QB0, QF0, moduli_space_directions):
+    def _dI_holomorphic_volume_form_jax(points, j_elim, DQDZB0, DQDZF0, DI_DQZB0, DI_DQZF0, D2QDZ2B0, D2QDZ2F0, DI_DQB0, DI_DQF0):
         """JAX implementation of holomorphic volume form computation."""
         indices = PointGenerator._find_max_dQ_coords_jax(points, DQDZB0, DQDZF0) if j_elim is None else j_elim
         
@@ -1387,12 +1387,52 @@ class PointGenerator:
         d2q_dz2 = PointGenerator._compute_d2q_dz2_jax(points, indices, D2QDZ2B0, D2QDZ2F0)
         dq_dz = PointGenerator._compute_dq_dz_jax(points, indices, DQDZB0, DQDZF0)
         dI_dQZ = PointGenerator._compute_dI_dQZ_jax(points, indices, DI_DQZB0, DI_DQZF0)
-        dIp = PointGenerator._compute_dIp_jax(points, indices, DI_DQB0, DI_DQF0)
+        dIp = PointGenerator._compute_dIp_jax(points, DI_DQB0, DI_DQF0)
         
         d_IOmega =  -1*(dI_dQZ - jnp.expand_dims(d2q_dz2/dq_dz, 0) * dIp)*jnp.expand_dims(1/dq_dz**2, 0)
-        return d_IOmega
-        # compute (dQ/dzj)**-1
-        #return 1 / d2q_dz2
+        return d_IOmega, dq_dz
+
+    def _measure_integral(self,points,aux_weights, j_elim=None):
+        aux_weights = jnp.astype(aux_weights, points.dtype)
+        d_IOmega, dq_dz = self._dI_holomorphic_volume_form_jax(points, j_elim, self.BASIS['DQDZB0'], self.BASIS['DQDZF0'], self.BASIS['DI_DQZB0'],
+                                                                self.BASIS['DI_DQZF0'], self.BASIS['D2QDZ2B0'], self.BASIS['D2QDZ2F0'], self.BASIS['DI_DQB0'], 
+                                                                self.BASIS['DI_DQF0'])
+        d_JbarOmegabar = jnp.conj(d_IOmega)
+
+        omega = 1/dq_dz
+        omegabar = jnp.conj(omega)
+
+        v  = jnp.mean(aux_weights*jnp.abs(d_IOmega)**2)
+        int_dIomega_wedge_omegabar = jnp.mean(jnp.einsum('ix,x->ix',d_IOmega,aux_weights*omegabar), axis=-1)
+        int_omega_wedge_dJbar_omegabar = jnp.mean(jnp.einsum('x,jx->jx', aux_weights*omega,d_JbarOmegabar), axis=-1)
+        # Compute mean of d_IOmega * conj(d_JbarOmegabar) across points, for each moduli direction
+        # Reshape aux_weights to broadcast correctly across moduli directions
+        int_dIO_dJbarObar = jnp.mean(jnp.einsum('ip,jp,p->ijp', d_IOmega, jnp.conj(d_JbarOmegabar), aux_weights), axis=-1)
+        result = (1/v**2)*jnp.einsum('i,j->ij', int_omega_wedge_dJbar_omegabar, int_dIomega_wedge_omegabar) - 1/v *int_dIO_dJbarObar
+        return result
+
+     def _measure_integral(self,points,aux_weights, j_elim=None):
+        aux_weights = jnp.astype(aux_weights, points.dtype)
+        d_IOmega, dq_dz = self._dI_holomorphic_volume_form_jax(points, j_elim, self.BASIS['DQDZB0'], self.BASIS['DQDZF0'], self.BASIS['DI_DQZB0'],
+                                                                self.BASIS['DI_DQZF0'], self.BASIS['D2QDZ2B0'], self.BASIS['D2QDZ2F0'], self.BASIS['DI_DQB0'], 
+                                                                self.BASIS['DI_DQF0'])
+        d_JbarOmegabar = jnp.conj(d_IOmega)
+
+        omega = 1/dq_dz
+        omegabar = jnp.conj(omega)
+
+        v  = jnp.mean(aux_weights*jnp.abs(d_IOmega)**2)
+        int_dIomega_wedge_omegabar = jnp.mean(jnp.einsum('ix,x->ix',d_IOmega,aux_weights*omegabar), axis=-1)
+        int_omega_wedge_dJbar_omegabar = jnp.mean(jnp.einsum('x,jx->jx', aux_weights*omega,d_JbarOmegabar), axis=-1)
+        # Compute mean of d_IOmega * conj(d_JbarOmegabar) across points, for each moduli direction
+        # Reshape aux_weights to broadcast correctly across moduli directions
+        int_dIO_dJbarObar = jnp.mean(jnp.einsum('ip,jp,p->ijp', d_IOmega, jnp.conj(d_JbarOmegabar), aux_weights), axis=-1)
+        result = (1/v**2)*jnp.einsum('i,j->ij', int_omega_wedge_dJbar_omegabar, int_dIomega_wedge_omegabar) - 1/v *int_dIO_dJbarObar
+        return result
+
+
+
+
     
     def _holomorphic_volume_form_legacy(self, points, j_elim=None):
         """Legacy numpy implementation of holomorphic volume form computation."""
