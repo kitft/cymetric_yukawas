@@ -1344,11 +1344,11 @@ class PointGenerator:
     
     @staticmethod
     @jax_jit
-    def _compute_dIp_jax(points, indices, DI_DQB0, DI_DQF0):
+    def _compute_dIp_jax(points, DI_DQB0, DI_DQF0):
         """Compute dIp using the moduli space directions."""
-        dIp = jnp.power(jnp.expand_dims(points, 0), DI_DQB0[:,indices])# shape is 81, N, 8
-        dIp = jnp.multiply.reduce(dIp, axis=-1) # shape is 81, N
-        dIp = jnp.add.reduce(DI_DQF0[:,indices] * dIp, axis=-1) # shape is N
+        dIp = jnp.power(jnp.expand_dims(points, 0), tf.expand_dims(DI_DQB0, 1))# shape is 81, N, monoms, 8
+        dIp = jnp.multiply.reduce(dIp, axis=-1) # shape is 81, N, monoms
+        dIp = jnp.add.reduce(tf.expand_dims(DI_DQF0, 1) * dIp, axis=-1) # shape is 81, N# 81 is a stand-in for the number of moduli space directions
         return dIp
 
     def dI_holomorphic_volume_form(self, points, j_elim=None, use_jax=True):
@@ -1389,7 +1389,7 @@ class PointGenerator:
         dI_dQZ = PointGenerator._compute_dI_dQZ_jax(points, indices, DI_DQZB0, DI_DQZF0)
         dIp = PointGenerator._compute_dIp_jax(points, indices, DI_DQB0, DI_DQF0)
         
-        d_IOmega =  -1*(dI_dQZ - jnp.expand_dims(d2q_dz2/dq_dz, 1) * dIp)*jnp.expand_dims(1/dq_dz**2, 1)
+        d_IOmega =  -1*(dI_dQZ - jnp.expand_dims(d2q_dz2/dq_dz, 0) * dIp)*jnp.expand_dims(1/dq_dz**2, 0)
         return d_IOmega
         # compute (dQ/dzj)**-1
         #return 1 / d2q_dz2

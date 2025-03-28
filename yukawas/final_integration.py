@@ -434,14 +434,14 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             integrand_bare_Q3U2_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH-vH_bare,vQ3_bare,vU2_bare)*omega_normalised_to_one
             integrand_bare_Q3U2_vQ3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3-vQ3_bare,vU2_bare)*omega_normalised_to_one
             integrand_bare_Q3U2_vU2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3_bare,vU2-vU2_bare)*omega_normalised_to_one
-            extra_thing_U2_integrand = tf.einsum('xab,x,xa,xb,xc->x',mets,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3_bare,extra_thing_U2)*omega_normalised_to_one
+            extra_thing_U2_integrand =  factor* tf.einsum('abc,x,xa,xb,xc->x',lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3_bare,extra_thing_U2)*omega_normalised_to_one
 
 
             integrand_Q3U2_woH = factor * tf.einsum("abc,xa,xb,xc->x",lc_c,vH_bare,vQ3_bare,vU2_bare)*omega_normalised_to_one
             integrand_bare_Q3U2_vH_woH = factor * tf.einsum("abc,xa,xb,xc->x",lc_c,vH-vH_bare,vQ3_bare,vU2_bare)*omega_normalised_to_one
             integrand_bare_Q3U2_vQ3_woH = factor * tf.einsum("abc,xa,xb,xc->x",lc_c,vH_bare,vQ3-vQ3_bare,vU2_bare)*omega_normalised_to_one
             integrand_bare_Q3U2_vU2_woH = factor * tf.einsum("abc,xa,xb,xc->x",lc_c,vH_bare,vQ3_bare,vU2-vU2_bare)*omega_normalised_to_one
-            extra_thing_U2_integrand_woH = tf.einsum('xab,xa,xb,xc->x',mets,vH_bare,vQ3_bare,extra_thing_U2)*omega_normalised_to_one
+            extra_thing_U2_integrand_woH = factor * tf.einsum('abc,xa,xb,xc->x',lc_c,vH_bare,vQ3_bare,extra_thing_U2)*omega_normalised_to_one
 
             # Q1U3 combination
             integrand_Q1U3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H3*H2),vH_bare,vQ1_bare,vU3_bare)*omega_normalised_to_one
