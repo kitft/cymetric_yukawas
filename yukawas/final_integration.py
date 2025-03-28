@@ -397,16 +397,16 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
 
         if do_extra_stuff:
             print("\n\n\n\n\n\n\n\n Checking topological invariance if one of the forms is pure derivatives!")
-            def compute_extra_thing(batch):
+            def compute_extra_thing(batch,pullbacks):
                 extra_thing_U2 = extder_jbar_for_sigma(batch, HFmodel_vU2)
-                pullbackextrathingU2 = HFmodel_vU2.pullbacks(batch)
-                extra_thing_U2 = tf.einsum('xbj,xj->xb', tf.math.conj(pullbackextrathingU2), extra_thing_U2)
+                #pullbackextrathingU2 = HFmodel_vU2.pullbacks(batch)
+                extra_thing_U2 = tf.einsum('xbj,xj->xb', tf.math.conj(pullbacks), extra_thing_U2)
                 return extra_thing_U2
 
             # Pass real_pts as a list to avoid too many positional arguments error
             extra_thing_U2 = batch_process_helper_func(
                 compute_extra_thing,
-                (real_pts,),
+                (real_pts,pullbacks),
                 batch_size=10000,
                 compile_func=True
             )
