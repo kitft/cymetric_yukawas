@@ -415,20 +415,20 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             print(absdiff[:10])
             print(np.max(np.sum(absdiff,axis=1)))
             badelement = np.argmax(np.sum(absdiff,axis=1))
-            print('offending element:\n ', extra_thing_U2[badelement], "\n and \n", (vU2-vU2_bare)[badelement])
+            print('offending element =index ', badelement, '\n ', extra_thing_U2[badelement], "\n and \n", (vU2-vU2_bare)[badelement])
 
-            #pullbacks_jax = batch_process_helper_func(pg.pullbacks, [jnp.array(pointsComplex)], batch_indices=[0], batch_size=100000)
-            #pullbacks_regular = batch_process_helper_func(pg.pullbacks, [pointsComplex], batch_indices=[0], batch_size=100000)
-            #pullbacks_tf = batch_process_helper_func(phimodel.pullbacks, [real_pts], batch_indices=[0], batch_size=100000)
-            #print("difference between jax and regular pullbacks:",np.max(np.abs(pullbacks_jax-pullbacks_regular)))
-            #badelement = np.argmax(np.sum(np.abs(pullbacks_jax-pullbacks_regular),axis=(1,2)))
-            #print("argmax of difference between jax and regular pullbacks:",badelement)
-            #print('guilty party: ', pullbacks_jax[badelement], pullbacks_regular[badelement])
-            #print("difference between tf and regular pullbacks:",np.max(np.abs(pullbacks_tf-tf.cast(pullbacks_regular,pullbacks_tf.dtype))))
-            #badelement = np.argmax(np.sum(np.abs(pullbacks_tf-tf.cast(pullbacks_regular,pullbacks_tf.dtype)),axis=(1,2) ))
-            #print("argmax of difference between tf and regular pullbacks:",badelement)
-            #print('guilty party: ', pullbacks_tf[badelement], pullbacks_regular[badelement])
-            # Check topological invariance with pure derivatives
+            pullbacks_jax = batch_process_helper_func(pg.pullbacks, [jnp.array(pointsComplex)], batch_indices=[0], batch_size=100000)
+            pullbacks_regular = batch_process_helper_func(pg.pullbacks, [pointsComplex], batch_indices=[0], batch_size=100000)
+            pullbacks_tf = batch_process_helper_func(phimodel.pullbacks, [real_pts], batch_indices=[0], batch_size=100000)
+            print("difference between jax and regular pullbacks:",np.max(np.abs(pullbacks_jax-pullbacks_regular)))
+            badelement = np.argmax(np.sum(np.abs(pullbacks_jax-pullbacks_regular),axis=(1,2)))
+            print("argmax of difference between jax and regular pullbacks:",badelement)
+            print('guilty party: ', pullbacks_jax[badelement], pullbacks_regular[badelement])
+            print("difference between tf and regular pullbacks:",np.max(np.abs(pullbacks_tf-tf.cast(pullbacks_regular,pullbacks_tf.dtype))))
+            badelement = np.argmax(np.sum(np.abs(pullbacks_tf-tf.cast(pullbacks_regular,pullbacks_tf.dtype)),axis=(1,2) ))
+            print("argmax of difference between tf and regular pullbacks:",badelement)
+            print('guilty party: ', pullbacks_tf[badelement], pullbacks_regular[badelement])
+            #Check topological invariance with pure derivatives
             integrand_Q3U2 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3_bare,vU2_bare)*omega_normalised_to_one
             integrand_bare_Q3U2_vH = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH-vH_bare,vQ3_bare,vU2_bare)*omega_normalised_to_one
             integrand_bare_Q3U2_vQ3 = factor * tf.einsum("abc,x,xa,xb,xc->x",lc_c,tfsqrtandcast(H1*H2*H3),vH_bare,vQ3-vQ3_bare,vU2_bare)*omega_normalised_to_one
