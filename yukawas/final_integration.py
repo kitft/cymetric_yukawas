@@ -412,6 +412,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             print("Compare:")
             print(np.abs(extra_thing_U2[0:10]-(vU2-vU2_bare)[0:10]))
             print(np.max(np.abs(extra_thing_U2[0:]+(vU2-vU2_bare)[0:])))
+            print('offending element:\n ', extra_thing_U2[np.argmax(np.abs(extra_thing_U2[0:]+(vU2-vU2_bare)[0:]))], "\n and \n", (vU2-vU2_bare)[np.argmax(np.abs(extra_thing_U2[0:]+(vU2-vU2_bare)[0:]))])
             import jax.numpy as jnp
 
             pullbacks_jax = pg.pullbacks(jnp.array(pointsComplex))
