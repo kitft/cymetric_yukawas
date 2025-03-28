@@ -1348,7 +1348,7 @@ class PointGenerator:
         """Compute dIp using the moduli space directions."""
         dIp = jnp.power(jnp.expand_dims(points, 0), tf.expand_dims(DI_DQB0, 1))# shape is 81, N, monoms, 8
         dIp = jnp.multiply.reduce(dIp, axis=-1) # shape is 81, N, monoms
-        dIp = jnp.add.reduce(tf.expand_dims(DI_DQF0, 1) * dIp, axis=-1) # shape is 81, N# 81 is a stand-in for the number of moduli space directions
+        dIp = jnp.add.reduce(jnp.expand_dims(DI_DQF0, 1) * dIp, axis=-1) # shape is 81, N# 81 is a stand-in for the number of moduli space directions
         return dIp
 
     def dI_holomorphic_volume_form(self, points, j_elim=None, use_jax=True):
