@@ -410,9 +410,10 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                 compile_func=True
             )
             print("Compare:")
-            print(np.abs(extra_thing_U2[0:10]-(vU2-vU2_bare)[0:10]))
-            print(np.max(np.abs(extra_thing_U2[0:]+(vU2-vU2_bare)[0:])))
-            badelement = np.argmax(np.abs(extra_thing_U2[0:]+(vU2-vU2_bare)[0:]))
+            absdiff = np.abs(extra_thing_U2-(vU2-vU2_bare))
+            print(absdiff[:10])
+            print(np.max(np.sum(absdiff,axis=1)))
+            badelement = np.argmax(np.sum(absdiff,axis=1))
             print('offending element:\n ', extra_thing_U2[badelement], "\n and \n", (vU2-vU2_bare)[badelement])
             import jax.numpy as jnp
 
@@ -420,11 +421,11 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             pullbacks_regular = pg.pullbacks(pointsComplex)
             pullbacks_tf = phimodel.pullbacks(real_pts)
             print("difference between jax and regular pullbacks:",np.max(np.abs(pullbacks_jax-pullbacks_regular)))
-            badelement = np.argmax(np.abs(pullbacks_jax-pullbacks_regular))
+            badelement = np.argmax(np.sum(np.abs(pullbacks_jax-pullbacks_regular),axis=(1,2)))
             print("argmax of difference between jax and regular pullbacks:",badelement)
             print('guilty party: ', pullbacks_jax[badelement], pullbacks_regular[badelement])
             print("difference between tf and regular pullbacks:",np.max(np.abs(pullbacks_tf-pullbacks_regular)))
-            badelement = np.argmax(np.abs(pullbacks_tf-pullbacks_regular))
+            badelement = np.argmax(np.sum(np.abs(pullbacks_tf-pullbacks_regular),axis=(1,2) ))
             print("argmax of difference between tf and regular pullbacks:",badelement)
             print('guilty party: ', pullbacks_tf[badelement], pullbacks_regular[badelement])
             # Check topological invariance with pure derivatives
