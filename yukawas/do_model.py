@@ -653,11 +653,11 @@ if __name__ == '__main__':
         print("Not using multiprocessing, as requested.")
         do_multiprocessing = False
 
-if orbit_P1s!=False:
-    orbit_P1s = False
-    use_quadratic_method = True
-    use_jax = False
-    do_multiprocessing = True
+# if orbit_P1s!=False:
+#     orbit_P1s = False
+#     use_quadratic_method = True
+#     use_jax = False
+#     do_multiprocessing = True
 
 if __name__ == '__main__':
     print("Name of invoking script: ", name_of_invoking_script, "modeltype: ", modeltype, "namespace of vH: ", functionforbaseharmonicform_jbar_for_vH.__module__)
@@ -882,22 +882,22 @@ if __name__ ==  '__main__':
         print(f"  m{i+1}: {masses[1,i]:.6e} ± {masserrors[i]:.6e}")
     print("--------------------------------")
 
-    import jax
-    import jax.numpy as jnp
-    all_points = jnp.concatenate([dataEval['X_train'], dataEval['X_val']], axis=0)
-    all_ys = jnp.concatenate([dataEval['y_train'], dataEval['y_val']], axis=0)
-    all_aux_weights = all_ys[:,0]/all_ys[:,1]
+    # import jax
+    # import jax.numpy as jnp
+    # all_points = jnp.concatenate([dataEval['X_train'], dataEval['X_val']], axis=0)
+    # all_ys = jnp.concatenate([dataEval['y_train'], dataEval['y_val']], axis=0)
+    # all_aux_weights = all_ys[:,0]/all_ys[:,1]
     
-    psivector = jax.nn.one_hot(40, 81)
+    # # psivector = jax.nn.one_hot(40, 81)
 
-    pg.moduli_space_directions = np.array([psivector])
-    pg.get_moduli_space_metric = True
-    pg._generate_dQdz_basis()
-    pg._generate_padded_dIdQZ_basis()
-    pg._generate_moduli_space_basis()
+    # # pg.moduli_space_directions = np.array([psivector])
+    # # pg.get_moduli_space_metric = True
+    # # pg._generate_dQdz_basis()
+    # # pg._generate_padded_dIdQZ_basis()
+    # # pg._generate_moduli_space_basis()
 
-    measure_integral = pg._measure_integral(all_points,all_aux_weights,j_elim=None)
-    print("measure val here: ", measure_integral)
-    wandb.log({'measure_integral': measure_integral})
+    # # measure_integral = pg._measure_integral(all_points,all_aux_weights,j_elim=None)
+    # # print("measure val here: ", measure_integral)
+    # # wandb.log({'measure_integral': measure_integral})
     
     
