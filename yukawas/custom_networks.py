@@ -1217,7 +1217,7 @@ class BiholoModelFuncGENERALforHYMinv3(tf.keras.Model):
         self.layers_list2+=[tf.keras.layers.Dense(units=1, use_bias=False,kernel_initializer=final_layer_inits)]# add the extra free parameter after the log
         
         # Additional bias parameter for the final output
-        self.final_bias = tf.Variable(0.0, dtype=tf.float32, trainable=True)
+        self.final_bias = tf.Variable(0.0, dtype=real_dtype, trainable=True)
         
         self.BASIS=BASIS
         self.nCoords=tf.reduce_sum(tf.cast(BASIS['AMBIENT'],tf.int32)+1)
@@ -1272,7 +1272,7 @@ class BiholoModelFuncGENERALforHYMinv3(tf.keras.Model):
         """
         # Temporarily set bias to zero to get the base output
         #original_bias = self.final_bias.numpy()
-        self.final_bias.assign(0.0)
+        self.final_bias.assign(tf.cast(0.0,real_dtype))
         
         # Compute model outputs without the bias
         outputs = self(points)
