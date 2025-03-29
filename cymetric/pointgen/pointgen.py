@@ -1411,24 +1411,26 @@ class PointGenerator:
         result = (1/v**2)*jnp.einsum('i,j->ij', int_omega_wedge_dJbar_omegabar, int_dIomega_wedge_omegabar) - 1/v *int_dIO_dJbarObar
         return result
 
-     def _measure_integral(self,points,aux_weights, j_elim=None):
-        aux_weights = jnp.astype(aux_weights, points.dtype)
-        d_IOmega, dq_dz = self._dI_holomorphic_volume_form_jax(points, j_elim, self.BASIS['DQDZB0'], self.BASIS['DQDZF0'], self.BASIS['DI_DQZB0'],
-                                                                self.BASIS['DI_DQZF0'], self.BASIS['D2QDZ2B0'], self.BASIS['D2QDZ2F0'], self.BASIS['DI_DQB0'], 
-                                                                self.BASIS['DI_DQF0'])
-        d_JbarOmegabar = jnp.conj(d_IOmega)
+    # #def get_measure_integral
 
-        omega = 1/dq_dz
-        omegabar = jnp.conj(omega)
+    # def _measure_integral(self,points,aux_weights, j_elim=None):
+    #     aux_weights = jnp.astype(aux_weights, points.dtype)
+    #     d_IOmega, dq_dz = self._dI_holomorphic_volume_form_jax(points, j_elim, self.BASIS['DQDZB0'], self.BASIS['DQDZF0'], self.BASIS['DI_DQZB0'],
+    #                                                             self.BASIS['DI_DQZF0'], self.BASIS['D2QDZ2B0'], self.BASIS['D2QDZ2F0'], self.BASIS['DI_DQB0'], 
+    #                                                             self.BASIS['DI_DQF0'])
+    #     d_JbarOmegabar = jnp.conj(d_IOmega)
 
-        v  = jnp.mean(aux_weights*jnp.abs(d_IOmega)**2)
-        int_dIomega_wedge_omegabar = jnp.mean(jnp.einsum('ix,x->ix',d_IOmega,aux_weights*omegabar), axis=-1)
-        int_omega_wedge_dJbar_omegabar = jnp.mean(jnp.einsum('x,jx->jx', aux_weights*omega,d_JbarOmegabar), axis=-1)
-        # Compute mean of d_IOmega * conj(d_JbarOmegabar) across points, for each moduli direction
-        # Reshape aux_weights to broadcast correctly across moduli directions
-        int_dIO_dJbarObar = jnp.mean(jnp.einsum('ip,jp,p->ijp', d_IOmega, jnp.conj(d_JbarOmegabar), aux_weights), axis=-1)
-        result = (1/v**2)*jnp.einsum('i,j->ij', int_omega_wedge_dJbar_omegabar, int_dIomega_wedge_omegabar) - 1/v *int_dIO_dJbarObar
-        return result
+    #     omega = 1/dq_dz
+    #     omegabar = jnp.conj(omega)
+
+    #     v  = jnp.mean(aux_weights*jnp.abs(d_IOmega)**2)
+    #     int_dIomega_wedge_omegabar = jnp.mean(jnp.einsum('ix,x->ix',d_IOmega,aux_weights*omegabar), axis=-1)
+    #     int_omega_wedge_dJbar_omegabar = jnp.mean(jnp.einsum('x,jx->jx', aux_weights*omega,d_JbarOmegabar), axis=-1)
+    #     # Compute mean of d_IOmega * conj(d_JbarOmegabar) across points, for each moduli direction
+    #     # Reshape aux_weights to broadcast correctly across moduli directions
+    #     int_dIO_dJbarObar = jnp.mean(jnp.einsum('ip,jp,p->ijp', d_IOmega, jnp.conj(d_JbarOmegabar), aux_weights), axis=-1)
+    #     result = (1/v**2)*jnp.einsum('i,j->ij', int_omega_wedge_dJbar_omegabar, int_dIomega_wedge_omegabar) - 1/v *int_dIO_dJbarObar
+    #     return result
 
 
 
