@@ -1084,7 +1084,7 @@ class BiholoModelFuncGENERAL(tf.keras.Model):
         self.nCoords=tf.reduce_sum(tf.cast(BASIS['AMBIENT'],tf.int32)+1)
         self.ambient=tf.cast(BASIS['AMBIENT'],tf.int32)
         self.kmoduli=BASIS['KMODULI']
-        if tf.reduce_sum(tf.math.abs(np.array(self.ambient)-np.array([1,1,1,1])))==0:
+        if len(self.ambient)==4 and tf.reduce_sum(tf.math.abs(np.array(self.ambient)-np.array([1,1,1,1])))==0:
             if use_symmetry_reduced_TQ:
                 self.bihom_func= bihom_function_generatorTQ2(np.array(self.ambient),len(self.ambient),self.kmoduli)
                 print("using TQ with symmetry reduction (input dim 16)")

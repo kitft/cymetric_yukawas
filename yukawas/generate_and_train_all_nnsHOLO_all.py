@@ -417,8 +417,8 @@ def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=
    #nEpochs = 100
    #bSizes = [192, 150000]
    alpha = [1., 1., 30., 1., 2.] # 1 AND 3??
-   nfold = 3
-   n_in = 2*8
+   nfold = int(tf.math.real(BASIS['NFOLD']))
+   n_in = 2*np.sum(BASIS['AMBIENT']+1)
    n_out = 1
    #lRate = 0.001
 
