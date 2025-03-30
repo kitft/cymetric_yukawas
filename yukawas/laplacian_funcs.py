@@ -633,7 +633,7 @@ def HYM_measure_val_with_H_relative_to_norm(HFmodel,dataHF,HYMmetric_model,metri
             'Trained_DivFS': (normofcoclosuretrained*weights)/tf.reduce_mean(normoflaplacianvals*weights).numpy().item(),
             'FS_DivFS': (normofcoclosureofvFS*weights)/tf.reduce_mean(normoflaplacianvals*weights).numpy().item(),
         }
-        return TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS, dataforhistograms
+        return TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS, dataforhistograms, normofcoclosuretrained_over_normFS
     #print("check this is tiny: ",tf.math.reduce_std(coclosureofjustdsigma/(laplacianvals)))
     return TrainedDivTrained, avgavagTrainedDivTrained, TrainedDivFS, avgavagTrainedDivFS, FS_DivFS, avgavagFS_DivFS, normofcoclosuretrained_over_normFS
 
