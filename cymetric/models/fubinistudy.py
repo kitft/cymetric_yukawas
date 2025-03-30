@@ -368,7 +368,8 @@ class FSModel(tfk.Model):
 
         dz_hyper = tf.concat(dz_hyper, axis=1)
         B = tf.concat(B, axis=1)
-        all_dzdz = tf.einsum('xij,xjk->xki', tf.linalg.inv(B),-1.*dz_hyper)
+        #all_dzdz = tf.einsum('xij,xjk->xki', tf.linalg.inv(B),-1.*dz_hyper)
+        all_dzdz = tf.einsum('xij,xjk->xki', tf.linalg.inv(B),dz_hyper)
 
 
         identity = tf.eye(self.ncoords, dtype=complex_dtype)
