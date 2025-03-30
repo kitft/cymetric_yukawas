@@ -99,7 +99,12 @@ def laplacian(betamodel,points,pullbacks,invmetrics, training=False):
         0.25*dd_phi[:, ncoords:, :ncoords], \
         0.25*dd_phi[:, :ncoords, ncoords:], \
         0.25*dd_phi[:, ncoords:, ncoords:]
-    dd_phi = tf.complex(dx_dx_phi + dy_dy_phi, dx_dy_phi - dy_dx_phi)# this should be d_dbar
+    dd_phi = tf.complex(dx_dx_phi + dy_dy_phi, dx_dy_phi - dy_dx_phi)
+    #the indices of this ddphi are therefore jbar differentiated FIRST, then i. I.e. del_i delbar_j x has indices x,jbar,i, as we count right to left
+    
+    #that is dy is done FIRST, then dx. As written, then, this yields
+    
+    # this should be d_dbar
     # this second imaginary part is a vector equation, so whilst the result is hermitian it is not necessarily real?
     # comes from df/dz = f_x -i f_y/2. Do it twice in the correct order!
     # the result is dy_dx_phi has the y index first, then the x index

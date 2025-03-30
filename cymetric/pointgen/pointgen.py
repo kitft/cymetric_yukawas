@@ -1312,7 +1312,10 @@ class PointGenerator:
         omega = jnp.multiply.reduce(omega, axis=-1)
         omega = jnp.add.reduce(DQDZF0[indices] * omega, axis=-1)
         # compute (dQ/dzj)**-1
-        return 1 / omega
+        which_p1 = (j_elim//2)
+        sign_of_omega = (-1)**which_p1
+        # compute (dQ/dzj)**-1
+        return 1 / omega*sign_of_omega
     @staticmethod
     @jax_jit
     def _compute_d2q_dz2_jax(points, indices, D2QDZ2B0, D2QDZ2F0):
@@ -1444,8 +1447,10 @@ class PointGenerator:
                          self.BASIS['DQDZB0'][indices])
         omega = np.multiply.reduce(omega, axis=-1)
         omega = np.add.reduce(self.BASIS['DQDZF0'][indices] * omega, axis=-1)
+        which_p1 = (j_elim//2)
+        sign_of_omega = (-1)**which_p1
         # compute (dQ/dzj)**-1
-        return 1 / omega
+        return 1 / omega*sign_of_omega
 
 
     def _find_max_dQ_coords_legacy(self, points):
@@ -1756,8 +1761,8 @@ class PointGenerator:
             pif = jnp.sum(pif_factors * pif, axis=-1)
             pif = jnp.reshape(pif, (-1, nhyper))
             B_matrix = B_matrix.at[:, i, :].add(pif)
-        #all_dzdz = jnp.einsum('xij,xjk->xki', jnp.linalg.inv(B_matrix), complex(-1., 0.) * dz_hyper)
-        all_dzdz = jnp.einsum('xij,xjk->xki', jnp.linalg.inv(B_matrix), dz_hyper)
+        all_dzdz = jnp.einsum('xij,xjk->xki', jnp.linalg.inv(B_matrix), complex(-1., 0.) * dz_hyper)
+        #all_dzdz = jnp.einsum('xij,xjk->xki', jnp.linalg.inv(B_matrix), dz_hyper)
         for i in range(nhyper):
             pullbacks = pullbacks.at[jnp.arange(points.shape[0]), :, j_elim[:, i]].add(all_dzdz[:, :, i])
         return pullbacks
@@ -1821,8 +1826,8 @@ class PointGenerator:
             B_matrix[:, i, :] += pif
         all_dzdz = np.einsum('xij,xjk->xki',
                              np.linalg.inv(B_matrix),
-                             dz_hyper)
-                             #complex(-1., 0.) * dz_hyper)
+                             #dz_hyper)
+                             complex(-1., 0.) * dz_hyper)
         for i in range(self.nhyper):
             pullbacks[np.arange(len(points)), :, j_elim[:, i]] += all_dzdz[:, :, i]
         return pullbacks
