@@ -1298,24 +1298,35 @@ class PointGenerator:
             ndarray[(n_p), np.complex128]: Omega evaluated at each point.
         """
         if isinstance(points, jnp.ndarray) or (isinstance(points, np.ndarray) and use_jax):
-            return PointGenerator._holomorphic_volume_form_jax(points, j_elim, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']))
+            ambient_ones = np.all(self.ambient ==np.ones_like(self.ambient))
+            if not ambient_ones:
+                print("warning: not adding sign for holomorphic volume form")
+            return PointGenerator._holomorphic_volume_form_jax(points, j_elim, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']), ambient_ones=ambient_ones)
         else:
             print(f"using legacy holomorphic volume form, {type(points)}, use_jax = {use_jax}")
             return self._holomorphic_volume_form_legacy(points, j_elim)
     
     @staticmethod
     @jax_jit
-    def _holomorphic_volume_form_jax(points, j_elim, DQDZB0, DQDZF0):
+    def _holomorphic_volume_form_jax(points, j_elim, DQDZB0, DQDZF0, ambient_ones=True):
         """JAX implementation of holomorphic volume form computation."""
         indices = PointGenerator._find_max_dQ_coords_jax(points, DQDZB0, DQDZF0) if j_elim is None else j_elim
         omega = jnp.power(jnp.expand_dims(points, 1), DQDZB0[indices])
         omega = jnp.multiply.reduce(omega, axis=-1)
         omega = jnp.add.reduce(DQDZF0[indices] * omega, axis=-1)
+        
+        # Handle sign calculation
+        if ambient_ones:
+            inv_one_mask = jnp.logical_not(jnp.isclose(points, complex(1, 0)))
+            ints_for_power = jnp.tile(jnp.expand_dims(jnp.arange(points.shape[1]), 0), (points.shape[0], 1))
+            sign_for_omega2 = jnp.prod((-1)**(inv_one_mask*ints_for_power), axis=-1).astype(jnp.complex128)
+            which_p1 = (indices//2)
+            sign_of_omega = (-1)**which_p1 * (-1)**(indices%2-1) * sign_for_omega2
+        else:
+            sign_of_omega = 1
+            
         # compute (dQ/dzj)**-1
-        which_p1 = (indices//2)
-        sign_of_omega = (-1)**which_p1 * (-1)**(indices%2)
-        # compute (dQ/dzj)**-1
-        return 1 / omega*sign_of_omega
+        return 1 / omega * sign_of_omega
     @staticmethod
     @jax_jit
     def _compute_d2q_dz2_jax(points, indices, D2QDZ2B0, D2QDZ2F0):
@@ -1440,21 +1451,40 @@ class PointGenerator:
 
 
     
-    def _holomorphic_volume_form_legacy(self, points, j_elim=None):
+    # def _holomorphic_volume_form_legacy(self, points, j_elim=None):
+    #     """Legacy numpy implementation of holomorphic volume form computation."""
+    #     indices = self._find_max_dQ_coords(points) if j_elim is None else j_elim
+    #     omega = np.power(np.expand_dims(points, 1),
+    #                      self.BASIS['DQDZB0'][indices])
+    #     omega = np.multiply.reduce(omega, axis=-1)
+    #     omega = np.add.reduce(self.BASIS['DQDZF0'][indices] * omega, axis=-1)
+    #     if np.all(self.ambient ==np.ones_like(self.ambient)):
+    #         which_p1 = (indices//2)
+    #         sign_of_omega = (-1)**which_p1*(-1)**(indices%2)
+    #         # compute (dQ/dzj)**-1
+    #         return 1 / omega*sign_of_omega
+    #     else:
+    #         print("warning: not adding sign for holomorphic volume form")
+    #         return 1 / omega
+
+    def _holomorphic_volume_form_legacy_test(self, points, j_elim=None):
         """Legacy numpy implementation of holomorphic volume form computation."""
         indices = self._find_max_dQ_coords(points) if j_elim is None else j_elim
+        
         omega = np.power(np.expand_dims(points, 1),
                          self.BASIS['DQDZB0'][indices])
         omega = np.multiply.reduce(omega, axis=-1)
         omega = np.add.reduce(self.BASIS['DQDZF0'][indices] * omega, axis=-1)
         if np.all(self.ambient ==np.ones_like(self.ambient)):
+            inv_one_mask = ~np.isclose(points, complex(1, 0))   
+            ints_for_power = np.tile(np.expand_dims(np.arange(len(inv_one_mask[-1])),0),(len(inv_one_mask),1))
+            sign_for_omega2 = np.prod((-1)**(inv_one_mask*ints_for_power), axis=-1).astype(np.complex128)
             which_p1 = (indices//2)
-            sign_of_omega = (-1)**which_p1*(-1)**(indices%2)
-            # compute (dQ/dzj)**-1
-            return 1 / omega*sign_of_omega
+            sign_of_omega = (-1)**which_p1*(-1)**(indices%2-1)*sign_for_omega2
         else:
-            print("warning: not adding sign for holomorphic volume form")
-            return 1 / omega
+            sign_of_omega = 1
+        return 1 / omega*sign_of_omega
+    
 
 
     def _find_max_dQ_coords_legacy(self, points):
