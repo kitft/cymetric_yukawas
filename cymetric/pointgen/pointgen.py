@@ -1447,10 +1447,14 @@ class PointGenerator:
                          self.BASIS['DQDZB0'][indices])
         omega = np.multiply.reduce(omega, axis=-1)
         omega = np.add.reduce(self.BASIS['DQDZF0'][indices] * omega, axis=-1)
-        which_p1 = (indices//2)
-        sign_of_omega = (-1)**which_p1
-        # compute (dQ/dzj)**-1
-        return 1 / omega*sign_of_omega
+        if self.ambient ==np.ones_like(self.ambient):
+            which_p1 = (indices//2)
+            sign_of_omega = (-1)**which_p1
+            # compute (dQ/dzj)**-1
+            return 1 / omega*sign_of_omega
+        else:
+            print("warning: not adding sign for holomorphic volume form")
+            return 1 / omega
 
 
     def _find_max_dQ_coords_legacy(self, points):
