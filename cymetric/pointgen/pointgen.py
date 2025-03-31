@@ -1467,7 +1467,7 @@ class PointGenerator:
     #         print("warning: not adding sign for holomorphic volume form")
     #         return 1 / omega
 
-    def _holomorphic_volume_form_legacy_test(self, points, j_elim=None):
+    def _holomorphic_volume_form_legacy(self, points, j_elim=None):
         """Legacy numpy implementation of holomorphic volume form computation."""
         indices = self._find_max_dQ_coords(points) if j_elim is None else j_elim
         
