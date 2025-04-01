@@ -718,7 +718,6 @@ if 'random_search' in sys.argv[1:]:
 d, 0, c, 0, b, 0, a, 0, b, 0, c, 0, d, 0, e, 0, f, \
 0, g, 0, h, 0, i, 0, j, 0, k, 0, l, 0, m, 0, n, 0, \
 o, 0, p, 0, q, 0, r, 0, s, 0, t, 0, u])
-    free_coefficient = get_coefficients_here(free_coefficient)
     free_coefficient_str = str(hash(tuple(get_coefficients_here(free_coefficient))))
 
 def purge_dicts_and_mem():
@@ -733,6 +732,7 @@ if __name__ ==  '__main__':
 
     unique_id_or_coeff = free_coefficient_str
     coefficientsTQ = get_coefficients_here(free_coefficient)
+    print(f"using coefficients: {coefficientsTQ}")
     manifold_name_and_data = (coefficientsTQ, kmoduliTQ, ambientTQ, monomialsTQ, type_folder, unique_id_or_coeff, manifold_name, data_path)
     try:
         unique_id_or_coeff_float = float(unique_id_or_coeff)
