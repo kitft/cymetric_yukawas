@@ -363,7 +363,7 @@ if __name__ == '__main__':
     if 'random_search' in sys.argv[1:]:
         print("doing random search!")
         a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u = np.random.normal(0,5,21) + 1j*np.random.normal(0,5,21)
-        get_coefficients_here = lambda x: np.array([u, 0, t, 0, s, 0, r, 0, q, 0, p, 0, o, 0, n, 0, m, \
+        get_coefficients_here = lambda x, **kwargs: np.array([u, 0, t, 0, s, 0, r, 0, q, 0, p, 0, o, 0, n, 0, m, \
     0, l, 0, k, 0, j, 0, i, 0, h, 0, g, 0, f, 0, e, 0, \
     d, 0, c, 0, b, 0, a, 0, b, 0, c, 0, d, 0, e, 0, f, \
     0, g, 0, h, 0, i, 0, j, 0, k, 0, l, 0, m, 0, n, 0, \
@@ -388,7 +388,7 @@ if __name__ == '__main__':
     print("last few digits of free coefficient", last_few_digits_of_free_coeff)
     seed_for_gen=(int(int((int(free_coefficient*100000000000)+free_coefficient*1000000))+((free_coefficient*10**(18))%123987123157869)) + last_few_digits_of_free_coeff )%4294967294 # modulo largest seed
     print("seed for gen", seed_for_gen)
-    coefficientsTQ = get_coefficients_here(free_coefficient)
+    #coefficientsTQ = get_coefficients_here(free_coefficient)
 
 
     alphabeta=[1,10]
@@ -698,11 +698,12 @@ if __name__ == '__main__':
 
     if 'split_deformation' in sys.argv[1:]:
         print('using split deformation')
-        get_coefficients_here = lambda x: get_coefficients_here(x, deformation = 'split_deformation')
+        get_coefficients_here_with_deformation = lambda x: get_coefficients_here(x, deformation = 'split_deformation')
     elif 'regular_deformation' in sys.argv[1:]:
         print('using regular deformation')
-        get_coefficients_here = lambda x: get_coefficients_here(x, deformation = 'regular_deformation')
+        get_coefficients_here_with_deformation = lambda x: get_coefficients_here(x, deformation = 'regular_deformation')
     else:
+        get_coefficients_here_with_deformation = lambda x: get_coefficients_here(x, deformation = 'regular_deformation')
         print('no deformation specified, using default deformation')
 
     if 'smallbatch' in sys.argv[1:]:
@@ -757,7 +758,7 @@ do_extra_stuff_for_integration = True
 if __name__ ==  '__main__':
 
     unique_id_or_coeff = free_coefficient_str
-    coefficientsTQ = get_coefficients_here(free_coefficient)
+    coefficientsTQ = get_coefficients_here_with_deformation(free_coefficient)
     print(f"using coefficients: {coefficientsTQ}")
     manifold_name_and_data = (coefficientsTQ, kmoduliTQ, ambientTQ, monomialsTQ, type_folder, unique_id_or_coeff, manifold_name, data_path)
     try:
