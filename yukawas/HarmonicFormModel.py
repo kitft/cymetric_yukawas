@@ -938,3 +938,16 @@ def train_modelHF(HFmodel, data_train, optimizer=None, epochs=50, batch_sizes=[6
     training_history['epochs'] = list(range(epochs))
     
     return HFmodel, training_history
+
+
+def pulled_back_func(func):
+    """Decorator to create a function that pulls back a form to the CY manifold."""
+    @tf.function
+    def wrapped_func(input_tensor, pullbacks_holo=None, j_elim=None):
+        cpoints = point_vec_to_complex(input_tensor)
+        NuAmbient = func(cpoints) 
+        # self.pullbacks takes real points
+        NuCY = tf.einsum('xbj,xj->xb', tf.math.conj(pullbacks_holo), NuAmbient)
+        return NuCY
+
+    return wrapped_func

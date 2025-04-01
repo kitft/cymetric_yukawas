@@ -50,6 +50,10 @@ def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10
         func = tf.function(func_orig)
     else:
         func = func_orig
+
+    # if compile_func_jax:
+    #     import jax
+    #     func = jax.jit(func)
         
     # Determine the number of batches based on the first batched argument
     num_batches = tf.cast(tf.math.ceil(tf.shape(args[batch_indices[0]])[0] / batch_size), tf.int32)

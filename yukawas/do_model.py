@@ -29,8 +29,17 @@ start_from = sys.argv[4] if len(sys.argv) > 3+1 else 'phi' # start from phi, LB1
 npoints_config = sys.argv[5] if len(sys.argv) > 4+1 else '1hundred'
 job_id = sys.argv[-1] # job id
 
-if integrate_or_run not in ['integrate', 'run']:
+if integrate_or_run not in ['integrate', 'run', 'just_FS', 'justFS']:
     raise ValueError("Invalid command: " + integrate_or_run, "you ran " + " ".join(sys.argv))
+if integrate_or_run == 'justFS':
+    integrate_or_run = 'just_FS'
+
+if integrate_or_run == 'just_FS':
+    print("Just doing FS")
+    just_FS = True
+    integrate_or_run = 'integrate'
+else:
+    just_FS = False
 
 import csv
 import numpy as np
@@ -733,109 +742,129 @@ if __name__ ==  '__main__':
                       'tags': [integrate_or_run, modeltype, "nint"+str(n_to_integrate), "npoints"+str(nPoints), addtofilename]})
     
     
+    if not just_FS: 
+        generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,force_generate=force_generate_phi,seed_set=seed_for_gen,average_selected_t = orbit_P1s, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing)
+        if train_phi:
+            #phimodel,training_history=train_and_save_nn(manifold_name_and_data,depthPhi,widthPhi,nEpochsPhi,bSizes=[64,tr_batchsize],lRate=lRatePhi) 
+            phimodel,training_history, measure_phi=train_and_save_nn(manifold_name_and_data,phimodel_config,use_zero_network=use_zero_network_phi, unique_name=unique_name_phi)
+        else:
+            phimodel,training_history, measure_phi=load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=return_zero_phi,skip_measures=skip_measuresPhi,set_weights_to_random=return_random_phi, unique_name=unique_name_phi)
+
+
+        generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundleforHYM_LB1,nPoints,phimodel,force_generate=force_generate_HYM,seed_set=seed_for_gen)
+        if train_LB1:
+            betamodel_LB1,training_historyBeta_LB1, measure_LB1 = train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM_LB1,betamodel_config,phimodel,load_network=False,use_zero_network=use_zero_network_beta, unique_name=unique_name_LB1)
+        else: 
+            betamodel_LB1,training_historyBeta_LB1, measure_LB1=load_nn_HYM(manifold_name_and_data,linebundleforHYM_LB1,betamodel_config,phimodel,set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM, unique_name=unique_name_LB1)
+        purge_dicts_and_mem()
+
     
-    generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,force_generate=force_generate_phi,seed_set=seed_for_gen,average_selected_t = orbit_P1s, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing)
-    if train_phi:
-        #phimodel,training_history=train_and_save_nn(manifold_name_and_data,depthPhi,widthPhi,nEpochsPhi,bSizes=[64,tr_batchsize],lRate=lRatePhi) 
-        phimodel,training_history, measure_phi=train_and_save_nn(manifold_name_and_data,phimodel_config,use_zero_network=use_zero_network_phi, unique_name=unique_name_phi)
-    else:
-        phimodel,training_history, measure_phi=load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=return_zero_phi,skip_measures=skip_measuresPhi,set_weights_to_random=return_random_phi, unique_name=unique_name_phi)
-
-
-    generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundleforHYM_LB1,nPoints,phimodel,force_generate=force_generate_HYM,seed_set=seed_for_gen)
-    if train_LB1:
-        betamodel_LB1,training_historyBeta_LB1, measure_LB1 = train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM_LB1,betamodel_config,phimodel,load_network=False,use_zero_network=use_zero_network_beta, unique_name=unique_name_LB1)
-    else: 
-        betamodel_LB1,training_historyBeta_LB1, measure_LB1=load_nn_HYM(manifold_name_and_data,linebundleforHYM_LB1,betamodel_config,phimodel,set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM, unique_name=unique_name_LB1)
-    purge_dicts_and_mem()
-
-    
-    generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundleforHYM_LB2,nPoints,phimodel,force_generate=force_generate_HYM,seed_set=seed_for_gen)
-    if train_LB2:
-        betamodel_LB2,training_historyBeta_LB2, measure_LB2 = train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM_LB2,betamodel_config,phimodel,load_network=False,use_zero_network=use_zero_network_beta, unique_name=unique_name_LB2)
-    else:
-        betamodel_LB2,training_historyBeta_LB2, measure_LB2=load_nn_HYM(manifold_name_and_data,linebundleforHYM_LB2,betamodel_config,phimodel,set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM, unique_name=unique_name_LB2)
-    purge_dicts_and_mem()
+        generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundleforHYM_LB2,nPoints,phimodel,force_generate=force_generate_HYM,seed_set=seed_for_gen)
+        if train_LB2:
+            betamodel_LB2,training_historyBeta_LB2, measure_LB2 = train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM_LB2,betamodel_config,phimodel,load_network=False,use_zero_network=use_zero_network_beta, unique_name=unique_name_LB2)
+        else:
+            betamodel_LB2,training_historyBeta_LB2, measure_LB2=load_nn_HYM(manifold_name_and_data,linebundleforHYM_LB2,betamodel_config,phimodel,set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM, unique_name=unique_name_LB2)
+        purge_dicts_and_mem()
   
 
-    generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundleforHYM_LB3,nPoints,phimodel,force_generate=force_generate_HYM,seed_set=seed_for_gen)
-    if train_LB3:
-        betamodel_LB3,training_historyBeta_LB3, measure_LB3 = train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM_LB3,betamodel_config,phimodel,load_network=False,use_zero_network=use_zero_network_beta, unique_name=unique_name_LB3)
-    else:
-        betamodel_LB3,training_historyBeta_LB3, measure_LB3=load_nn_HYM(manifold_name_and_data,linebundleforHYM_LB3,betamodel_config,phimodel,set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM, unique_name=unique_name_LB3)
-    purge_dicts_and_mem()
+        generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundleforHYM_LB3,nPoints,phimodel,force_generate=force_generate_HYM,seed_set=seed_for_gen)
+        if train_LB3:
+            betamodel_LB3,training_historyBeta_LB3, measure_LB3 = train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM_LB3,betamodel_config,phimodel,load_network=False,use_zero_network=use_zero_network_beta, unique_name=unique_name_LB3)
+        else:
+            betamodel_LB3,training_historyBeta_LB3, measure_LB3=load_nn_HYM(manifold_name_and_data,linebundleforHYM_LB3,betamodel_config,phimodel,set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM, unique_name=unique_name_LB3)
+        purge_dicts_and_mem()
 
-    generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB1,functionforbaseharmonicform_jbar_for_vH,phimodel,betamodel_LB1,nPoints,force_generate=force_generate_HF,seed_set=seed_for_gen)
-    if train_vH:
-        #HFmodel_vH,trainingHistoryHF_vH, measure = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB1,betamodel_LB1,functionforbaseharmonicform_jbar_for_vH,depthSigma+2,widthSigma//2,nEpochsSigma,[64],lRate=lRateSigma/10,alpha=alphasigma1,stddev=stddev_H33,final_layer_scale=final_layer_scale_H33)
-        HFmodel_vH,trainingHistoryHF_vH, measure_HF1 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB1,betamodel_LB1,phimodel,functionforbaseharmonicform_jbar_for_vH,sigmamodel_config, unique_name=unique_name_vH)
-        #was /100
-    else:
-        HFmodel_vH,trainingHistoryHF_vH, measure_HF1=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB1,betamodel_LB1,phimodel,functionforbaseharmonicform_jbar_for_vH,sigmamodel_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vH)
-    purge_dicts_and_mem()
-
-
-
-
-
-    generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB2,functionforbaseharmonicform_jbar_for_vQ3,phimodel,betamodel_LB2,nPoints,force_generate=force_generate_HF,seed_set=seed_for_gen)
-    if train_vQ3:
-        HFmodel_vQ3,trainingHistoryHF_vQ3, measure_HF2 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB2,betamodel_LB2,phimodel,functionforbaseharmonicform_jbar_for_vQ3,sigmamodel_config, unique_name=unique_name_vQ3)
-    else:
-        HFmodel_vQ3,trainingHistoryHF_vQ3, measure_HF2=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB2,betamodel_LB2,phimodel,functionforbaseharmonicform_jbar_for_vQ3,sigmamodel_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vQ3)
-    purge_dicts_and_mem()
-
-
-    generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB2,functionforbaseharmonicform_jbar_for_vU3,phimodel,betamodel_LB2,nPoints,force_generate=force_generate_HF,seed_set=seed_for_gen)
-    if train_vU3:
-        HFmodel_vU3,trainingHistoryHF_vU3, measure_HF3 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB2,betamodel_LB2,phimodel,functionforbaseharmonicform_jbar_for_vU3,sigmamodel_config, unique_name=unique_name_vU3)
-    else:
-        HFmodel_vU3,trainingHistoryHF_vU3, measure_HF3=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB2,betamodel_LB2,phimodel,functionforbaseharmonicform_jbar_for_vU3,sigmamodel_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vU3)
-    purge_dicts_and_mem()
+        generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB1,functionforbaseharmonicform_jbar_for_vH,phimodel,betamodel_LB1,nPoints,force_generate=force_generate_HF,seed_set=seed_for_gen)
+        if train_vH:
+            #HFmodel_vH,trainingHistoryHF_vH, measure = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB1,betamodel_LB1,functionforbaseharmonicform_jbar_for_vH,depthSigma+2,widthSigma//2,nEpochsSigma,[64],lRate=lRateSigma/10,alpha=alphasigma1,stddev=stddev_H33,final_layer_scale=final_layer_scale_H33)
+            HFmodel_vH,trainingHistoryHF_vH, measure_HF1 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB1,betamodel_LB1,phimodel,functionforbaseharmonicform_jbar_for_vH,sigmamodel_config, unique_name=unique_name_vH)
+            #was /100
+        else:
+            HFmodel_vH,trainingHistoryHF_vH, measure_HF1=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB1,betamodel_LB1,phimodel,functionforbaseharmonicform_jbar_for_vH,sigmamodel_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vH)
+        purge_dicts_and_mem()
 
 
 
 
 
+        generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB2,functionforbaseharmonicform_jbar_for_vQ3,phimodel,betamodel_LB2,nPoints,force_generate=force_generate_HF,seed_set=seed_for_gen)
+        if train_vQ3:
+            HFmodel_vQ3,trainingHistoryHF_vQ3, measure_HF2 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB2,betamodel_LB2,phimodel,functionforbaseharmonicform_jbar_for_vQ3,sigmamodel_config, unique_name=unique_name_vQ3)
+        else:
+            HFmodel_vQ3,trainingHistoryHF_vQ3, measure_HF2=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB2,betamodel_LB2,phimodel,functionforbaseharmonicform_jbar_for_vQ3,sigmamodel_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vQ3)
+        purge_dicts_and_mem()
 
-    generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB3,functionforbaseharmonicform_jbar_for_vQ1,phimodel,betamodel_LB3,nPoints,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
-    if train_vQ1:
-        HFmodel_vQ1,trainingHistoryHF_vQ1, measure_HF4 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vQ1,sigma2model_config, unique_name=unique_name_vQ1)
-    else:
-        HFmodel_vQ1,trainingHistoryHF_vQ1, measure_HF4=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vQ1,sigma2model_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vQ1)
-    purge_dicts_and_mem()
+
+        generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB2,functionforbaseharmonicform_jbar_for_vU3,phimodel,betamodel_LB2,nPoints,force_generate=force_generate_HF,seed_set=seed_for_gen)
+        if train_vU3:
+            HFmodel_vU3,trainingHistoryHF_vU3, measure_HF3 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB2,betamodel_LB2,phimodel,functionforbaseharmonicform_jbar_for_vU3,sigmamodel_config, unique_name=unique_name_vU3)
+        else:
+            HFmodel_vU3,trainingHistoryHF_vU3, measure_HF3=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB2,betamodel_LB2,phimodel,functionforbaseharmonicform_jbar_for_vU3,sigmamodel_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vU3)
+        purge_dicts_and_mem()
+
+
+
+
+
+
+        generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB3,functionforbaseharmonicform_jbar_for_vQ1,phimodel,betamodel_LB3,nPoints,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
+        if train_vQ1:
+            HFmodel_vQ1,trainingHistoryHF_vQ1, measure_HF4 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vQ1,sigma2model_config, unique_name=unique_name_vQ1)
+        else:
+            HFmodel_vQ1,trainingHistoryHF_vQ1, measure_HF4=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vQ1,sigma2model_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vQ1)
+        purge_dicts_and_mem()
     
 
-    generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB3,functionforbaseharmonicform_jbar_for_vQ2,phimodel,betamodel_LB3,nPoints,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
-    if train_vQ2:   
-        HFmodel_vQ2,trainingHistoryHF_vQ2, measure_HF5 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vQ2,sigma2model_config, unique_name=unique_name_vQ2)
-    else:
-        HFmodel_vQ2,trainingHistoryHF_vQ2, measure_HF5=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vQ2,sigma2model_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vQ2)
-    purge_dicts_and_mem()   
+        generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB3,functionforbaseharmonicform_jbar_for_vQ2,phimodel,betamodel_LB3,nPoints,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
+        if train_vQ2:   
+            HFmodel_vQ2,trainingHistoryHF_vQ2, measure_HF5 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vQ2,sigma2model_config, unique_name=unique_name_vQ2)
+        else:
+            HFmodel_vQ2,trainingHistoryHF_vQ2, measure_HF5=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vQ2,sigma2model_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vQ2)
+        purge_dicts_and_mem()   
 
-    generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB3,functionforbaseharmonicform_jbar_for_vU1,phimodel,betamodel_LB3,nPoints,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
-    if train_vU1:
-        HFmodel_vU1,trainingHistoryHF_vU1, measure_HF6 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vU1,sigma2model_config, unique_name=unique_name_vU1)
-    else:
-        HFmodel_vU1,trainingHistoryHF_vU1, measure_HF6=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vU1,sigma2model_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vU1)  
-    delete_all_dicts_except('dataEval')
-    gc.collect()
-    tf.keras.backend.clear_session()
+        generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB3,functionforbaseharmonicform_jbar_for_vU1,phimodel,betamodel_LB3,nPoints,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
+        if train_vU1:
+            HFmodel_vU1,trainingHistoryHF_vU1, measure_HF6 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vU1,sigma2model_config, unique_name=unique_name_vU1)
+        else:
+            HFmodel_vU1,trainingHistoryHF_vU1, measure_HF6=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vU1,sigma2model_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vU1)  
+        delete_all_dicts_except('dataEval')
+        gc.collect()
+        tf.keras.backend.clear_session()
 
-    generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB3,functionforbaseharmonicform_jbar_for_vU2,phimodel,betamodel_LB3,nPoints,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
-    if train_vU2:
-        HFmodel_vU2,trainingHistoryHF_vU2, measure_HF7 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vU2,sigma2model_config, unique_name=unique_name_vU2)
+        generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB3,functionforbaseharmonicform_jbar_for_vU2,phimodel,betamodel_LB3,nPoints,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
+        if train_vU2:
+            HFmodel_vU2,trainingHistoryHF_vU2, measure_HF7 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vU2,sigma2model_config, unique_name=unique_name_vU2)
+        else:
+            HFmodel_vU2,trainingHistoryHF_vU2, measure_HF7=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vU2,sigma2model_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vU2)
+        purge_dicts_and_mem()
+
     else:
-        HFmodel_vU2,trainingHistoryHF_vU2, measure_HF7=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vU2,sigma2model_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vU2)
-    purge_dicts_and_mem()
-    
+        print("just FS - skipping to eval")
+
+
 
     pg,kmoduli=generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,n_to_integrate,seed_set=seed_for_gen,force_generate=force_generate_eval,average_selected_t = orbit_P1s, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing)
+    if just_FS:
+        print("skipped to EVAL")
+        #phimodel = 
+        dirnameEval = os.path.join(data_path,type_folder,f'{manifold_name}_pg_for_eval_with_{unique_id_or_coeff}')
+        BASIS = prepare_tf_basis(np.load(os.path.join(dirnameEval, 'basis.pickle'), allow_pickle=True))
+        phimodel = FSModel(BASIS, unique_name='phi')
+        betamodel_LB1 = lambda x: raw_FS_HYM_r_r(x, linebundleforHYM_LB1)
+        betamodel_LB2 = lambda x: raw_FS_HYM_r_r(x, linebundleforHYM_LB2)
+        betamodel_LB3 = lambda x: raw_FS_HYM_r_r(x, linebundleforHYM_LB3)
+        HFmodel_vH = pulled_back_func(functionforbaseharmonicform_jbar_for_vH)
+        HFmodel_vQ3 = pulled_back_func(functionforbaseharmonicform_jbar_for_vQ3)
+        HFmodel_vU3 = pulled_back_func(functionforbaseharmonicform_jbar_for_vU3)
+        HFmodel_vQ1 = pulled_back_func(functionforbaseharmonicform_jbar_for_vQ1)
+        HFmodel_vQ2 = pulled_back_func(functionforbaseharmonicform_jbar_for_vQ2)
+        HFmodel_vU1 = pulled_back_func(functionforbaseharmonicform_jbar_for_vU1)
+        HFmodel_vU2 = pulled_back_func(functionforbaseharmonicform_jbar_for_vU2)
+
     dirnameEval = os.path.join(data_path,type_folder,f'{manifold_name}_pg_for_eval_with_{unique_id_or_coeff}')
     if not os.path.exists(dirnameEval):
         raise FileNotFoundError(f"Directory {dirnameEval} not found.")
     dataEval=np.load(os.path.join(dirnameEval, 'dataset.npz'))
-
 
     network_params = {        # Network parameters
         'free_coefficient': free_coefficient,
@@ -853,9 +882,6 @@ if __name__ ==  '__main__':
         'depth_sigma2': depthSigma2,
         'points_training': nPoints,
         'points_integration': n_to_integrate,
-        'measure_phi': measure_phi,
-        'measure_LBs': [measure_LB1, measure_LB2, measure_LB3],
-        'measure_HFs': [measure_HF1, measure_HF2, measure_HF3, measure_HF4, measure_HF5, measure_HF6, measure_HF7],
         'config_phi': phimodel_config,
         'config_beta': betamodel_config,
         'config_sigma': sigmamodel_config,
@@ -867,21 +893,39 @@ if __name__ ==  '__main__':
         'orbit': orbit_P1s,
         'doubleprecision': double_precision
     }
-
+    if not just_FS:
+        network_params.update({
+            'measure_phi': measure_phi,
+            'measure_LBs': [measure_LB1, measure_LB2, measure_LB3],
+            'measure_HFs': [measure_HF1, measure_HF2, measure_HF3, measure_HF4, measure_HF5, measure_HF6, measure_HF7]
+        })
+        do_extra_stuff_for_integration = do_extra_stuff_for_integration
+    else:
+        print("just FS")
+        do_extra_stuff_for_integration = False
+        
     masses, masserrors = do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH,
                                        HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = do_extra_stuff_for_integration,
-                                         run_args=sys.argv, dirnameEval=dirnameEval, result_files_path=result_files_path, addtofilename=addtofilename)
+                                         run_args=sys.argv, dirnameEval=dirnameEval, result_files_path=result_files_path, addtofilename=addtofilename, just_FS = just_FS)
+
+
+
 
     print("\nYou ran " + " ".join(sys.argv))
     print("--------------------------------")
-    print("Trained masses:")
-    for i in range(3):
-        print(f"  m{i+1}: {masses[0,i]:.6e} ± {masserrors[i]:.6e}")
-    print("\nReference masses:")
-    for i in range(3):
-        print(f"  m{i+1}: {masses[1,i]:.6e} ± {masserrors[i]:.6e}")
-    print("--------------------------------")
-
+    if not just_FS:
+        print("Trained masses:")
+        for i in range(3):
+            print(f"  m{i+1}: {masses[0,i]:.6e} ± {masserrors[0,i]:.6e}")
+        print("\nReference masses:")
+        for i in range(3):
+            print(f"  m{i+1}: {masses[1,i]:.6e} ± {masserrors[1,i]:.6e}")
+        print("--------------------------------")
+    else:
+        print("Reference masses (only):")
+        for i in range(3):
+            print(f"  m{i+1}: {masses[0,i]:.6e} ± {masserrors[0,i]:.6e}")
+        print("--------------------------------")
     # import jax
     # import jax.numpy as jnp
     # all_points = jnp.concatenate([dataEval['X_train'], dataEval['X_val']], axis=0)

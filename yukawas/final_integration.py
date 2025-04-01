@@ -40,7 +40,40 @@ def convert_to_nested_tensor_dict(data):
       return data
 
 def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3,
-                  HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, run_args=None, dirnameEval=None, result_files_path=None, addtofilename=None):
+                  HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, run_args=None, dirnameEval=None, result_files_path=None, addtofilename=None, just_FS=False):
+
+
+
+    if just_FS:
+        uncorrectedvH = HFmodel_vH
+        uncorrectedvQ3 = HFmodel_vQ3
+        uncorrectedvU3 = HFmodel_vU3
+        uncorrectedvQ1 = HFmodel_vQ1
+        uncorrectedvQ2 = HFmodel_vQ2
+        uncorrectedvU1 = HFmodel_vU1
+        uncorrectedvU2 = HFmodel_vU2
+        betamodel_LB1raw = betamodel_LB1
+        betamodel_LB2raw = betamodel_LB2
+        betamodel_LB3raw = betamodel_LB3
+    elif not just_FS:
+        uncorrectedvH = HFmodel_vH.uncorrected_FS_harmonicform
+        uncorrectedvQ3 = HFmodel_vQ3.uncorrected_FS_harmonicform
+        uncorrectedvU3 = HFmodel_vU3.uncorrected_FS_harmonicform
+        uncorrectedvQ1 = HFmodel_vQ1.uncorrected_FS_harmonicform
+        uncorrectedvQ2 = HFmodel_vQ2.uncorrected_FS_harmonicform
+        uncorrectedvU1 = HFmodel_vU1.uncorrected_FS_harmonicform
+        uncorrectedvU2 = HFmodel_vU2.uncorrected_FS_harmonicform
+        correctedvH = HFmodel_vH.corrected_harmonicform
+        correctedvQ3 = HFmodel_vQ3.corrected_harmonicform
+        correctedvU3 = HFmodel_vU3.corrected_harmonicform
+        correctedvQ1 = HFmodel_vQ1.corrected_harmonicform
+        correctedvQ2 = HFmodel_vQ2.corrected_harmonicform
+        correctedvU1 = HFmodel_vU1.corrected_harmonicform
+        correctedvU2 = HFmodel_vU2.corrected_harmonicform
+        betamodel_LB1raw = betamodel_LB1.raw_FS_HYM_r
+        betamodel_LB2raw = betamodel_LB2.raw_FS_HYM_r
+        betamodel_LB3raw = betamodel_LB3.raw_FS_HYM_r
+
     #savevecs = not ("nosavevecs" in run_args or "no_save_vecs" in run_args or "no_savevecs" in run_args or "nosave_vecs" in run_args) 
     savevecs =("savevecs" in run_args or "save_vecs" in run_args) 
     loadvecs = ("loadvecs" in run_args or "load_vecs" in run_args)
@@ -124,16 +157,16 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
             np.savez(pullbacks_filename, pullbacks=pullbacks)
             print(f"Saved pullbacks to {pullbacks_filename}")
     
-
+    
     if not loadvecs:
         mets_bare = batch_process_helper_func(phimodel.fubini_study_pb, (real_pts, pullbacks), batch_indices=(0,1), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'ts':tf.cast(kmoduli,complex_dtype)})
-        vH_bare = batch_process_helper_func(HFmodel_vH.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
-        vQ3_bare = batch_process_helper_func(HFmodel_vQ3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
-        vU3_bare = batch_process_helper_func(HFmodel_vU3.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
-        vQ1_bare = batch_process_helper_func(HFmodel_vQ1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
-        vQ2_bare = batch_process_helper_func(HFmodel_vQ2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
-        vU1_bare = batch_process_helper_func(HFmodel_vU1.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
-        vU2_bare = batch_process_helper_func(HFmodel_vU2.uncorrected_FS_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+        vH_bare = batch_process_helper_func(uncorrectedvH, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+        vQ3_bare = batch_process_helper_func(uncorrectedvQ3, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+        vU3_bare = batch_process_helper_func(uncorrectedvU3, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+        vQ1_bare = batch_process_helper_func(uncorrectedvQ1, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+        vQ2_bare = batch_process_helper_func(uncorrectedvQ2, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+        vU1_bare = batch_process_helper_func(uncorrectedvU1, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+        vU2_bare = batch_process_helper_func(uncorrectedvU2, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True, actually_batch=actually_batch, kwargs={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
 
 
     mats=[]
@@ -144,7 +177,16 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     woHholomorphic_Yukawas_trained_and_ref = []
     woHholomorphic_Yukawas_trained_and_ref_errors= []
     topological_data={}
-    for use_trained in [True,False]:
+    singular_values_errors_trained_and_ref=[]
+
+    if just_FS:
+        whichtodo = [False]
+    elif not just_FS:
+        whichtodo = [True,False]
+    else:
+        raise ValueError("Invalid value for just_FS")
+
+    for use_trained in whichtodo:
         prefix = "trained" if use_trained else "ref"
         if loadvecs:
             filename = os.path.join(data_path,type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{use_trained}.npz")
@@ -173,37 +215,37 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                 LB2c=tf.cast(H2, complex_dtype)
                 LB3c=tf.cast(H3, complex_dtype)
                 # Batch process corrected harmonic forms
-                vH = batch_process_helper_func(HFmodel_vH.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+                vH = batch_process_helper_func(correctedvH, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
                 hvHb = tf.einsum('x,xb->xb', LB1c, tf.math.conj(vH))
                 print('got vH', flush=True)
 
-                vQ3 = batch_process_helper_func(HFmodel_vQ3.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+                vQ3 = batch_process_helper_func(correctedvQ3, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
                 hvQ3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vQ3))
                 print('got vQ3', flush=True)
 
-                vU3 = batch_process_helper_func(HFmodel_vU3.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+                vU3 = batch_process_helper_func(correctedvU3, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
                 hvU3b = tf.einsum('x,xb->xb', LB2c, tf.math.conj(vU3))
                 print('got vU3', flush=True)
 
-                vQ1 = batch_process_helper_func(HFmodel_vQ1.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+                vQ1 = batch_process_helper_func(correctedvQ1, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
                 hvQ1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ1))
                 print('got vQ1', flush=True)
 
-                vQ2 = batch_process_helper_func(HFmodel_vQ2.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+                vQ2 = batch_process_helper_func(correctedvQ2, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
                 hvQ2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vQ2))
                 print('got vQ2', flush=True)
 
-                vU1 = batch_process_helper_func(HFmodel_vU1.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+                vU1 = batch_process_helper_func(correctedvU1, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
                 hvU1b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU1))
                 print('got vU1', flush=True)
 
-                vU2 = batch_process_helper_func(HFmodel_vU2.corrected_harmonicform, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
+                vU2 = batch_process_helper_func(correctedvU2, (real_pts,), batch_indices=(0,), batch_size=batch_size_for_processing, compile_func=True,kwargs ={'pullbacks_holo':pullbacks}, batch_kwargs_keys=['pullbacks_holo'])
                 hvU2b = tf.einsum('x,xb->xb', LB3c, tf.math.conj(vU2))
                 print('got vU2', flush=True)
             elif not use_trained:
-                H1=betamodel_LB1.raw_FS_HYM_r(real_pts) 
-                H2=betamodel_LB2.raw_FS_HYM_r(real_pts) 
-                H3=betamodel_LB3.raw_FS_HYM_r(real_pts) 
+                H1=betamodel_LB1raw(real_pts) 
+                H2=betamodel_LB2raw(real_pts) 
+                H3=betamodel_LB3raw(real_pts) 
                 LB1c=tf.cast(H1, complex_dtype)
                 LB2c=tf.cast(H2, complex_dtype)
                 LB3c=tf.cast(H3, complex_dtype)
@@ -1104,6 +1146,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
 
         # Calculate singular values and their errors
         singular_value_errors = propagate_errors_to_singular_values(physical_yukawas, physical_yukawas_errors)
+        singular_values_errors_trained_and_ref.append(singular_value_errors)
 
         print("masses ± errors")
         for i in range(len(s)):
@@ -1179,23 +1222,32 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
 
     # Save training results to CSV files
 
-
-    trained_holo13 = holomorphic_Yukawas_trained_and_ref[0][0,2]
-    trained_holo23 = holomorphic_Yukawas_trained_and_ref[0][1,2]
-    trained_holo31 = holomorphic_Yukawas_trained_and_ref[0][2,0]
-    trained_holo32 = holomorphic_Yukawas_trained_and_ref[0][2,1]
-    ref_holo13 = holomorphic_Yukawas_trained_and_ref[1][0,2]
-    ref_holo23 = holomorphic_Yukawas_trained_and_ref[1][1,2]
-    ref_holo31 = holomorphic_Yukawas_trained_and_ref[1][2,0]
-    ref_holo32 = holomorphic_Yukawas_trained_and_ref[1][2,1]
-    trained_holo13_score= np.abs(trained_holo13)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][0,2])/np.abs(trained_holo13)
-    trained_holo23_score=np.abs(trained_holo23)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][1,2])/np.abs(trained_holo23)    
-    trained_holo31_score = np.abs(trained_holo31)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,0])/np.abs(trained_holo31)
-    trained_holo32_score = np.abs(trained_holo32)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,1])/np.abs(trained_holo32)
-    ref_holo13_score = np.abs(ref_holo13)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][0,2])/np.abs(ref_holo13)
-    ref_holo23_score = np.abs(ref_holo23)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][1,2])/np.abs(ref_holo23)   
-    ref_holo31_score = np.abs(ref_holo31)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][2,0])/np.abs(ref_holo31)
-    ref_holo32_score = np.abs(ref_holo32)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][2,1])/np.abs(ref_holo32)
+    if not just_FS:
+        trained_holo13 = holomorphic_Yukawas_trained_and_ref[0][0,2]
+        trained_holo23 = holomorphic_Yukawas_trained_and_ref[0][1,2]
+        trained_holo31 = holomorphic_Yukawas_trained_and_ref[0][2,0]
+        trained_holo32 = holomorphic_Yukawas_trained_and_ref[0][2,1]
+        ref_holo13 = holomorphic_Yukawas_trained_and_ref[1][0,2]
+        ref_holo23 = holomorphic_Yukawas_trained_and_ref[1][1,2]
+        ref_holo31 = holomorphic_Yukawas_trained_and_ref[1][2,0]
+        ref_holo32 = holomorphic_Yukawas_trained_and_ref[1][2,1]
+        trained_holo13_score= np.abs(trained_holo13)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][0,2])/np.abs(trained_holo13)
+        trained_holo23_score=np.abs(trained_holo23)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][1,2])/np.abs(trained_holo23)    
+        trained_holo31_score = np.abs(trained_holo31)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,0])/np.abs(trained_holo31)
+        trained_holo32_score = np.abs(trained_holo32)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,1])/np.abs(trained_holo32)
+        ref_holo13_score = np.abs(ref_holo13)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][0,2])/np.abs(ref_holo13)
+        ref_holo23_score = np.abs(ref_holo23)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][1,2])/np.abs(ref_holo23)   
+        ref_holo31_score = np.abs(ref_holo31)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][2,0])/np.abs(ref_holo31)
+        ref_holo32_score = np.abs(ref_holo32)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][2,1])/np.abs(ref_holo32)
+    elif just_FS:
+        ref_holo13 = holomorphic_Yukawas_trained_and_ref[0][0,2]
+        ref_holo23 = holomorphic_Yukawas_trained_and_ref[0][1,2]    
+        ref_holo31 = holomorphic_Yukawas_trained_and_ref[0][2,0]
+        ref_holo32 = holomorphic_Yukawas_trained_and_ref[0][2,1]
+        ref_holo13_score= np.abs(ref_holo13)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][0,2])/np.abs(ref_holo13)
+        ref_holo23_score=np.abs(ref_holo23)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][1,2])/np.abs(ref_holo23)    
+        ref_holo31_score = np.abs(ref_holo31)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,0])/np.abs(ref_holo31)
+        ref_holo32_score = np.abs(ref_holo32)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,1])/np.abs(ref_holo32)
     
     # # Calculate average real and imaginary accuracy metrics
     # avg_rel_real_error = np.mean(np.abs(np.real(physical_yukawas_errors)) / np.abs(physical_yukawas))
@@ -1219,7 +1271,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         'integral_stats': integral_stats,
         'matrix_stats': matrix_stats,
         'physical_yukawas_errors': physical_yukawas_errors,
-        'masses_errors': singular_value_errors,
+        'masses_errors': np.array(singular_values_errors_trained_and_ref),
         'm_neffs': m_neffs,
         'mwoH_neffs': mwoH_neffs,
         'Qneffs': Qneffs,
@@ -1247,31 +1299,50 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     doubleprecision = network_params['doubleprecision']
     orbit = network_params['orbit']
     
-    
-    # Create header if file doesn't exist
-    if not os.path.exists(csv_file):
-        with open(csv_file, 'w', newline='') as f:
+    if not just_FS:
+        # Create header if file doesn't exist
+        if not os.path.exists(csv_file):
+            with open(csv_file, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['run_id', 'learned_mass1', 'learned_mass2', 'learned_mass3', 
+                                 'learned_mass1_error', 'learned_mass2_error', 'learned_mass3_error',
+                                 'ref_mass1', 'ref_mass2', 'ref_mass3',
+                                 'ref_mass1_error', 'ref_mass2_error', 'ref_mass3_error',
+                                 'coefficient', 'n_to_integrate', 'run_args','doubleprecision','orbit','t_holo13','t_holo23','t_holo31','t_holo32','r_holo13','r_holo23','r_holo31','r_holo32',
+                                 't_holo13_score','t_holo23_score','t_holo31_score','t_holo32_score','r_holo13_score','r_holo23_score','r_holo31_score','r_holo32_score'])
+        # Append masses for this run
+        with open(csv_file, 'a', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(['run_id', 'learned_mass1', 'learned_mass2', 'learned_mass3', 
-                             'learned_mass1_error', 'learned_mass2_error', 'learned_mass3_error',
-                             'ref_mass1', 'ref_mass2', 'ref_mass3',
-                             'ref_mass1_error', 'ref_mass2_error', 'ref_mass3_error',
-                             'coefficient', 'n_to_integrate', 'run_args','doubleprecision','orbit','t_holo13','t_holo23','t_holo31','t_holo21','r_holo13','r_holo23','r_holo31','r_holo21',
-                             't_holo13_score','t_holo23_score','t_holo31_score','t_holo21_score','r_holo13_score','r_holo23_score','r_holo31_score','r_holo21_score'])
+            writer.writerow([run_id] + 
+                            list(masses_trained_and_ref[0]) + 
+                            list(singular_value_errors) +
+                            list(masses_trained_and_ref[1]) + 
+                            list(singular_value_errors) +  # Using same error estimate for both learned and reference
+                            [unique_id_or_coeff] + 
+                            [n_p]+ [run_args]+ [doubleprecision]+ [orbit]+[trained_holo13,trained_holo23,trained_holo31,trained_holo32] + [ref_holo13,ref_holo23,ref_holo31,ref_holo32] +
+                            [trained_holo13_score,trained_holo23_score,trained_holo31_score,trained_holo32_score] + [ref_holo13_score,ref_holo23_score,ref_holo31_score,ref_holo32_score])
 
-    # Append masses for this run
-    with open(csv_file, 'a', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow([run_id] + 
-                        list(masses_trained_and_ref[0]) + 
-                        list(singular_value_errors) +
-                        list(masses_trained_and_ref[1]) + 
-                        list(singular_value_errors) +  # Using same error estimate for both learned and reference
-                        [unique_id_or_coeff] + 
-                        [n_p]+ [run_args]+ [doubleprecision]+ [orbit]+[trained_holo13,trained_holo23,trained_holo31,trained_holo32] + [ref_holo13,ref_holo23,ref_holo31,ref_holo32] +
-                        [trained_holo13_score,trained_holo23_score,trained_holo31_score,trained_holo32_score] + [ref_holo13_score,ref_holo23_score,ref_holo31_score,ref_holo32_score])
+    elif just_FS:
+        #Create header if file doesn't exist
+        if not os.path.exists(csv_file):
+            with open(csv_file, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['run_id',
+                                 'ref_mass1', 'ref_mass2', 'ref_mass3',
+                                 'ref_mass1_error', 'ref_mass2_error', 'ref_mass3_error',
+                                 'coefficient', 'n_to_integrate', 'run_args','doubleprecision','orbit','r_holo13','r_holo23','r_holo31','r_holo32',
+                                 'r_holo13_score','r_holo23_score','r_holo31_score','r_holo32_score'])
+        # Append masses for this run
+        with open(csv_file, 'a', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow([run_id] + 
+                            list(masses_trained_and_ref[0]) + 
+                            list(singular_value_errors) +
+                            [unique_id_or_coeff] + 
+                            [n_p]+ [run_args]+ [doubleprecision]+ [orbit]+[ref_holo13,ref_holo23,ref_holo31,ref_holo32] +
+                            [ref_holo13_score,ref_holo23_score,ref_holo31_score,ref_holo32_score])
 
     if do_extra_stuff:    
         pass
 
-    return np.array(masses_trained_and_ref), np.array(singular_value_errors)
+    return np.array(masses_trained_and_ref), np.array(singular_values_errors_trained_and_ref)

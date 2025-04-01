@@ -835,3 +835,21 @@ def train_modelbeta(betamodel, data_train, optimizer=None, epochs=50, batch_size
         print("WARNING: No set_zero_integral method found in model")
     
     return betamodel, training_history
+
+
+  
+def raw_FS_HYM_r_r(rpoints, linebundleforHYM):
+    r"""Computes the raw Fubini-Study metric for a line bundle on real points.
+
+        Args:
+            rpoints (tf.tensor([bSize, 2*ncoords], real_dtype)): Points in real coordinates.
+
+        Returns:
+            tf.tensor([bSize], complex_dtype): Raw Fubini-Study metric values.
+        """
+    cpoints=point_vec_to_complex(rpoints)
+    K1=tf.reduce_sum(cpoints[:,0:2]*tf.math.conj(cpoints[:,0:2]),1)
+    K2=tf.reduce_sum(cpoints[:,2:4]*tf.math.conj(cpoints[:,2:4]),1)
+    K3=tf.reduce_sum(cpoints[:,4:6]*tf.math.conj(cpoints[:,4:6]),1)
+    K4=tf.reduce_sum(cpoints[:,6:8]*tf.math.conj(cpoints[:,6:8]),1)
+    return (K1**(-linebundleforHYM[0]))*(K2**(-linebundleforHYM[1]))*(K3**(-linebundleforHYM[2]))*(K4**(-linebundleforHYM[3]))
