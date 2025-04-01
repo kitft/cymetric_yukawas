@@ -330,7 +330,8 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
             os.environ["XLA_FLAGS"] = ""
         else:
             print("asked not to use multiprocessing, but use_quadratic_method is True")
-            n_batches = (n_p//100000) if n_p//100000 > 0 else 1
+            divbatch = 100000 if batch_size is None else batch_size
+            n_batches = ((n_p//divbatch) if n_p//divbatch > 0 else 1)
             batch_n = n_p//n_batches
             random_seeds = np.random.RandomState(numpy_seed).randint(0, 2**32, size=n_batches)
             print(f"Running {n_batches} batches on one processes, each doing {batch_n} points (so /8 random sections). Each batch has a random seed.") 
