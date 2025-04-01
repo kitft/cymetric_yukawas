@@ -441,6 +441,9 @@ if __name__ == '__main__':
         elif '100k' == npoints_config:
             nPoints = 100
             n_to_integrate = 100_000
+        elif '300k' == npoints_config:
+            nPoints = 100
+            n_to_integrate = 300_000
         elif '1million' == npoints_config:
             nPoints = 100
             n_to_integrate = 1_000_000
