@@ -433,7 +433,7 @@ class FreeModel(FSModel):
         # ...
         """
         # unpack data
-        if len(data) == 3:
+        if len(data) == 4:
             x, y, pullback, sample_weight = data
         else:
             sample_weight = None

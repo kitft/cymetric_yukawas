@@ -509,8 +509,10 @@ def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=
    #print("phimodelzero: " +str(phimodelzero.model(datacasted[0][0:2])))
    #metricsnames=phimodelzero.metrics_names
    #problem - metricsnames aren't defined unless model has been trained, not just evaluated? SOlution - return_dict
-   valzero=phimodelzero.evaluate(datacasted[0],datacasted[1],datacasted[2],return_dict=True)
-   valtrained=phimodel.evaluate(datacasted[0],datacasted[1],datacasted[2],return_dict=True)
+   # valzero=phimodelzero.evaluate(datacasted[0],datacasted[1],datacasted[2],return_dict=True)
+   # valtrained=phimodel.evaluate(datacasted[0],datacasted[1],datacasted[2],return_dict=True)
+   valzero=phimodelzero.test_step(datacasted)
+   valtrained=phimodel.test_step(datacasted)
 
 
    # phimodel.learn_ricci_val=False 
