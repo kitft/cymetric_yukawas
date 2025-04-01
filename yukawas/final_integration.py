@@ -117,10 +117,17 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         omega = tf.cast(data['omega'],complex_dtype)
     # Verify that dataEval['y_train'][:n_p,1] equals |omega|^2
     omega_abs_squared_calculated = tf.math.real(omega * tf.math.conj(omega))
-    assert tf.reduce_all(tf.abs(omega_abs_squared_calculated[:100] - omegasquared[:100]) < 1e-5), f"First elements \n
-        of dataEval['y_train'][:,1] should equal |omega|^2 {tf.reduce_max(tf.abs(omega_abs_squared_calculated[:100] - omegasquared[:100]))},\n
-        first: calc {omega_abs_squared_calculated[:3]}, load{omegasquared[:3]}\n
-        np.argmax(tf.abs(omega_abs_squared_calculated[:100] - omegasquared[:100]))"
+    max_diff = tf.reduce_max(tf.abs(omega_abs_squared_calculated[:] - omegasquared[:]))
+    max_diff_index = tf.argmax(tf.abs(omega_abs_squared_calculated[:] - omegasquared[:]))
+    assert tf.reduce_all(tf.abs(omega_abs_squared_calculated[:] - omegasquared[:]) < 1e-5), (
+        f"First elements of dataEval['y_train'][:,1] should equal |omega|^2. "
+        f"Max difference: {max_diff}, "
+        f"at index: {max_diff_index}, "
+        f"calculated values: {omega_abs_squared_calculated[max_diff_index:max_diff_index+3]}, "
+        f"loaded values: {omegasquared[max_diff_index:max_diff_index+3]}, "
+        f"jax: {pg._find_max_dQ_coords(pointsComplex[max_diff_index:max_diff_index+3])}, "
+        f"not jax: {pg._find_max_dQ_coords(pointsComplex[max_diff_index:max_diff_index+3], use_jax=False)}"
+    )
     #put the omega here, not the omegabar
     omega_normalised_to_one=omega/tf.cast(np.sqrt(volCY_from_Om),complex_dtype) # this is the omega that's normalised to 1. VERIFIED yes.
 
