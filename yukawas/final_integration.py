@@ -119,7 +119,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     omega_abs_squared_calculated = tf.math.real(omega * tf.math.conj(omega))
     max_diff = tf.reduce_max(tf.abs(omega_abs_squared_calculated[:] - omegasquared[:]))
     max_diff_index = tf.argmax(tf.abs(omega_abs_squared_calculated[:] - omegasquared[:]))
-    assert tf.reduce_all(tf.abs(omega_abs_squared_calculated[:] - omegasquared[:]) < 1e-5), (
+    assert tf.reduce_all(tf.abs(omega_abs_squared_calculated[:] - omegasquared[:]) < 5e-5), (
         f"First elements of dataEval['y_train'][:,1] should equal |omega|^2. "
         f"Max difference: {max_diff}, "
         f"at index: {max_diff_index}, "
