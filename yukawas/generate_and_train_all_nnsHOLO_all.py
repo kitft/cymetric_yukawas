@@ -187,7 +187,7 @@ def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,numb
             print("Regenerating dataset with correct dtype")
             kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
             pg.prepare_basis(dirname, kappa=kappa)
-         elif len(data['X_train'])+len(data['X_val']) != number_points:
+         elif len(data['X_train'])+len(data['X_val']) < 0.99*number_points:
             length_total = len(data['X_train'])+len(data['X_val'])
             print(f"wrong length {length_total}, want {number_points} - generating anyway")
             kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
@@ -229,7 +229,7 @@ def generate_points_and_save_using_defaults(manifold_name_and_data,number_points
             print("Regenerating dataset with correct dtype")
             kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
             pg.prepare_basis(dirname, kappa=kappa)
-         elif len(data['X_train'])+len(data['X_val']) != number_points:
+         elif len(data['X_train'])+len(data['X_val']) < 0.99*number_points:
             length_total = len(data['X_train'])+len(data['X_val'])
             print(f"wrong length {length_total}, want {number_points} - generating anyway")
             kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
@@ -576,7 +576,7 @@ def generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundle
             print(f"Warning: X_train dtype is not 64-bit, it should b: {data['X_train'].dtype} ")
             print("Regenerating dataset with correct dtype")
             kappaHYM = prepare_dataset_HYM(pg,data,number_pointsHYM, dirnameHYM,phimodel,linebundleforHYM,BASIS,normalize_to_vol_j=True)
-         elif len(data['X_train'])+len(data['X_val']) != number_pointsHYM:
+         elif len(data['X_train'])+len(data['X_val']) < 0.99*number_pointsHYM:
             length_total = len(data['X_train'])+len(data['X_val'])
             dataMetric = np.load(os.path.join(dirnameForMetric, 'dataset.npz'))
             print(f"wrong length {length_total}, want {number_pointsHYM} - generating anyway")
@@ -1052,7 +1052,7 @@ def generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundlef
             print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
             print("Regenerating dataset with correct dtype")
             kappaHarmonic=prepare_dataset_HarmonicForm(pg,data,number_pointsHarmonic,dirnameHarmonic,phimodel,linebundleforHYM,BASIS,functionforbaseharmonicform_jbar,betamodel)
-         elif len(data['X_train'])+len(data['X_val']) != number_pointsHarmonic:
+         elif len(data['X_train'])+len(data['X_val']) < 0.99*number_pointsHarmonic:
             length_total = len(data['X_train'])+len(data['X_val'])
             print(f"wrong length {length_total}, want {number_pointsHarmonic} - generating anyway")
             dataMetric = np.load(os.path.join(dirnameForMetric, 'dataset.npz'))
