@@ -126,7 +126,9 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         f"calculated values: {omega_abs_squared_calculated[max_diff_index:max_diff_index+3]}, "
         f"loaded values: {omegasquared[max_diff_index:max_diff_index+3]}, "
         f"jax: {pg._find_max_dQ_coords(pointsComplex[max_diff_index:max_diff_index+3])}, "
+        f"defo jax: {pg._find_max_dQ_coords(jnp.array(pointsComplex[max_diff_index:max_diff_index+3]))}, "
         f"not jax: {pg._find_max_dQ_coords(pointsComplex[max_diff_index:max_diff_index+3], use_jax=False)}"
+        f"pointsComplex: {pointsComplex[max_diff_index:max_diff_index+3]}"
     )
     #put the omega here, not the omegabar
     omega_normalised_to_one=omega/tf.cast(np.sqrt(volCY_from_Om),complex_dtype) # this is the omega that's normalised to 1. VERIFIED yes.

@@ -680,6 +680,11 @@ if __name__ == '__main__':
         batch_size_for_eval = None
         batch_size_for_processing = None
 
+    if 'skip_pg' in sys.argv[1:] or 'skippg' in sys.argv[1:]:
+        skip_pg = True
+    else:
+        skip_pg = False
+
 # if orbit_P1s!=False:
 #     orbit_P1s = False
 #     use_quadratic_method = True
@@ -771,7 +776,8 @@ if __name__ ==  '__main__':
     
     
     if not just_FS: 
-        generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,force_generate=force_generate_phi,seed_set=seed_for_gen,average_selected_t = orbit_P1s, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing, batch_size = batch_size_for_gen)
+        if not skip_pg:
+            generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,force_generate=force_generate_phi,seed_set=seed_for_gen,average_selected_t = orbit_P1s, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing, batch_size = batch_size_for_gen)
         if train_phi:
             #phimodel,training_history=train_and_save_nn(manifold_name_and_data,depthPhi,widthPhi,nEpochsPhi,bSizes=[64,tr_batchsize],lRate=lRatePhi) 
             phimodel,training_history, measure_phi=train_and_save_nn(manifold_name_and_data,phimodel_config,use_zero_network=use_zero_network_phi, unique_name=unique_name_phi)
