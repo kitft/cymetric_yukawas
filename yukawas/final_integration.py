@@ -96,6 +96,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     print("\n do analysis: \n\n\n")
 
     batch_size_for_processing=min(100000, len(real_pts)) if batch_size_for_processing is None else batch_size_for_processing
+
     if len(real_pts)>100000:
         actually_batch=True
     else:
@@ -116,7 +117,10 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         omega = tf.cast(data['omega'],complex_dtype)
     # Verify that dataEval['y_train'][:n_p,1] equals |omega|^2
     omega_abs_squared_calculated = tf.math.real(omega * tf.math.conj(omega))
-    assert tf.reduce_all(tf.abs(omega_abs_squared_calculated[:100] - omegasquared[:100]) < 1e-5), f"First elements of dataEval['y_train'][:,1] should equal |omega|^2 {tf.reduce_max(tf.abs(omega_abs_squared_calculated[:100] - omegasquared[:100]))},first: calc {omega_abs_squared_calculated[:3]}, load{omegasquared[:3]}"
+    assert tf.reduce_all(tf.abs(omega_abs_squared_calculated[:100] - omegasquared[:100]) < 1e-5), f"First elements \n
+        of dataEval['y_train'][:,1] should equal |omega|^2 {tf.reduce_max(tf.abs(omega_abs_squared_calculated[:100] - omegasquared[:100]))},\n
+        first: calc {omega_abs_squared_calculated[:3]}, load{omegasquared[:3]}\n
+        np.argmax(tf.abs(omega_abs_squared_calculated[:100] - omegasquared[:100]))"
     #put the omega here, not the omegabar
     omega_normalised_to_one=omega/tf.cast(np.sqrt(volCY_from_Om),complex_dtype) # this is the omega that's normalised to 1. VERIFIED yes.
 

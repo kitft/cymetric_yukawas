@@ -244,7 +244,7 @@ def generate_points_and_save_using_defaults(manifold_name_and_data,number_points
 
 def getcallbacksandmetrics(data, prefix, wandb = True, batchsize = 64):
    #rcb = RicciCallback((data['X_val'], data['y_val']), data['val_pullbacks'])
-   scb = SigmaCallback((data['X_val'], data['y_val']))
+   scb = SigmaCallback((data['X_val'], data['y_val'], data['val_pullbacks']))
    #volkcb = VolkCallback((data['X_val'], data['y_val']))
    #kcb = KaehlerCallback((data['X_val'], data['y_val']))
    #tcb = TransitionCallback((data['X_val'], data['y_val']))
