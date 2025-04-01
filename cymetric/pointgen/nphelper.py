@@ -147,7 +147,7 @@ def _prepare_dataset_batched_for_mp(point_gen, batch_n_p, ltails, rtails, seed :
     return points, weights, omegasquared, pullbacks
 
 
-def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltails=0, rtails=0, normalize_to_vol_j=True,average_selected_t = False, shuffle_points = True):
+def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltails=0, rtails=0, normalize_to_vol_j=True,average_selected_t = False, shuffle_points = True, batch_size = None):
     r"""Prepares training and validation data from point_gen in batches.
 
     Note:
