@@ -139,6 +139,7 @@ class PointGenerator:
 
         if use_quadratic_method:
             if len(self.ambient) == 4 and np.all(self.ambient ==np.ones(4)):
+                print("ON TETRAQUADRIC")
                 from cymetric.pointgen.pointgen_jax_gmpy2 import JAXPointGeneratorQuadratic
                 if max_iter==0:
                     print("using quadratic method but not using newton improvement")
@@ -146,6 +147,7 @@ class PointGenerator:
                     print("using quadratic method, with max_iterations: ", max_iter, " and tol: ", tol)
                 self.pointgen_jax_quadratic = JAXPointGeneratorQuadratic(self, max_iter = max_iter, tol = tol)
             elif len(self.ambient) == 2 and np.all(self.ambient ==np.ones(2)):
+                print("ON TORUS")
                 from cymetric.pointgen.pointgen_jax_gmpy2torus import JAXPointGeneratorQuadratic_Torus
                 if max_iter==0:
                     print("using quadratic method but not using newton improvement")
@@ -1312,7 +1314,7 @@ class PointGenerator:
             ambient_ones = np.all(self.ambient ==np.ones_like(self.ambient))
             if not ambient_ones:
                 print("warning: not adding sign for holomorphic volume form")
-            return PointGenerator._holomorphic_volume_form_jax(points, j_elim, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']), ambient_ones=ambient_ones)
+            return PointGenerator._holomorphic_volume_form_jax(points, jnp.squeeze(j_elim) if j_elim is not None else None, jnp.array(self.BASIS['DQDZB0']), jnp.array(self.BASIS['DQDZF0']), ambient_ones=ambient_ones)
         else:
             print(f"using legacy holomorphic volume form, {type(points)}, use_jax = {use_jax}")
             return self._holomorphic_volume_form_legacy(points, j_elim)
