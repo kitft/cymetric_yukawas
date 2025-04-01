@@ -8,17 +8,17 @@ def get_coefficients_m1(free_coefficient, deformation = 'regular_deformation'):
     coefficients=np.array([1., 0, 2, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, \
         0, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
         0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 0, 0, \
-        0, 0, 0, 1, 0, 2, 0, 0, 0, 2, 0, 1], dtype=complex_dtype)
+        0, 0, 0, 1, 0, 2, 0, 0, 0, 2, 0, 1], dtype=complex)
     if deformation == 'split_deformation':
         coefficients += np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, x, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-            x, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=complex_dtype)
+            x, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=complex)
     elif deformation == 'regular_deformation':
         coefficients += np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, x, 0, 0, 0, 0, 0, \
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, \
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=complex_dtype)
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=complex)
     else:
         raise ValueError("Invalid deformation specified")
     return coefficients
