@@ -346,6 +346,20 @@ elif modeltype == "m1rotated":
     functionforbaseharmonicform_jbar_for_vU2.line_bundle = np.array([2,-1,-3,2]) 
 
 if __name__ == '__main__':
+
+    print("Name of invoking script: ", name_of_invoking_script, "modeltype: ", modeltype, "namespace of vH: ", functionforbaseharmonicform_jbar_for_vH.__module__)
+    if modeltype == "m13":
+        if get_coefficients_here != get_coefficients_m13 or functionforbaseharmonicform_jbar_for_vH.__module__ not in ['yukawas.OneAndTwoFormsForLineBundlesModel13','OneAndTwoFormsForLineBundlesModel13']:
+            raise ValueError("invalid configuration for m13: ", get_coefficients_here, functionforbaseharmonicform_jbar_for_vH.__module__)
+    elif modeltype == "m1":
+        if get_coefficients_here != get_coefficients_m1 or  functionforbaseharmonicform_jbar_for_vH.__module__ not in ['yukawas.OneAndTwoFormsForLineBundlesModel1','OneAndTwoFormsForLineBundlesModel1']:
+            raise ValueError("invalid configuration for m1: ", get_coefficients_here, functionforbaseharmonicform_jbar_for_vH.__module__)
+    elif modeltype == "m1rotated":
+        if get_coefficients_here != get_coefficients_m1 or  functionforbaseharmonicform_jbar_for_vH.__module__ not in ['yukawas.RotatedOneAndTwoFormsForLineBundlesModel1','RotatedOneAndTwoFormsForLineBundlesModel1']:
+            raise ValueError("invalid configuration for m1rotated: ", get_coefficients_here, functionforbaseharmonicform_jbar_for_vH.__module__)
+    else:
+        raise ValueError("Invalid model specified")
+
     if 'random_search' in sys.argv[1:]:
         print("doing random search!")
         a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u = np.random.normal(0,5,21) + 1j*np.random.normal(0,5,21)
@@ -712,18 +726,6 @@ if __name__ == '__main__':
 #     do_multiprocessing = True
 
 if __name__ == '__main__':
-    print("Name of invoking script: ", name_of_invoking_script, "modeltype: ", modeltype, "namespace of vH: ", functionforbaseharmonicform_jbar_for_vH.__module__)
-    if modeltype == "m13":
-        if get_coefficients_here != get_coefficients_m13 or functionforbaseharmonicform_jbar_for_vH.__module__ not in ['yukawas.OneAndTwoFormsForLineBundlesModel13','OneAndTwoFormsForLineBundlesModel13']:
-            raise ValueError("invalid configuration for m13: ", get_coefficients_here, functionforbaseharmonicform_jbar_for_vH.__module__)
-    elif modeltype == "m1":
-        if get_coefficients_here != get_coefficients_m1 or  functionforbaseharmonicform_jbar_for_vH.__module__ not in ['yukawas.OneAndTwoFormsForLineBundlesModel1','OneAndTwoFormsForLineBundlesModel1']:
-            raise ValueError("invalid configuration for m1: ", get_coefficients_here, functionforbaseharmonicform_jbar_for_vH.__module__)
-    elif modeltype == "m1rotated":
-        if get_coefficients_here != get_coefficients_m1 or  functionforbaseharmonicform_jbar_for_vH.__module__ not in ['yukawas.RotatedOneAndTwoFormsForLineBundlesModel1','RotatedOneAndTwoFormsForLineBundlesModel1']:
-            raise ValueError("invalid configuration for m1rotated: ", get_coefficients_here, functionforbaseharmonicform_jbar_for_vH.__module__)
-    else:
-        raise ValueError("Invalid model specified")
 
     
     training_flags = determine_training_flags(start_from)
