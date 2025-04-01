@@ -175,7 +175,7 @@ def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,numb
    kappa = None
    if force_generate or (not os.path.exists(dirname)):
       print("Generating: forced? " + str(force_generate))
-      kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
+      kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t, batch_size = batch_size)
       pg.prepare_basis(dirname, kappa=kappa)
       print(f"Generated dataset: kappa: {kappa}")
    elif os.path.exists(dirname):
