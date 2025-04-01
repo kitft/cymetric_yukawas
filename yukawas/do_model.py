@@ -345,6 +345,19 @@ elif modeltype == "m1rotated":
     functionforbaseharmonicform_jbar_for_vU1.line_bundle = np.array([2,-1,-3,2]) 
     functionforbaseharmonicform_jbar_for_vU2.line_bundle = np.array([2,-1,-3,2]) 
 
+if __name__ == '__main__':
+    if 'random_search' in sys.argv[1:]:
+        print("doing random search!")
+        a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u = np.random.normal(0,5,21) + 1j*np.random.normal(0,5,21)
+        get_coefficients_here = lambda x: np.array([u, 0, t, 0, s, 0, r, 0, q, 0, p, 0, o, 0, n, 0, m, \
+    0, l, 0, k, 0, j, 0, i, 0, h, 0, g, 0, f, 0, e, 0, \
+    d, 0, c, 0, b, 0, a, 0, b, 0, c, 0, d, 0, e, 0, f, \
+    0, g, 0, h, 0, i, 0, j, 0, k, 0, l, 0, m, 0, n, 0, \
+    o, 0, p, 0, q, 0, r, 0, s, 0, t, 0, u])
+        free_coefficient_str = str(hash(tuple(get_coefficients_here(free_coefficient))))
+        type_folder+='_random'
+
+
 
 
 
@@ -731,17 +744,6 @@ if __name__ == '__main__':
     )
     
 
-if 'random_search' in sys.argv[1:]:
-    print("doing random search!")
-    a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u = np.random.normal(0,5,21) + 1j*np.random.normal(0,5,21)
-    get_coefficients_here = lambda x: np.array([u, 0, t, 0, s, 0, r, 0, q, 0, p, 0, o, 0, n, 0, m, \
-0, l, 0, k, 0, j, 0, i, 0, h, 0, g, 0, f, 0, e, 0, \
-d, 0, c, 0, b, 0, a, 0, b, 0, c, 0, d, 0, e, 0, f, \
-0, g, 0, h, 0, i, 0, j, 0, k, 0, l, 0, m, 0, n, 0, \
-o, 0, p, 0, q, 0, r, 0, s, 0, t, 0, u])
-    free_coefficient_str = str(hash(tuple(get_coefficients_here(free_coefficient))))
-    type_folder+='_random'
-
 def purge_dicts_and_mem():
     delete_all_dicts_except('dataEval','manifold_name_and_data', 'phimodel_config', 'betamodel_config', 'sigmamodel_config', 'sigma2model_config')
     gc.collect()
@@ -779,6 +781,7 @@ if __name__ ==  '__main__':
                       'manifold_name' : manifold_name,
                       'type_folder' : type_folder,
                       'seed' : seed_for_gen,
+                      'coefficients': coefficientsTQ.tolist(),
                       'tags': [integrate_or_run, modeltype, "nint"+str(n_to_integrate), "npoints"+str(nPoints), addtofilename]+addtags})
     
     
@@ -934,6 +937,7 @@ if __name__ ==  '__main__':
         'orbit': orbit_P1s,
         'doubleprecision': double_precision
     }
+    wandb.log(network_params)
     if not just_FS:
         network_params.update({
             'measure_phi': measure_phi,
