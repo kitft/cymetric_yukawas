@@ -8,7 +8,7 @@ from cymetric.config import real_dtype, complex_dtype
 
 
 
-def sigma_measure(model, points, y_true, batch = False):
+def sigma_measure(model, points, y_true, pullbacks = None, batch = False):
     r"""We compute the Monge Ampere equation
 
     .. math::
@@ -42,7 +42,7 @@ def sigma_measure(model, points, y_true, batch = False):
             batch_points = points[i:end_idx]
             batch_y_true = y_true[i:end_idx]
             
-            g = model(batch_points)
+            g = model(batch_points, pb = pullbacks)
             weights = batch_y_true[:, -2]
             omega = batch_y_true[:, -1]
             
@@ -67,7 +67,7 @@ def sigma_measure(model, points, y_true, batch = False):
         sigma = final_sigma_sum / final_volume_cy_sum
         return sigma
     else:
-        g = model(points)
+        g = model(points, pb = pullbacks)
         weights = y_true[:, -2]
         omega = y_true[:, -1]
         # use gamma series
