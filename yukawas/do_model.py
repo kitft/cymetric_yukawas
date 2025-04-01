@@ -676,8 +676,8 @@ if __name__ == '__main__':
 
     if 'smallbatch' in sys.argv[1:]:
         batch_size_for_gen =  10000
-        batch_size_for_eval = 10000
-        batch_size_for_processing = 100000# same as before
+        batch_size_for_eval = 100000
+        batch_size_for_processing = 10000# same as before
     else:
         batch_size_for_gen = None
         batch_size_for_eval = None
