@@ -701,7 +701,16 @@ if __name__ == '__main__':
     )
     
 
-
+if 'random_search' in sys.argv[1:]:
+    print("doing random search!")
+    a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u = np.random.normal(0,5,21) + 1j*np.random.normal(0,5,21)
+    get_coefficients_here = lambda x: np.array([u, 0, t, 0, s, 0, r, 0, q, 0, p, 0, o, 0, n, 0, m, \
+0, l, 0, k, 0, j, 0, i, 0, h, 0, g, 0, f, 0, e, 0, \
+d, 0, c, 0, b, 0, a, 0, b, 0, c, 0, d, 0, e, 0, f, \
+0, g, 0, h, 0, i, 0, j, 0, k, 0, l, 0, m, 0, n, 0, \
+o, 0, p, 0, q, 0, r, 0, s, 0, t, 0, u])
+    free_coefficient = get_coefficients_here(free_coefficient)
+    free_coefficient_str = str(hash(tuple(get_coefficients_here(free_coefficient))))
 
 def purge_dicts_and_mem():
     delete_all_dicts_except('dataEval','manifold_name_and_data', 'phimodel_config', 'betamodel_config', 'sigmamodel_config', 'sigma2model_config')

@@ -137,13 +137,22 @@ class PointGenerator:
             self.pointgen_jax = pointgen_jax.JAXPointGenerator(self)
 
         if use_quadratic_method:
-            from cymetric.pointgen.pointgen_jax_gmpy2 import JAXPointGeneratorQuadratic
-            if max_iter==0:
-                print("using quadratic method but not using newton improvement")
+            if len(self.ambient) == 4 and np.all(self.ambient ==np.ones(4)):
+                from cymetric.pointgen.pointgen_jax_gmpy2 import JAXPointGeneratorQuadratic
+                if max_iter==0:
+                    print("using quadratic method but not using newton improvement")
+                else:
+                    print("using quadratic method, with max_iterations: ", max_iter, " and tol: ", tol)
+                self.pointgen_jax_quadratic = JAXPointGeneratorQuadratic(self, max_iter = max_iter, tol = tol)
+            elif len(self.ambient) == 2 and np.all(self.ambient ==np.ones(2)):
+                from cymetric.pointgen.pointgen_jax_gmpy2torus import JAXPointGeneratorQuadratic_Torus
+                if max_iter==0:
+                    print("using quadratic method but not using newton improvement")
+                else:
+                    print("using quadratic method, with max_iterations: ", max_iter, " and tol: ", tol)
+                self.pointgen_jax_quadratic = JAXPointGeneratorQuadratic_Torus(self, max_iter = max_iter, tol = tol)
             else:
-                print("using quadratic method, with max_iterations: ", max_iter, " and tol: ", tol)
-            self.pointgen_jax_quadratic = JAXPointGeneratorQuadratic(self, max_iter = max_iter, tol = tol)
-
+                raise ValueError("Quadratic method not implemented for this ambient space")
             
 
     @staticmethod
@@ -1642,6 +1651,7 @@ class PointGenerator:
 
 
 
+
     def point_weight(self, points, normalize_to_vol_j=False, j_elim=None, selected_t_val=None):
         r"""We compute the weight/mass of each point:
 
@@ -1745,6 +1755,7 @@ class PointGenerator:
             return self._pullbacks_legacy(points, j_elim)
     
     @staticmethod
+    @jax_jit
     def _pullbacks_jax(points, j_elim, DQDZB0, DQDZF0, nfold, nhyper, ncoords):
         """JAX version of pullbacks computation.
         
