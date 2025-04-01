@@ -363,11 +363,11 @@ class FreeModel(FSModel):
         r"""Train step of a single batch in model.fit().
         # ...
         """
-        if len(data) == 3:
-            x, y, sample_weight = data
+        if len(data) == 4:
+            x, y, pullback, sample_weight = data
         else:
             sample_weight = None
-            x, y = data
+            x, y, pullback = data
         with tf.GradientTape(persistent=False) as tape:
             trainable_vars = self.model.trainable_weights
             #print("999999999999999")
@@ -378,7 +378,7 @@ class FreeModel(FSModel):
             
             #tape.watch(trainable_vars)
             # add other loss contributions.
-            y_pred = self(x)
+            y_pred = self(x, pb = pullback)
             if self.learn_kaehler:
                 cijk_loss = self.compute_kaehler_loss(x)
             else:
@@ -434,11 +434,11 @@ class FreeModel(FSModel):
         """
         # unpack data
         if len(data) == 3:
-            x, y, sample_weight = data
+            x, y, pullback, sample_weight = data
         else:
             sample_weight = None
-            x, y = data
-        y_pred = self(x)
+            x, y, pullback = data
+        y_pred = self(x, pb = pullback)
         # add loss contributions
         if self.learn_kaehler:
             cijk_loss = self.compute_kaehler_loss(x)

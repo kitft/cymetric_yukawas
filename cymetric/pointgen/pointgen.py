@@ -1490,6 +1490,7 @@ class PointGenerator:
             sign_for_omega2 = np.prod((-1)**(inv_one_mask*ints_for_power), axis=-1).astype(np.complex128)
             which_p1 = (indices//2)
             sign_of_omega = (-1)**which_p1 * (-1)**(indices%2+1) * sign_for_omega2 * (-1)**(indices%2+1)
+            
         else:
             sign_of_omega = 1
         return 1 / omega*sign_of_omega

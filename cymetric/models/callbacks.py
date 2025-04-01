@@ -215,9 +215,10 @@ class SigmaCallback(tfk.callbacks.Callback):
                 Defaults to False.
         """
         super(SigmaCallback, self).__init__()
-        self.X_val, self.y_val = validation_data
+        self.X_val, self.y_val, self.pullback_val = validation_data
         self.X_val = tf.cast(self.X_val, real_dtype)
         self.y_val = tf.cast(self.y_val, real_dtype)
+        self.pullback_val = tf.cast(self.pullback_val, complex_dtype)
         self.initial = initial
 
     def on_epoch_end(self, epoch, logs=None):
@@ -227,7 +228,7 @@ class SigmaCallback(tfk.callbacks.Callback):
             epoch (int): epoch
             logs (dict, optional): history.history. Defaults to None.
         """
-        sigma = sigma_measure_tf(self.model, self.X_val, self.y_val, batch = True)
+        sigma = sigma_measure_tf(self.model, self.X_val, self.y_val, self.pullback_val, batch = True)
 
         cb_res = sigma.numpy().tolist()
         logs['sigma_val'] = cb_res
