@@ -1640,6 +1640,8 @@ class PointGenerator:
         See also: [9803052]."""
 
         FS_shiffman = self.pointgen_jax_quadratic.pullback_all_3_spaces_vmap(points, pullbacks)
+        print("fs",np.max(np.abs(FS_shiffman)), np.min(np.abs(FS_shiffman)))
+        print("om",np.max(np.abs(omegasquared)), np.min(np.abs(omegasquared)))
         #print("FS_shiffman: ", FS_shiffman)
         #print("omegasquared: ", omegasquared)
         weights = np.real(omegasquared / FS_shiffman)
