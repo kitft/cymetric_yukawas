@@ -137,6 +137,7 @@ def _prepare_dataset_batched_for_mp(point_gen, batch_n_p, ltails, rtails, seed :
         omega = np.expand_dims(pwo['omega'][mask], -1)
         omegasquared = np.real(omega * np.conj(omega))
         points = pwo['point'][mask]
+        print('pwo pullbacks shape', pwo['pullbacks'].shape)
         pullbacks = pwo['pullbacks'][mask]
         gc.collect()
     except Exception as e:
@@ -353,13 +354,12 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
 
     # Normalize weights if requested (after all batches are combined)
     if normalize_to_vol_j:
-        print("normalizing to vol_j")
+        print(f"normalizing to vol_j, {np.mean(all_weights)}, min {np.min(all_weights)}")
         fs_ref = point_gen.fubini_study_metrics(all_points, vol_js=np.ones_like(point_gen.kmoduli))
         fs_ref_pb = np.einsum('xai,xij,xbj->xab', all_pullbacks, fs_ref, np.conj(all_pullbacks))
         aux_weights = all_omega.flatten() / all_weights.flatten()
         norm_fac = point_gen.vol_j_norm / np.mean(np.real(np.linalg.det(fs_ref_pb)) / aux_weights)
         all_weights = norm_fac * all_weights
-        print("normalized to vol_j")
 
     # Split into train and validation sets after all processing
     n_total = len(all_points)

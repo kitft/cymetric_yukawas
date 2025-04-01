@@ -17,6 +17,7 @@ import jax.numpy as jnp
 from jax import jit as jax_jit
 from jax import vmap as jax_vmap
 from functools import partial
+import gc
 from jax import config as jaxconfig
 
 jaxconfig.update("jax_enable_x64", True)
@@ -1258,7 +1259,7 @@ class PointGenerator:
             data_types = [
                 ('point', np.complex128, self.ncoords),
                 ('weight', np.float64),
-                ('pullbacks', np.complex128, (3,self.ncoords))
+                ('pullbacks', np.complex128, (self.nfold,self.ncoords))
             ]
             data_types = data_types + [('omega', np.complex128)] if omega else data_types
             dtype = np.dtype(data_types)
@@ -1283,6 +1284,7 @@ class PointGenerator:
             weights = self.point_weight_quadratic(points, omegasquared, pullbacks, normalize_to_vol_j=normalize_to_vol_j)
             point_weights['point'], point_weights['weight'] = points[0:n_p], weights[0:n_p]
             point_weights['pullbacks'] = pullbacks[0:n_p]
+            gc.collect()
             return point_weights
 
     def holomorphic_volume_form(self, points, j_elim=None, use_jax=True):
