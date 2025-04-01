@@ -137,7 +137,6 @@ def _prepare_dataset_batched_for_mp(point_gen, batch_n_p, ltails, rtails, seed :
         omega = np.expand_dims(pwo['omega'][mask], -1)
         omegasquared = np.real(omega * np.conj(omega))
         points = pwo['point'][mask]
-        print('pwo pullbacks shape', pwo['pullbacks'].shape)
         pullbacks = pwo['pullbacks'][mask]
         gc.collect()
     except Exception as e:
