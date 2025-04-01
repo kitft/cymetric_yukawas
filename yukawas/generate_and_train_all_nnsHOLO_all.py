@@ -324,7 +324,7 @@ def train_and_save_nn(manifold_name_and_data, phimodel_config=None,use_zero_netw
    phimodelzero.compile(custom_metrics=cmetrics)
 
    ## compare validation loss before training for zero network and nonzero network
-   datacasted=[data['X_val'],data['y_val']]
+   datacasted=[data['X_val'],data['y_val'], data['val_pullbacks']]
    #need to re-enable learning, in case there's been a problem:
    phimodel.learn_transition = False
    phimodelzero.learn_transition = False
@@ -439,7 +439,7 @@ def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=
    #nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
    print("nns made")
 
-   datacasted=[data['X_val'],data['y_val']]
+   datacasted=[data['X_val'],data['y_val'], data['val_pullbacks']]
 
    #    nn_phi = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
    #    nn_phi_zero = make_nn(n_in,n_out,nlayer,nHidden,act,use_zero_network=True)
@@ -509,8 +509,8 @@ def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=
    #print("phimodelzero: " +str(phimodelzero.model(datacasted[0][0:2])))
    #metricsnames=phimodelzero.metrics_names
    #problem - metricsnames aren't defined unless model has been trained, not just evaluated? SOlution - return_dict
-   valzero=phimodelzero.evaluate(datacasted[0],datacasted[1],return_dict=True)
-   valtrained=phimodel.evaluate(datacasted[0],datacasted[1],return_dict=True)
+   valzero=phimodelzero.evaluate(datacasted[0],datacasted[1],datacasted[2],return_dict=True)
+   valtrained=phimodel.evaluate(datacasted[0],datacasted[1],datacasted[2],return_dict=True)
 
 
    # phimodel.learn_ricci_val=False 
@@ -634,7 +634,7 @@ def train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_conf
    databeta_val_dict=dict(list(dict(databeta).items())[len(dict(databeta))//2:])
    # batch_sizes=[64,10000]
   
-   datacasted=[databeta['X_val'],databeta['y_val']]
+   datacasted=[databeta['X_val'],databeta['y_val'], databeta['val_pullbacks']]
 
 
 
@@ -870,7 +870,7 @@ def load_nn_HYM(manifold_name_and_data,linebundleforHYM,betamodel_config,phimode
    databeta = convert_to_tensor_dict(databeta)
    #databeta_train = dict(list(dict(databeta).items())[:len(dict(databeta))//2])
    databeta_val_dict=dict(list(dict(databeta).items())[len(dict(databeta))//2:])
-   datacasted=[databeta['X_val'],databeta['y_val']]
+   datacasted=[databeta['X_val'],databeta['y_val'], databeta['val_pullbacks']]
 
    cb_list, cmetrics = getcallbacksandmetricsHYM(databeta, prefix = lbstring, wandb = False, batchsize = bSizes[0])
 
@@ -1108,7 +1108,7 @@ def train_and_save_nn_HF(manifold_name_and_data, linebundleforHYM, betamodel, me
    dataHF = convert_to_tensor_dict(dataHF)
    dataHF_train=dict(list(dict(dataHF).items())[:len(dict(dataHF))//2])
    dataHF_val_dict=dict(list(dict(dataHF).items())[len(dict(dataHF))//2:])
-   datacasted=[dataHF['X_val'],dataHF['y_val']]
+   datacasted=[dataHF['X_val'],dataHF['y_val'], dataHF['val_pullbacks']]
 
    prefix = nameOfBaseHF.split('_')[-1]
    cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF, prefix = prefix, wandb = True, batchsize = bSizes[0])
@@ -1497,7 +1497,7 @@ def load_nn_HF(manifold_name_and_data,linebundleforHYM,betamodel,metric_model,fu
    dataHF = convert_to_tensor_dict(dataHF)
    dataHF_train=dict(list(dict(dataHF).items())[:len(dict(dataHF))//2])
    dataHF_val_dict=dict(list(dict(dataHF).items())[len(dict(dataHF))//2:])
-   datacasted=[dataHF['X_val'],dataHF['y_val']]
+   datacasted=[dataHF['X_val'],dataHF['y_val'], dataHF['val_pullbacks']]
 
    prefix = nameOfBaseHF.split('_')[-1]
    cb_listHF, cmetricsHF = getcallbacksandmetricsHF(dataHF, prefix = prefix, wandb = False, batchsize = bSizes[0])
