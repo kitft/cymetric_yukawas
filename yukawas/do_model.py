@@ -174,6 +174,10 @@ for arg in sys.argv[1:]:
     if arg.startswith('name'):
         addtofilename = arg[4:]  # Extract whatever comes after 'name'
         break
+addtags = []
+for arg in sys.argv[1:]:
+    if arg.startswith('tag'):
+        addtags.append(arg[3:])
 
 print("Adding to final filename: ",addtofilename)
 
@@ -775,7 +779,7 @@ if __name__ ==  '__main__':
                       'manifold_name' : manifold_name,
                       'type_folder' : type_folder,
                       'seed' : seed_for_gen,
-                      'tags': [integrate_or_run, modeltype, "nint"+str(n_to_integrate), "npoints"+str(nPoints), addtofilename]})
+                      'tags': [integrate_or_run, modeltype, "nint"+str(n_to_integrate), "npoints"+str(nPoints), addtofilename]+addtags})
     
     
     if not just_FS: 
