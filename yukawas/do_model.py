@@ -662,6 +662,15 @@ if __name__ == '__main__':
         print("Not using multiprocessing, as requested.")
         do_multiprocessing = False
 
+    if 'split_deformation' in sys.argv[1:]:
+        print('using split deformation')
+        get_coefficients_here = lambda x: get_coefficients_here(x, deformation = 'split_deformation')
+    elif 'regular_deformation' in sys.argv[1:]:
+        print('using regular deformation')
+        get_coefficients_here = lambda x: get_coefficients_here(x, deformation = 'regular_deformation')
+    else:
+        print('no deformation specified, using default deformation')
+
 # if orbit_P1s!=False:
 #     orbit_P1s = False
 #     use_quadratic_method = True
