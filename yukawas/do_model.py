@@ -769,6 +769,8 @@ if __name__ ==  '__main__':
             name = f'{modeltype}_fc_{unique_id_or_coeff}_{addtofilename}_{job_id}',
             config = {'unique_id_or_coeff': unique_id_or_coeff,
                       'unique_id_or_coeff_float': unique_id_or_coeff_float,
+                      'unique_id_or_coeff_real': np.real(unique_id_or_coeff),
+                      'unique_id_or_coeff_im': np.imag(unique_id_or_coeff),
                       'phimodel_config': phimodel_config,
                       'betamodel_config': betamodel_config,
                       'sigmamodel_config': sigmamodel_config,
@@ -783,7 +785,8 @@ if __name__ ==  '__main__':
                       'manifold_name' : manifold_name,
                       'type_folder' : type_folder,
                       'seed' : seed_for_gen,
-                      'coefficients': coefficientsTQ.tolist(),
+                      'coefficientsR': np.real(coefficientsTQ).tolist(),
+                      'coefficientsI': np.imag(coefficientsTQ).tolist(),
                       'tags': [integrate_or_run, modeltype, "nint"+str(n_to_integrate), "npoints"+str(nPoints), addtofilename]+addtags})
     
     
@@ -913,7 +916,8 @@ if __name__ ==  '__main__':
     dataEval=np.load(os.path.join(dirnameEval, 'dataset.npz'))
 
     network_params = {        # Network parameters
-        'free_coefficient': free_coefficient,
+        'free_coefficient': np.real(free_coefficient),
+        'free_coefficient_I': np.imag(free_coefficient),
         'epochs_phi': nEpochsPhi,
         'epochs_beta': nEpochsBeta, 
         'epochs_sigma': nEpochsSigma,
@@ -932,7 +936,8 @@ if __name__ ==  '__main__':
         'config_beta': betamodel_config,
         'config_sigma': sigmamodel_config,
         'config_sigma2': sigma2model_config,
-        'coefficientsTQ': coefficientsTQ,
+        'coefficientsR': np.real(coefficientsTQ).tolist(),
+        'coefficientsI': np.imag(coefficientsTQ).tolist(),
         'kmoduliTQ': kmoduliTQ,
         'ambientTQ': ambientTQ,
         'monomialsTQ': monomialsTQ,
