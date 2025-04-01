@@ -73,7 +73,7 @@ def train_model(fsmodel, data, optimizer=None, epochs=50, batch_sizes=[64, 10000
     # Create datasets outside the loop to avoid recreating them each epoch
     # Prepare datasets outside the loop
     dataset1 = tf.data.Dataset.from_tensor_slices(
-        (tf.cast(data['X_train'], real_dtype), tf.cast(data['y_train'], real_dtype), tf.cast(data['pullback_train'], real_dtype))).cache()
+        (tf.cast(data['X_train'], real_dtype), tf.cast(data['y_train'], real_dtype), tf.cast(data['train_pullbacks'], real_dtype))).cache()
     
     # Create both batched datasets upfront
     batch_size1 = batch_sizes[0]
