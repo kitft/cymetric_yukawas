@@ -164,7 +164,7 @@ def create_adam_optimizer_with_decay(initial_learning_rate, nEpochs, final_lr_fa
 
     return tf.keras.optimizers.Adam(learning_rate=initial_learning_rate)#lr_schedule)
 
-def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,number_points,force_generate=False,seed_set=0,average_selected_t = True, use_quadratic_method = False, do_multiprocessing = False, use_jax = True, max_iter = 10):
+def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,number_points,force_generate=False,seed_set=0,average_selected_t = True, use_quadratic_method = False, do_multiprocessing = False, use_jax = True, max_iter = 10, batch_size = None):
    print("\n\n")
    coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path = (manifold_name_and_data)
    pg = PointGenerator(monomials, coefficients, kmoduli, ambient, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing, max_iter = max_iter)
@@ -185,23 +185,23 @@ def generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,numb
          if data['X_train'].dtype != 'float64':#real_dtype: if it's a bare cymetric file, it should always be float64
             print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
             print("Regenerating dataset with correct dtype")
-            kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
+            kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t, batch_size = batch_size)
             pg.prepare_basis(dirname, kappa=kappa)
          elif len(data['X_train'])+len(data['X_val']) < 0.99*number_points:
             length_total = len(data['X_train'])+len(data['X_val'])
             print(f"wrong length {length_total}, want {number_points} - generating anyway")
-            kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
+            kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t, batch_size = batch_size)
             pg.prepare_basis(dirname, kappa=kappa)
       except:
          print("error loading - generating anyway")
-         kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
+         kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t, batch_size = batch_size)
          pg.prepare_basis(dirname, kappa=kappa)
    if kappa is not None:
       print("Kappa: " + str(kappa))
    return pg,kmoduli
 
 
-def generate_points_and_save_using_defaults(manifold_name_and_data,number_points,force_generate=False,seed_set=0,average_selected_t = True, use_quadratic_method = False, use_jax = True, do_multiprocessing = False, max_iter = 10):
+def generate_points_and_save_using_defaults(manifold_name_and_data,number_points,force_generate=False,seed_set=0,average_selected_t = True, use_quadratic_method = False, use_jax = True, do_multiprocessing = False, max_iter = 10, batch_size = None):
    coefficients, kmoduli, ambient, monomials, type_folder, unique_id_or_coeff, manifold_name, data_path =  manifold_name_and_data
    pg = PointGenerator(monomials, coefficients, kmoduli, ambient, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing, max_iter = max_iter)
    pg._set_seed(seed_set)
@@ -216,7 +216,7 @@ def generate_points_and_save_using_defaults(manifold_name_and_data,number_points
    kappa = None   
    if force_generate or (not os.path.exists(dirname)):
       print("Generating: forced? " + str(force_generate))
-      kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
+      kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t, batch_size = batch_size)
       pg.prepare_basis(dirname, kappa=kappa)
       print(f"Generated dataset: kappa: {kappa}")
    elif os.path.exists(dirname):
@@ -227,16 +227,16 @@ def generate_points_and_save_using_defaults(manifold_name_and_data,number_points
          if data['X_train'].dtype != 'float64':#real_dtype: if it's a bare cymetric file, it should always be float64
             print(f"Warning: X_train dtype doesn't match real_dtype {data['X_train'].dtype} != {real_dtype}")
             print("Regenerating dataset with correct dtype")
-            kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
+            kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t, batch_size = batch_size)
             pg.prepare_basis(dirname, kappa=kappa)
          elif len(data['X_train'])+len(data['X_val']) < 0.99*number_points:
             length_total = len(data['X_train'])+len(data['X_val'])
             print(f"wrong length {length_total}, want {number_points} - generating anyway")
-            kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
+            kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t, batch_size = batch_size)
             pg.prepare_basis(dirname, kappa=kappa)
       except Exception as e:
          print(f"error loading - generating anyway  {e}")
-         kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t)
+         kappa = pg.prepare_dataset(number_points, dirname,average_selected_t = average_selected_t, batch_size = batch_size)
          pg.prepare_basis(dirname, kappa=kappa)
    if kappa is not None:
       print("Kappa: " + str(kappa))

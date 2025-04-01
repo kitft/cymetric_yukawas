@@ -2029,7 +2029,7 @@ class PointGenerator:
         """
         return prepare_basis_pickle(self, dirname, kappa)
 
-    def prepare_dataset(self, n_p, dirname, val_split=0.1, ltails=0, rtails=0,average_selected_t = False):
+    def prepare_dataset(self, n_p, dirname, val_split=0.1, ltails=0, rtails=0,average_selected_t = False, batch_size = None):
         r"""Prepares training and validation data.
 
         Args:
@@ -2044,7 +2044,7 @@ class PointGenerator:
         Returns:
             np.float: kappa = vol_k / vol_cy
         """
-        return prepare_dataset(self, n_p, dirname, val_split=val_split, ltails=ltails, rtails=rtails,average_selected_t = average_selected_t)
+        return prepare_dataset(self, n_p, dirname, val_split=val_split, ltails=ltails, rtails=rtails,average_selected_t = average_selected_t, batch_size = batch_size)
 
     def cy_condition(self, points):
         r"""Computes the CY condition at each point.

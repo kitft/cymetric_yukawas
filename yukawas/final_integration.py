@@ -40,7 +40,7 @@ def convert_to_nested_tensor_dict(data):
       return data
 
 def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3,
-                  HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, run_args=None, dirnameEval=None, result_files_path=None, addtofilename=None, just_FS=False):
+                  HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, run_args=None, dirnameEval=None, result_files_path=None, addtofilename=None, just_FS=False, batch_size_for_processing=None):
 
 
 
@@ -95,13 +95,18 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
 
     print("\n do analysis: \n\n\n")
 
+    batch_size_for_processing=min(100000, len(real_pts)) if batch_size_for_processing is None else batch_size_for_processing
+    if len(real_pts)>100000:
+        actually_batch=True
+    else:
+        actually_batch=False
     #Vol_from_dijk_J=pg.get_volume_from_intersections(kmoduli)
     #Vol_reference_dijk_with_k_is_1=pg.get_volume_from_intersections(np.ones_like(kmoduli)) 
     #volCY_from_Om=tf.reduce_mean(dataEval['y_train'][:n_p,0])
     print("Compute holomorphic Yukawas")
     #consider omega normalisation
     if not loadvecs:
-        omega = tf.cast(batch_process_helper_func(pg.holomorphic_volume_form, [jnp.array(pointsComplex)], batch_indices=[0], batch_size=100000),complex_dtype)
+        omega = tf.cast(batch_process_helper_func(pg.holomorphic_volume_form, [jnp.array(pointsComplex)], batch_indices=[0], batch_size=batch_size_for_processing),complex_dtype)
     else:
         print("attempting to load omega")
         filename = os.path.join(data_path,type_folder, f"vectors_fc_{unique_id_or_coeff}_{n_p}_trained_{False}.npz")
@@ -125,11 +130,6 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
 
     #mem= = tracker.SummaryTracker()
     #print(sorted(mem(.create_summary(), reverse=True, key=itemgetter(2))[:10])
-    batch_size_for_processing=min(100000, len(real_pts))
-    if len(real_pts)>100000:
-        actually_batch=True
-    else:
-        actually_batch=False
 
      
         # Compute or load pullbacks
@@ -145,14 +145,14 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         except FileNotFoundError:
             print("File not found. Computing pullbacks...")
             #raise Exception("Pullbacks file not found.")
-            pullbacks = tf.cast(batch_process_helper_func(pg.pullbacks, [jnp.array(pointsComplex)], batch_indices=[0], batch_size=100000), complex_dtype)
+            pullbacks = tf.cast(batch_process_helper_func(pg.pullbacks, [jnp.array(pointsComplex)], batch_indices=[0], batch_size=batch_size_for_processing), complex_dtype)
             
         # Save pullbacks to file
         np.savez(pullbacks_filename, pullbacks=pullbacks)
         print(f"Saved pullbacks to {pullbacks_filename}")
     else:
         # Compute pullbacks if not loading from file
-        pullbacks = tf.cast(batch_process_helper_func(pg.pullbacks, [jnp.array(pointsComplex)], batch_indices=[0], batch_size=100000), complex_dtype)
+        pullbacks = tf.cast(batch_process_helper_func(pg.pullbacks, [jnp.array(pointsComplex)], batch_indices=[0], batch_size=batch_size_for_processing), complex_dtype)
         if savepullbacks:
             np.savez(pullbacks_filename, pullbacks=pullbacks)
             print(f"Saved pullbacks to {pullbacks_filename}")

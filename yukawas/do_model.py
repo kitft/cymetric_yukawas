@@ -671,6 +671,15 @@ if __name__ == '__main__':
     else:
         print('no deformation specified, using default deformation')
 
+    if 'smallbatch' in sys.argv[1:]:
+        batch_size_for_gen =  10000
+        batch_size_for_eval = 10000
+        batch_size_for_processing = 10000
+    else:
+        batch_size_for_gen = None
+        batch_size_for_eval = None
+        batch_size_for_processing = None
+
 # if orbit_P1s!=False:
 #     orbit_P1s = False
 #     use_quadratic_method = True
@@ -762,7 +771,7 @@ if __name__ ==  '__main__':
     
     
     if not just_FS: 
-        generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,force_generate=force_generate_phi,seed_set=seed_for_gen,average_selected_t = orbit_P1s, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing)
+        generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,force_generate=force_generate_phi,seed_set=seed_for_gen,average_selected_t = orbit_P1s, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing, batch_size = batch_size_for_gen)
         if train_phi:
             #phimodel,training_history=train_and_save_nn(manifold_name_and_data,depthPhi,widthPhi,nEpochsPhi,bSizes=[64,tr_batchsize],lRate=lRatePhi) 
             phimodel,training_history, measure_phi=train_and_save_nn(manifold_name_and_data,phimodel_config,use_zero_network=use_zero_network_phi, unique_name=unique_name_phi)
@@ -862,7 +871,7 @@ if __name__ ==  '__main__':
 
 
 
-    pg,kmoduli=generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,n_to_integrate,seed_set=seed_for_gen,force_generate=force_generate_eval,average_selected_t = orbit_P1s, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing)
+    pg,kmoduli=generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,n_to_integrate,seed_set=seed_for_gen,force_generate=force_generate_eval,average_selected_t = orbit_P1s, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing, batch_size = batch_size_for_eval)
     if just_FS:
         print("skipped to EVAL")
         #phimodel = 
