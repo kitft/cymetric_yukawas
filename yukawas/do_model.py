@@ -897,7 +897,7 @@ if __name__ ==  '__main__':
     dirnameEval = os.path.join(data_path,type_folder,f'{manifold_name}_pg_for_eval_with_{unique_id_or_coeff}')
     BASIS = prepare_tf_basis(np.load(os.path.join(dirnameEval, 'basis.pickle'), allow_pickle=True))
     wandb.log({"Kappa:": np.real(BASIS['KAPPA'])})# J^3 = \kappa |\Omega|^2 in this scheme. So integral omega wedge omegabar = 6*vol_J/kappa
-    wandb.log({"Vol_J_1n_dijktitjtk:": np.real(pg.vol_j_norm/np.real(tf.math.exp(tf.math.lgamma(pg.nfold+1))))})
+    wandb.log({"Vol_J_1n_dijktitjtk:": np.real(pg.vol_j_norm/np.real(tf.math.exp(tf.math.lgamma(tf.cast(pg.nfold, real_dtype)+1))))})
     wandb.log({"Vol_CY_om_ombar:": np.real(pg.vol_j_norm/np.real(BASIS['KAPPA']))})
     wandb.log({"factor_to_multiply_by_for_CY_vol:": np.sqrt(8/np.real(BASIS['KAPPA']))})
     if just_FS:
