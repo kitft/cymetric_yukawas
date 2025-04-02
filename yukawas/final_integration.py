@@ -1116,11 +1116,12 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
         woHholomorphic_Yukawas_trained_and_ref.append(mwoH)
         woHholomorphic_Yukawas_trained_and_ref_errors.append(m_errorswoH)
         scalefactor = np.sqrt((np.real(pg.vol_j_norm)/6)/np.real(BASIS['KAPPA']))* 8/4# ratio to un-normalise omega, then also x8 for the convention of the integral (ie..e that J = 0.5 g dzdzbar, and intJ= 1 ion a single P1, with g = 1/pi. This propagates from the FS norm point )
+        remove_factor = (8*np.sqrt(30)*np.sqrt(2))
 
-        holo_scaled_trained_and_ref.append(m*scalefactor)
-        holo_scaled_errors_trained_and_ref.append(m_errors*scalefactor)
-        woHholo_scaled_trained_and_ref.append(mwoH*scalefactor)
-        woHholo_scaled_errors_trained_and_ref.append(m_errorswoH*scalefactor)
+        holo_scaled_trained_and_ref.append(m*scalefactor* remove_factor)
+        holo_scaled_errors_trained_and_ref.append(m_errors*scalefactor* remove_factor)
+        woHholo_scaled_trained_and_ref.append(mwoH*scalefactor* remove_factor)
+        woHholo_scaled_errors_trained_and_ref.append(m_errorswoH*scalefactor* remove_factor)
 
         print("without H * 10**6")
         print(np.round(np.array(mwoH)*10**6,1))

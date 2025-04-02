@@ -41,8 +41,9 @@ def sigma_measure(model, points, y_true, pullbacks = None, batch = False):
             end_idx = tf.minimum(i + batch_size, num_points)
             batch_points = points[i:end_idx]
             batch_y_true = y_true[i:end_idx]
+            batch_pullbacks = None if pullbacks is None else pullbacks[i:end_idx]
             
-            g = model(batch_points, pb = pullbacks)
+            g = model(batch_points, pb = batch_pullbacks)
             weights = batch_y_true[:, -2]
             omega = batch_y_true[:, -1]
             
