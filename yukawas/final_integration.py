@@ -1262,7 +1262,7 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
             wandb.log({
                 "holomorphic_yukawa_matrix": wandb.Table(
                     data=holomorphic_yukawa_data,
-                    columns=["row", "col", "type", "real_value", "imag_value", "abs_error","real_value_woH","imag_value_woH","abs_error_woH"]
+                    columns=["row", "col", "type", "real_value", "imag_value", "abs_error","real_value_woH","imag_value_woH","abs_error_woH","real_value_scaled","imag_value_scaled","abs_error_scaled","real_value_scaled_woH","imag_value_scaled_woH","abs_error_scaled_woH"]
                 )
             })
 
