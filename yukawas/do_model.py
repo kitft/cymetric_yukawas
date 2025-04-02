@@ -895,6 +895,8 @@ if __name__ ==  '__main__':
 
     pg,kmoduli=generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,n_to_integrate,seed_set=seed_for_gen,force_generate=force_generate_eval,average_selected_t = orbit_P1s, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing, batch_size = batch_size_for_eval)
     dirnameEval = os.path.join(data_path,type_folder,f'{manifold_name}_pg_for_eval_with_{unique_id_or_coeff}')
+    # Delete dirnameEval if it exists
+    
     BASIS = prepare_tf_basis(np.load(os.path.join(dirnameEval, 'basis.pickle'), allow_pickle=True))
     wandb.log({"Kappa:": np.real(BASIS['KAPPA'])})# J^3 = \kappa |\Omega|^2 in this scheme. So integral omega wedge omegabar = 6*vol_J/kappa
     wandb.log({"Vol_J_1n_dijktitjtk:": np.real(pg.vol_j_norm/np.real(tf.math.exp(tf.math.lgamma(tf.cast(pg.nfold, real_dtype)+1))))})
@@ -1000,5 +1002,16 @@ if __name__ ==  '__main__':
     # # measure_integral = pg._measure_integral(all_points,all_aux_weights,j_elim=None)
     # # print("measure val here: ", measure_integral)
     # # wandb.log({'measure_integral': measure_integral})
+    try:
+        if 'random_search' in sys.argv:
+            print("random search")
+            # Delete dirnameEval if it exists
+            if os.path.exists(dirnameEval):
+                print(f"Deleting directory: {dirnameEval}")
+                import shutil
+                shutil.rmtree(dirnameEval)
+    except:
+        print(f'failed to delete dirnameEval. {dirnameEval}')
+
     
     
