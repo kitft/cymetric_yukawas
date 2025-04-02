@@ -140,7 +140,7 @@ class JAXPointGeneratorQuadratic:
         # Jacobian dF: 4 x 4 (treating x0,x1,y0,y1 as independent complex coords).
         # We can just code the known partial derivatives explicitly:
         x0, x1, y0, y1 = coords
-        dF = jnp.array([
+        dF = jnp.array([# this has the first index A (P3), second index P1xP1. So sum over first index.
             [      y0,    0+0j,      x0,    0+0j],
             [      y1,    0+0j,      0+0j,       x0],
             [    0+0j,      y0,      x1,    0+0j],

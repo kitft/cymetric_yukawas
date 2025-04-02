@@ -1648,7 +1648,7 @@ class PointGenerator:
         if normalize_to_vol_j:
             fs_ref = self.fubini_study_metrics(points, vol_js=np.ones_like(self.kmoduli))
             fs_ref_pb = np.einsum('xai,xij,xbj->xab', pullbacks, fs_ref, np.conj(pullbacks))
-            norm_fac = self.vol_j_norm / np.mean(np.real(np.linalg.det(fs_ref_pb)))
+            norm_fac = self.vol_j_norm / np.mean(np.real(np.linalg.det(fs_ref_pb))/FS_shiffman)# normalise to vol_j_norm?
             weights = norm_fac * weights
         return weights
 

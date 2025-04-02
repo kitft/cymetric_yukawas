@@ -894,11 +894,15 @@ if __name__ ==  '__main__':
 
 
     pg,kmoduli=generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,n_to_integrate,seed_set=seed_for_gen,force_generate=force_generate_eval,average_selected_t = orbit_P1s, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing, batch_size = batch_size_for_eval)
+    dirnameEval = os.path.join(data_path,type_folder,f'{manifold_name}_pg_for_eval_with_{unique_id_or_coeff}')
+    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameEval, 'basis.pickle'), allow_pickle=True))
+    wandb.log({"Kappa:": np.real(BASIS['KAPPA'])})# J^3 = \kappa |\Omega|^2 in this scheme. So integral omega wedge omegabar = 6*vol_J/kappa
+    wandb.log({"Vol_J_1n_dijktitjtk:": pg.vol_j_norm/np.math.factorial(pg.nfold)})
+    wandb.log({"Vol_CY_om_ombar:": pg.vol_j_norm/np.real(BASIS['KAPPA'])})
+    wandb.log({"factor_to_multiply_by_for_CY_vol:": np.sqrt(8/np.real(BASIS['KAPPA']))})
     if just_FS:
         print("skipped to EVAL")
         #phimodel = 
-        dirnameEval = os.path.join(data_path,type_folder,f'{manifold_name}_pg_for_eval_with_{unique_id_or_coeff}')
-        BASIS = prepare_tf_basis(np.load(os.path.join(dirnameEval, 'basis.pickle'), allow_pickle=True))
         phimodel = FSModel(BASIS, unique_name='phi')
         betamodel_LB1 = lambda x: raw_FS_HYM_r_r(x, linebundleforHYM_LB1)
         betamodel_LB2 = lambda x: raw_FS_HYM_r_r(x, linebundleforHYM_LB2)
@@ -957,7 +961,7 @@ if __name__ ==  '__main__':
         print("just FS")
         do_extra_stuff_for_integration = False
         
-    masses, masserrors = do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH,
+    masses, masserrors = do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH,
                                        HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = do_extra_stuff_for_integration,
                                          run_args=sys.argv, dirnameEval=dirnameEval, result_files_path=result_files_path, addtofilename=addtofilename, just_FS = just_FS, batch_size_for_processing = batch_size_for_processing)
 

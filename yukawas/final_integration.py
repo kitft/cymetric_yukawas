@@ -39,7 +39,7 @@ def convert_to_nested_tensor_dict(data):
    else:
       return data
 
-def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3,
+def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3,
                   HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, run_args=None, dirnameEval=None, result_files_path=None, addtofilename=None, just_FS=False, batch_size_for_processing=None):
 
 
@@ -191,6 +191,10 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
     woHholomorphic_Yukawas_trained_and_ref_errors= []
     topological_data={}
     singular_values_errors_trained_and_ref=[]
+    holo_scaled_trained_and_ref=[]
+    holo_scaled_errors_trained_and_ref=[]
+    woHholo_scaled_trained_and_ref=[]
+    woHholo_scaled_errors_trained_and_ref=[]
 
     if just_FS:
         whichtodo = [False]
@@ -1111,6 +1115,13 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         holomorphic_Yukawas_trained_and_ref_errors.append(m_errors)
         woHholomorphic_Yukawas_trained_and_ref.append(mwoH)
         woHholomorphic_Yukawas_trained_and_ref_errors.append(m_errorswoH)
+        scalefactor = np.sqrt((np.real(pg.vol_j_norm)/6)/np.real(BASIS['KAPPA']))* 8/4# ratio to un-normalise omega, then also x8 for the convention of the integral (ie..e that J = 0.5 g dzdzbar, and intJ= 1 ion a single P1, with g = 1/pi. This propagates from the FS norm point )
+
+        holo_scaled_trained_and_ref.append(m*scalefactor)
+        holo_scaled_errors_trained_and_ref.append(m_errors*scalefactor)
+        woHholo_scaled_trained_and_ref.append(mwoH*scalefactor)
+        woHholo_scaled_errors_trained_and_ref.append(m_errorswoH*scalefactor)
+
         print("without H * 10**6")
         print(np.round(np.array(mwoH)*10**6,1))
         print("holomorphic Yukawa errors *10**6 (absolute value)")
@@ -1120,7 +1131,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         # print("neffs without H")
         # print(np.round(mwoH_neffs,1))
 
-        print('proper calculation*10**6')
+        print('With H calculation*10**6')
         print(np.round(np.array(m)*10**6,1))
   
          # Print holomorphic Yukawa matrix errors
@@ -1129,6 +1140,15 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         # print("neffs")
         # print(np.round(m_neffs,1))
 
+        print("Without normalised omega, without H:")
+        print(np.round(np.array(mwoH*scalefactor)*10**6,1))
+        print("holomorphic Yukawa errors *10**6 (absolute value)")
+        print(np.round(m_errorswoH*scalefactor*10**6,1))
+
+        print("without normalised omega, with H:")
+        print(np.round(np.array(m*scalefactor)*10**6,1))
+        print("holomorphic Yukawa errors *10**6 (absolute value)")
+        print(np.round(m_errors*scalefactor*10**6,1))
 
         # Use the new function to calculate physical Yukawas and their errors
         physical_yukawas, physical_yukawas_errors = propagate_errors_to_physical_yukawas(
@@ -1206,7 +1226,18 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                     holo_log_data[f"{prefix}_woH_holomorphic_yukawa_matrix_{i}{j}_real"] = np.real(woHholomorphic_Yukawas_trained_and_ref[-1][i,j])
                     holo_log_data[f"{prefix}_woH_holomorphic_yukawa_matrix_{i}{j}_imag"] = np.imag(woHholomorphic_Yukawas_trained_and_ref[-1][i,j])
                     holo_log_data[f"{prefix}_woH_holomorphic_yukawa_matrix_{i}{j}_error"] = np.abs(woHholomorphic_Yukawas_trained_and_ref_errors[-1][i,j])
-                    
+                    holo_log_data[f"{prefix}_nonvanishing_unnorm_yukawa_23_real"] = np.real(holo_scaled_trained_and_ref[-1][1,2])
+                    holo_log_data[f"{prefix}_nonvanishing_unnorm_yukawa_23_imag"] = np.imag(holo_scaled_trained_and_ref[-1][1,2])
+                    holo_log_data[f"{prefix}_nonvanishing_unnorm_yukawa_23_error"] = np.abs(holo_scaled_errors_trained_and_ref[-1][1,2])
+                    holo_log_data[f"{prefix}_nonvanishing_unnorm_yukawa_32_real"] = np.real(holo_scaled_trained_and_ref[-1][2,1])
+                    holo_log_data[f"{prefix}_nonvanishing_unnorm_yukawa_32_imag"] = np.imag(holo_scaled_trained_and_ref[-1][2,1])
+                    holo_log_data[f"{prefix}_nonvanishing_unnorm_yukawa_32_error"] = np.abs(holo_scaled_errors_trained_and_ref[-1][2,1])
+                    holo_log_data[f"{prefix}_nonvanishing_unnorm_yukawa_23_woH_real"] = np.real(woHholo_scaled_trained_and_ref[-1][1,2])
+                    holo_log_data[f"{prefix}_nonvanishing_unnorm_yukawa_23_woH_imag"] = np.imag(woHholo_scaled_trained_and_ref[-1][1,2])
+                    holo_log_data[f"{prefix}_nonvanishing_unnorm_yukawa_23_woH_error"] = np.abs(woHholo_scaled_errors_trained_and_ref[-1][1,2])
+                    holo_log_data[f"{prefix}_nonvanishing_unnorm_yukawa_32_woH_real"] = np.real(woHholo_scaled_trained_and_ref[-1][2,1])
+                    holo_log_data[f"{prefix}_nonvanishing_unnorm_yukawa_32_woH_imag"] = np.imag(woHholo_scaled_trained_and_ref[-1][2,1])
+                    holo_log_data[f"{prefix}_nonvanishing_unnorm_yukawa_32_woH_error"] = np.abs(woHholo_scaled_errors_trained_and_ref[-1][2,1])
                     # Also add to table format for visualization
                     holomorphic_yukawa_data.append([
                         i, j, prefix, 
@@ -1215,7 +1246,13 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                         np.abs(holomorphic_Yukawas_trained_and_ref_errors[-1][i,j]),
                         np.real(woHholomorphic_Yukawas_trained_and_ref[-1][i,j]),
                         np.imag(woHholomorphic_Yukawas_trained_and_ref[-1][i,j]), 
-                        np.abs(woHholomorphic_Yukawas_trained_and_ref_errors[-1][i,j])
+                        np.abs(woHholomorphic_Yukawas_trained_and_ref_errors[-1][i,j]),
+                        np.real(holomorphic_Yukawas_trained_and_ref[-1][i,j]*scalefactor),
+                        np.imag(holomorphic_Yukawas_trained_and_ref[-1][i,j]*scalefactor), 
+                        np.abs(holomorphic_Yukawas_trained_and_ref_errors[-1][i,j]*scalefactor),
+                        np.real(woHholomorphic_Yukawas_trained_and_ref[-1][i,j]*scalefactor),
+                        np.imag(woHholomorphic_Yukawas_trained_and_ref[-1][i,j]*scalefactor), 
+                        np.abs(woHholomorphic_Yukawas_trained_and_ref_errors[-1][i,j]*scalefactor)
                     ])
             
             # Log holomorphic yukawa data
@@ -1228,6 +1265,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
                     columns=["row", "col", "type", "real_value", "imag_value", "abs_error","real_value_woH","imag_value_woH","abs_error_woH"]
                 )
             })
+
 
         ## Calculate effective sample size for the full dataset
         #full_eff_n = effective_sample_size(aux_weights[0:n_p]).numpy()
@@ -1252,6 +1290,23 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         ref_holo23_score = np.abs(ref_holo23)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][1,2])/np.abs(ref_holo23)   
         ref_holo31_score = np.abs(ref_holo31)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][2,0])/np.abs(ref_holo31)
         ref_holo32_score = np.abs(ref_holo32)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][2,1])/np.abs(ref_holo32)
+        scaled_trained_holo13 = holomorphic_Yukawas_trained_and_ref[0][0,2]*scalefactor
+        scaled_trained_holo23 = holomorphic_Yukawas_trained_and_ref[0][1,2]*scalefactor
+        scaled_trained_holo31 = holomorphic_Yukawas_trained_and_ref[0][2,0]*scalefactor
+        scaled_trained_holo32 = holomorphic_Yukawas_trained_and_ref[0][2,1]*scalefactor
+        scaled_ref_holo13 = holomorphic_Yukawas_trained_and_ref[1][0,2]*scalefactor
+        scaled_ref_holo23 = holomorphic_Yukawas_trained_and_ref[1][1,2]*scalefactor
+        scaled_ref_holo31 = holomorphic_Yukawas_trained_and_ref[1][2,0]*scalefactor
+        scaled_ref_holo32 = holomorphic_Yukawas_trained_and_ref[1][2,1]*scalefactor
+        scaled_trained_holo13_score= np.abs(scaled_trained_holo13)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][0,2])/np.abs(scaled_trained_holo13)
+        scaled_trained_holo23_score=np.abs(scaled_trained_holo23)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][1,2])/np.abs(scaled_trained_holo23)    
+        scaled_trained_holo31_score = np.abs(scaled_trained_holo31)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,0])/np.abs(scaled_trained_holo31)
+        scaled_trained_holo32_score = np.abs(scaled_trained_holo32)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,1])/np.abs(scaled_trained_holo32)
+        scaled_ref_holo13_score = np.abs(scaled_ref_holo13)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][0,2])/np.abs(scaled_ref_holo13)
+        scaled_ref_holo23_score = np.abs(scaled_ref_holo23)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][1,2])/np.abs(scaled_ref_holo23)
+        scaled_ref_holo31_score = np.abs(scaled_ref_holo31)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][2,0])/np.abs(scaled_ref_holo31)
+        scaled_ref_holo32_score = np.abs(scaled_ref_holo32)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[1][2,1])/np.abs(scaled_ref_holo32)
+        
     elif just_FS:
         ref_holo13 = holomorphic_Yukawas_trained_and_ref[0][0,2]
         ref_holo23 = holomorphic_Yukawas_trained_and_ref[0][1,2]    
@@ -1261,6 +1316,15 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         ref_holo23_score=np.abs(ref_holo23)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][1,2])/np.abs(ref_holo23)    
         ref_holo31_score = np.abs(ref_holo31)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,0])/np.abs(ref_holo31)
         ref_holo32_score = np.abs(ref_holo32)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,1])/np.abs(ref_holo32)
+        scaled_ref_holo13 = ref_holo13*scalefactor
+        scaled_ref_holo23 = ref_holo23*scalefactor
+        scaled_ref_holo31 = ref_holo31*scalefactor
+        scaled_ref_holo32 = ref_holo32*scalefactor
+        scaled_ref_holo13_score = np.abs(scaled_ref_holo13)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][0,2])/np.abs(scaled_ref_holo13)
+        scaled_ref_holo23_score = np.abs(scaled_ref_holo23)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][1,2])/np.abs(scaled_ref_holo23)
+        scaled_ref_holo31_score = np.abs(scaled_ref_holo31)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,0])/np.abs(scaled_ref_holo31)
+        scaled_ref_holo32_score = np.abs(scaled_ref_holo32)/np.abs(holomorphic_Yukawas_trained_and_ref_errors[0][2,1])/np.abs(scaled_ref_holo32)
+        
     
     # # Calculate average real and imaginary accuracy metrics
     # avg_rel_real_error = np.mean(np.abs(np.real(physical_yukawas_errors)) / np.abs(physical_yukawas))
@@ -1290,7 +1354,7 @@ def do_integrals(manifold_name_and_data, pg, dataEval, phimodel, betamodel_LB1, 
         'Qneffs': Qneffs,
         'Uneffs': Uneffs,
         'Hneffs': Hneffs,
-        'topological_data': topological_data
+        'topological_data': topological_data,
     }
 
     # Create unique filename for this run
