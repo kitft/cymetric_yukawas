@@ -223,110 +223,248 @@ class WP:
 
     @partial(jax.jit, static_argnums=(11))
     def gwP_jax(points, weights, pullbacks, DQDZB0, DQDZF0, kmoduli, DI_DQB0, DI_DQF0, DI_DQZB0, DI_DQZF0, indices = None, fullmatrix = False):
+        """
+        Calculates gWP and its standard error using standard numpy/jax operations.
+
+        Args:
+            points: Sample points.
+            weights: Weights for each sample point (should represent vol_form / total_vol_form).
+            pullbacks: Pullback metrics for each point.
+            DQDZB0, DQDZF0: Basis components.
+            kmoduli: Kahler moduli.
+            DI_DQB0, DI_DQF0, DI_DQZB0, DI_DQZF0: Basis derivatives.
+            indices: Indices for coordinate selection. If None, calculated dynamically.
+            fullmatrix: Whether to compute the full gWP matrix or just the diagonal.
+
+        Returns:
+            A tuple containing:
+                - gWP: The calculated Weil-Petersson metric (mean).
+                - gWP_std_error: The standard error of the mean for gWP.
+        """
         if indices is None:
-            indices = PointGenerator._find_max_dQ_coords_jax(points, DQDZB0, DQDZF0)
+            # Note: Dynamic calculation of indices might hinder JIT compilation if called without indices.
+            # Consider pre-calculating indices outside if performance is critical.
+            # This class method access might not work correctly inside a static method if PointGenerator isn't defined statically.
+            # Assuming PointGenerator._find_max_dQ_coords_jax is accessible statically or refactored.
+            # For now, let's assume it works or indices are always provided when jitted.
+            # If PointGenerator is the class containing this method, self. would be needed if not static.
+            # If it's a different class, PointGenerator._find_max_dQ_coords_jax might be okay if static.
+            # Reverting to WP._find_max_dQ_coords_jax assuming it's defined within WP or accessible.
+            # If _find_max_dQ_coords_jax is instance method, this needs refactoring.
+            # Let's assume it's a static method for now.
+            try:
+                 # If WP is the class name
+                 indices = WP._find_max_dQ_coords_jax(points, DQDZB0, DQDZF0)
+            except AttributeError:
+                 # If PointGenerator is the intended class and has the static method
+                 # This requires PointGenerator to be imported or accessible.
+                 # from .pointgen import PointGenerator # Example import
+                 # indices = PointGenerator._find_max_dQ_coords_jax(points, DQDZB0, DQDZF0)
+                 # For now, raise error if indices are needed but calculation fails
+                 raise ValueError("Indices must be provided or _find_max_dQ_coords_jax must be statically accessible.")
+
+
+        # Calculate the mean volume form (denominator for normalization)
         vol_omega = jnp.mean(weights)
-        dnu_dI_antiholobit, trace_holo = WP.dnu_dI(points, DQDZB0, DQDZF0, kmoduli, DI_DQB0, DI_DQF0, DI_DQZB0, DI_DQZF0,pullbacks, indices)
+        safe_vol_omega = jnp.where(vol_omega == 0, 1e-15, vol_omega) # Avoid division by zero
+
+        # Calculate intermediate quantities needed for gWP
+        dnu_dI_antiholobit, trace_holo = WP.dnu_dI(points, DQDZB0, DQDZF0, kmoduli, DI_DQB0, DI_DQF0, DI_DQZB0, DI_DQZF0, pullbacks, indices)
+
+        # Calculate per-sample values for int_omega_dIomega (numerator part)
+        per_sample_int_omega_dIomega_num = jnp.einsum('x,xI->xI', weights, trace_holo)
+        # Calculate the mean and standard error of the mean for int_omega_dIomega
+        int_omega_dIomega = jnp.mean(per_sample_int_omega_dIomega_num, axis=0)
+        n_samples = per_sample_int_omega_dIomega_num.shape[0]
+        safe_n_sqrt = jnp.sqrt(jnp.maximum(1.0, n_samples)) # Avoid division by zero if n_samples=0
+
+        int_omega_dIomega_real_std_error = jnp.std(jnp.real(per_sample_int_omega_dIomega_num), axis=0, ddof=0) / safe_n_sqrt # Use ddof=0 for population std used in SEM
+        int_omega_dIomega_imag_std_error = jnp.std(jnp.imag(per_sample_int_omega_dIomega_num), axis=0, ddof=0) / safe_n_sqrt
+        # Note: int_omega_dIomega_std_error is the error of the *numerator* mean
+
+        # Precompute wedge product matrix
+        wedge_the_two = jnp.array([[(-1)**((j+1)-(i+1)-1) for i in range(3)] for j in range(3)], dtype=points.dtype)
+
+        # Calculate std error of vol_omega (mean of weights)
+        vol_omega_std_error = jnp.std(weights, ddof=0) / safe_n_sqrt
+
+        # Define common variables for error propagation
+        Br = safe_vol_omega
+        dBr = vol_omega_std_error
+        Cr = jnp.real(int_omega_dIomega) # Mean of numerator
+        Ci = jnp.imag(int_omega_dIomega) # Mean of numerator
+        dCr = int_omega_dIomega_real_std_error # SEM of numerator mean
+        dCi = int_omega_dIomega_imag_std_error # SEM of numerator mean
+
         if not fullmatrix:
-            # Calculate per-sample values for int_omega_dIomega
-            per_sample_int_omega_dIomega = jnp.einsum('x,xI->xI', weights, trace_holo)
-            int_omega_dIomega = jnp.mean(per_sample_int_omega_dIomega, axis=0)
-            
-            # Track real and imaginary errors separately
-            int_omega_dIomega_real_std_error = jnp.std(jnp.real(per_sample_int_omega_dIomega), axis=0) / jnp.sqrt(per_sample_int_omega_dIomega.shape[0])
-            int_omega_dIomega_imag_std_error = jnp.std(jnp.imag(per_sample_int_omega_dIomega), axis=0) / jnp.sqrt(per_sample_int_omega_dIomega.shape[0])
-            int_omega_dIomega_std_error = int_omega_dIomega_real_std_error + 1j * int_omega_dIomega_imag_std_error
-            
-            int_dIomega_dJomegaholobit = jnp.einsum('x,xI,xI->xI', weights, trace_holo,jnp.conjugate(trace_holo))#weights has an omega wedge omega
-            wedge_the_two =  jnp.array([[(-1)**((j+1)-(i+1)-1) for i in range(3)] for j in range(3)])
-            dnu_dI_antiholobit_dJantiholobit = jnp.einsum('x,ij,xIij,xIji->xI',weights,wedge_the_two,dnu_dI_antiholobit,jnp.conjugate(dnu_dI_antiholobit))
-            
-            # Calculate the terms for each sample point
-            per_sample_term1 = (int_dIomega_dJomegaholobit)/(vol_omega)
-            per_sample_term2 = dnu_dI_antiholobit_dJantiholobit/vol_omega
-            per_sample_gWP = -(per_sample_term1 + per_sample_term2)
-            
-            # Calculate mean and standard error for the first part, tracking real and imaginary separately
-            gWP_part1 = jnp.mean(per_sample_gWP, axis=0)
-            gWP_part1_real_std_error = jnp.std(jnp.real(per_sample_gWP), axis=0) / jnp.sqrt(per_sample_gWP.shape[0])
-            gWP_part1_imag_std_error = jnp.std(jnp.imag(per_sample_gWP), axis=0) / jnp.sqrt(per_sample_gWP.shape[0])
-            
-            # Add the second term (which uses int_omega_dIomega)
-            gWP_part2 = jnp.einsum('I,I->I', int_omega_dIomega, jnp.conjugate(int_omega_dIomega))/vol_omega**2
-            
-            # Propagate error from int_omega_dIomega to gWP_part2, tracking real and imaginary separately
-            # For f = a*a*, df = 2*a*da
-            gWP_part2_real_std_error = 2 * jnp.abs(int_omega_dIomega) * int_omega_dIomega_real_std_error / vol_omega**2
-            gWP_part2_imag_std_error = 2 * jnp.abs(int_omega_dIomega) * int_omega_dIomega_imag_std_error / vol_omega**2
-            
+            # Calculate numerators for gWP terms per sample (diagonal case)
+            per_sample_term1_num = jnp.einsum('x,xI,xI->xI', weights, trace_holo, jnp.conjugate(trace_holo))
+            per_sample_term2_num = jnp.einsum('x,ij,xIij,xIji->xI', weights, wedge_the_two, dnu_dI_antiholobit, jnp.conjugate(dnu_dI_antiholobit))
+
+            # Calculate the per-sample numerator of gWP_part1
+            per_sample_gWP_part1_num = -(per_sample_term1_num + per_sample_term2_num)
+
+            # Calculate mean and standard error of the mean for the gWP_part1 numerator
+            gWP_part1_num_mean = jnp.mean(per_sample_gWP_part1_num, axis=0)
+            gWP_part1_num_real_std_error = jnp.std(jnp.real(per_sample_gWP_part1_num), axis=0, ddof=0) / safe_n_sqrt
+            gWP_part1_num_imag_std_error = jnp.std(jnp.imag(per_sample_gWP_part1_num), axis=0, ddof=0) / safe_n_sqrt
+
+            # Calculate gWP_part1 by dividing the numerator mean by the mean volume
+            gWP_part1 = gWP_part1_num_mean / safe_vol_omega
+
+            # Error propagation for gWP_part1 = A / B, where A = gWP_part1_num_mean, B = vol_omega
+            Ar = jnp.real(gWP_part1_num_mean)
+            Ai = jnp.imag(gWP_part1_num_mean)
+            dAr = gWP_part1_num_real_std_error
+            dAi = gWP_part1_num_imag_std_error
+
+            # Variance = (dAr/Br)^2 + (Ar*dBr/Br^2)^2 - assuming independence of A and B errors
+            # More correctly, Var(A/B) ≈ (mean(A)/mean(B))^2 * [ (std(A)/mean(A))^2 + (std(B)/mean(B))^2 - 2*cov(A,B)/(mean(A)mean(B)) ]
+            # Using simpler propagation: Var(f) ≈ (df/dA)^2 Var(A) + (df/dB)^2 Var(B)
+            # Var(A) = (dAr * sqrt(N))^2, Var(B) = (dBr * sqrt(N))^2
+            # Var(gWP_part1_real) = (1/Br)^2 * Var(Ar) + (-Ar/Br^2)^2 * Var(Br)
+            # Var(gWP_part1_real) = (1/Br)^2 * dAr^2 * N + (Ar^2/Br^4) * dBr^2 * N
+            # SEM^2(gWP_part1_real) = Var(gWP_part1_real) / N = (dAr/Br)^2 + (Ar*dBr/Br^2)^2
+            gWP_part1_var_real = (dAr/Br)**2 + (Ar*dBr/Br**2)**2
+            gWP_part1_var_imag = (dAi/Br)**2 + (Ai*dBr/Br**2)**2
+            gWP_part1_real_std_error = jnp.sqrt(jnp.maximum(0.0, gWP_part1_var_real))
+            gWP_part1_imag_std_error = jnp.sqrt(jnp.maximum(0.0, gWP_part1_var_imag))
+
+            # Calculate gWP_part2 = <term3_num> / <vol>^2 = C*C* / B^2
+            gWP_part2 = (int_omega_dIomega * jnp.conjugate(int_omega_dIomega)) / safe_vol_omega**2 # Real result
+
+            # Error propagation for gWP_part2 = (Cr^2 + Ci^2) / Br^2
+            # Var(gWP_part2) ≈ (d(gWP2)/dCr)^2 Var(Cr) + (d(gWP2)/dCi)^2 Var(Ci) + (d(gWP2)/dBr)^2 Var(Br)
+            # SEM^2(gWP_part2) ≈ (d(gWP2)/dCr)^2 SEM(Cr)^2 + (d(gWP2)/dCi)^2 SEM(Ci)^2 + (d(gWP2)/dBr)^2 SEM(Br)^2
+            # d(gWP2)/dCr = 2*Cr / Br^2
+            # d(gWP2)/dCi = 2*Ci / Br^2
+            # d(gWP2)/dBr = -2*(Cr^2 + Ci^2) / Br^3 = -2 * Real(gWP_part2) / Br
+            term_Cr_sq = ( (2 * Cr / Br**2) * dCr )**2
+            term_Ci_sq = ( (2 * Ci / Br**2) * dCi )**2
+            term_Br_sq = ( (-2 * jnp.real(gWP_part2) / Br) * dBr )**2
+
+            gWP_part2_var = term_Cr_sq + term_Ci_sq + term_Br_sq
+            gWP_part2_real_std_error = jnp.sqrt(jnp.maximum(0.0, gWP_part2_var))
+            gWP_part2_imag_std_error = jnp.zeros_like(gWP_part2_real_std_error) # gWP_part2 is real
+
+            # Combine the parts
+            gWP = gWP_part1 + jnp.real(gWP_part2) # Ensure real addition
+
+            # Add errors in quadrature for real and imaginary parts separately
+            gWP_real_std_error = jnp.sqrt(gWP_part1_real_std_error**2 + gWP_part2_real_std_error**2)
+            gWP_imag_std_error = gWP_part1_imag_std_error # gWP_part2_imag_std_error is 0
+
+        else: # fullmatrix = True
+            # Calculate numerators for gWP terms per sample (full matrix case)
+            per_sample_term1_num = jnp.einsum('x,xI,xJ->xIJ', weights, trace_holo, jnp.conjugate(trace_holo))
+            per_sample_term2_num = jnp.einsum('x,ij,xIij,xJji->xIJ', weights, wedge_the_two, dnu_dI_antiholobit, jnp.conjugate(dnu_dI_antiholobit))
+
+            # Calculate the per-sample numerator of gWP_part1
+            per_sample_gWP_part1_num = -(per_sample_term1_num + per_sample_term2_num)
+
+            # Calculate mean and standard error of the mean for the gWP_part1 numerator
+            gWP_part1_num_mean = jnp.mean(per_sample_gWP_part1_num, axis=0)
+            gWP_part1_num_real_std_error = jnp.std(jnp.real(per_sample_gWP_part1_num), axis=0, ddof=0) / safe_n_sqrt
+            gWP_part1_num_imag_std_error = jnp.std(jnp.imag(per_sample_gWP_part1_num), axis=0, ddof=0) / safe_n_sqrt
+
+            # Calculate gWP_part1 by dividing the numerator mean by the mean volume
+            gWP_part1 = gWP_part1_num_mean / safe_vol_omega
+
+            # Error propagation for gWP_part1 = A / B
+            Ar = jnp.real(gWP_part1_num_mean)
+            Ai = jnp.imag(gWP_part1_num_mean)
+            dAr = gWP_part1_num_real_std_error
+            dAi = gWP_part1_num_imag_std_error
+
+            gWP_part1_var_real = (dAr/Br)**2 + (Ar*dBr/Br**2)**2
+            gWP_part1_var_imag = (dAi/Br)**2 + (Ai*dBr/Br**2)**2
+            gWP_part1_real_std_error = jnp.sqrt(jnp.maximum(0.0, gWP_part1_var_real))
+            gWP_part1_imag_std_error = jnp.sqrt(jnp.maximum(0.0, gWP_part1_var_imag))
+
+            # Calculate gWP_part2 = <term3_num> / <vol>^2 = C_I * C_J* / B^2
+            gWP_part2 = jnp.einsum('I,J->IJ', int_omega_dIomega, jnp.conjugate(int_omega_dIomega)) / safe_vol_omega**2
+
+            # Error propagation for gWP_part2 = C_I * C_J* / B^2
+            # SEM^2(Real(gWP2_IJ)) ≈ sum_K [(dReal/dCKr*dCKr)^2 + (dReal/dCKi*dCKi)^2] + (dReal/dBr*dBr)^2
+            # SEM^2(Imag(gWP2_IJ)) ≈ sum_K [(dImag/dCKr*dCKr)^2 + (dImag/dCKi*dCKi)^2] + (dImag/dBr*dBr)^2
+            # Where K runs over variables C_I_real, C_I_imag, C_J_real, C_J_imag, B_real
+
+            # Partial derivatives (evaluated at mean values)
+            # dReal/dCrI = CrJ / Br^2
+            # dReal/dCiI = CiJ / Br^2
+            # dReal/dCrJ = CrI / Br^2
+            # dReal/dCiJ = CiI / Br^2
+            # dReal/dBr = -2 * Real(gWP2_IJ) / Br
+            # dImag/dCrI = -CiJ / Br^2
+            # dImag/dCiI = CrJ / Br^2
+            # dImag/dCrJ = CiI / Br^2
+            # dImag/dCiJ = -CrI / Br^2
+            # dImag/dBr = -2 * Imag(gWP2_IJ) / Br
+
+            # Variance calculation (SEM squared)
+            # Term involving dBr
+            term_Br_real_sq = ( (-2 * jnp.real(gWP_part2) / Br) * dBr )**2
+            term_Br_imag_sq = ( (-2 * jnp.imag(gWP_part2) / Br) * dBr )**2
+
+            # Terms involving dCrI, dCiI (derivative w.r.t. first index I)
+            # (dReal/dCrI * dCrI)^2 + (dReal/dCiI * dCiI)^2
+            term_I_real_sq = jnp.einsum('J,I->IJ', Cr**2 / Br**4, dCr**2) + jnp.einsum('J,I->IJ', Ci**2 / Br**4, dCi**2)
+            # (dImag/dCrI * dCrI)^2 + (dImag/dCiI * dCiI)^2
+            term_I_imag_sq = jnp.einsum('J,I->IJ', Ci**2 / Br**4, dCr**2) + jnp.einsum('J,I->IJ', Cr**2 / Br**4, dCi**2)
+
+            # Terms involving dCrJ, dCiJ (derivative w.r.t. second index J)
+            # (dReal/dCrJ * dCrJ)^2 + (dReal/dCiJ * dCiJ)^2
+            term_J_real_sq = jnp.einsum('I,J->IJ', Cr**2 / Br**4, dCr**2) + jnp.einsum('I,J->IJ', Ci**2 / Br**4, dCi**2)
+            # (dImag/dCrJ * dCrJ)^2 + (dImag/dCiJ * dCiJ)^2
+            term_J_imag_sq = jnp.einsum('I,J->IJ', Ci**2 / Br**4, dCr**2) + jnp.einsum('I,J->IJ', Cr**2 / Br**4, dCi**2)
+
+            # Total variance (SEM squared)
+            gWP_part2_var_real = term_I_real_sq + term_J_real_sq + term_Br_real_sq
+            gWP_part2_var_imag = term_I_imag_sq + term_J_imag_sq + term_Br_imag_sq
+
+            # Diagonal elements need special handling (I=J) - the above double counts derivatives
+            # For I=J: Real = (CrI^2 + CiI^2)/Br^2, Imag = 0
+            # SEM^2(Real) ≈ (dReal/dCrI*dCrI)^2 + (dReal/dCiI*dCiI)^2 + (dReal/dBr*dBr)^2
+            diag_idx = jnp.diag_indices_from(gWP_part2)
+            diag_Cr = Cr[diag_idx[0]]
+            diag_Ci = Ci[diag_idx[0]]
+            diag_dCr = dCr[diag_idx[0]]
+            diag_dCi = dCi[diag_idx[0]]
+            diag_gWP_part2_real = jnp.real(gWP_part2[diag_idx])
+
+            diag_term_Cr_sq = ( (2 * diag_Cr / Br**2) * diag_dCr )**2
+            diag_term_Ci_sq = ( (2 * diag_Ci / Br**2) * diag_dCi )**2
+            diag_term_Br_sq = ( (-2 * diag_gWP_part2_real / Br) * dBr )**2
+            diag_gWP_part2_var_real = diag_term_Cr_sq + diag_term_Ci_sq + diag_term_Br_sq
+            diag_gWP_part2_var_imag = jnp.zeros_like(diag_gWP_part2_var_real)
+
+            # Update diagonal elements of the variance matrices
+            gWP_part2_var_real = gWP_part2_var_real.at[diag_idx].set(diag_gWP_part2_var_real)
+            gWP_part2_var_imag = gWP_part2_var_imag.at[diag_idx].set(diag_gWP_part2_var_imag) # Should remain zero
+
+            # Standard error (sqrt of SEM squared)
+            gWP_part2_real_std_error = jnp.sqrt(jnp.maximum(0.0, gWP_part2_var_real))
+            gWP_part2_imag_std_error = jnp.sqrt(jnp.maximum(0.0, gWP_part2_var_imag))
+
             # Combine the parts
             gWP = gWP_part1 + gWP_part2
-            
+
             # Add errors in quadrature for real and imaginary parts separately
             gWP_real_std_error = jnp.sqrt(gWP_part1_real_std_error**2 + gWP_part2_real_std_error**2)
             gWP_imag_std_error = jnp.sqrt(gWP_part1_imag_std_error**2 + gWP_part2_imag_std_error**2)
-            
-            # Combine into complex std error
-            gWP_std_error = gWP_real_std_error + 1j * gWP_imag_std_error
-            
-        else:
-            # Calculate per-sample values for int_omega_dIomega
-            per_sample_int_omega_dIomega = jnp.einsum('x,xI->xI', weights, trace_holo)
-            int_omega_dIomega = jnp.mean(per_sample_int_omega_dIomega, axis=0)
-            
-            # Track real and imaginary errors separately
-            int_omega_dIomega_real_std_error = jnp.std(jnp.real(per_sample_int_omega_dIomega), axis=0) / jnp.sqrt(per_sample_int_omega_dIomega.shape[0])
-            int_omega_dIomega_imag_std_error = jnp.std(jnp.imag(per_sample_int_omega_dIomega), axis=0) / jnp.sqrt(per_sample_int_omega_dIomega.shape[0])
-            int_omega_dIomega_std_error = int_omega_dIomega_real_std_error + 1j * int_omega_dIomega_imag_std_error
-            
-            int_dIomega_dJomegaholobit = jnp.einsum('x,xI,xJ->xIJ', weights, trace_holo,jnp.conjugate(trace_holo))
-            wedge_the_two =  jnp.array([[(-1)**((j+1)-(i+1)-1) for i in range(3)] for j in range(3)])
-            dnu_dI_antiholobit_dJantiholobit = jnp.einsum('x,ij,xIij,xJji->xIJ',weights,wedge_the_two,dnu_dI_antiholobit,jnp.conjugate(dnu_dI_antiholobit))
-            
-            # Calculate the terms for each sample point
-            per_sample_term1 = (int_dIomega_dJomegaholobit)/(vol_omega)
-            per_sample_term2 = dnu_dI_antiholobit_dJantiholobit/vol_omega
-            per_sample_gWP = -(per_sample_term1 + per_sample_term2)
-            
-            # Calculate mean and standard error for the first part, tracking real and imaginary separately
-            gWP_part1 = jnp.mean(per_sample_gWP, axis=0)
-            gWP_part1_real_std_error = jnp.std(jnp.real(per_sample_gWP), axis=0) / jnp.sqrt(per_sample_gWP.shape[0])
-            gWP_part1_imag_std_error = jnp.std(jnp.imag(per_sample_gWP), axis=0) / jnp.sqrt(per_sample_gWP.shape[0])
-            
-            # Add the second term (which uses int_omega_dIomega)
-            gWP_part2 = jnp.einsum('I,J->IJ', int_omega_dIomega, jnp.conjugate(int_omega_dIomega))/vol_omega**2
-            
-            # Propagate error from int_omega_dIomega to gWP_part2 (matrix form)
-            # For f_IJ = a_I*a_J*, df_IJ depends on both da_I and da_J
-            # Handle real and imaginary parts separately
-            gWP_part2_real_std_error = jnp.sqrt(
-                jnp.einsum('I,J->IJ', (2 * jnp.abs(int_omega_dIomega) * int_omega_dIomega_real_std_error)**2, jnp.ones_like(int_omega_dIomega)) +
-                jnp.einsum('I,J->JI', (2 * jnp.abs(int_omega_dIomega) * int_omega_dIomega_real_std_error)**2, jnp.ones_like(int_omega_dIomega))
-            ) / vol_omega**2 / 2  # Divide by 2 to avoid double counting
-            
-            gWP_part2_imag_std_error = jnp.sqrt(
-                jnp.einsum('I,J->IJ', (2 * jnp.abs(int_omega_dIomega) * int_omega_dIomega_imag_std_error)**2, jnp.ones_like(int_omega_dIomega)) +
-                jnp.einsum('I,J->JI', (2 * jnp.abs(int_omega_dIomega) * int_omega_dIomega_imag_std_error)**2, jnp.ones_like(int_omega_dIomega))
-            ) / vol_omega**2 / 2  # Divide by 2 to avoid double counting
-            
-            # Combine the parts
-            gWP = gWP_part1 + gWP_part2
-            
-            # Add errors in quadrature for real and imaginary parts separately
-            gWP_real_std_error = jnp.sqrt(gWP_part1_real_std_error**2 + gWP_part2_real_std_error**2)
-            gWP_imag_std_error = jnp.sqrt(gWP_part1_imag_std_error**2 + gWP_part2_imag_std_error**2)
-            
-            # Combine into complex std error
-            gWP_std_error = gWP_real_std_error + 1j * gWP_imag_std_error
-        
+
+        # Combine into complex std error
+        gWP_std_error = gWP_real_std_error + 1j * gWP_imag_std_error
+
         return gWP, gWP_std_error
-    
+
     @staticmethod
     @partial(jax.jit, static_argnums=(11, 12, 14)) # nmoduli, fullmatrix, batch_size are static
     def gwP_jax_batched(points, weights, pullbacks, DQDZB0, DQDZF0, kmoduli, DI_DQB0, DI_DQF0, DI_DQZB0, DI_DQZF0, indices = None, fullmatrix = False, batch_size = 1000, num_batches = None, nmoduli = 1):
         """
         Calculates gWP and its standard error using online Welford algorithm for batches
         to avoid memory issues with large datasets. Uses jax.lax.fori_loop for better JIT compilation.
+        Normalization strategy matches gwP_jax (divide by final mean volume at the end).
 
         Args:
             points: Sample points. Shape (total_points, ...).
@@ -336,7 +474,7 @@ class WP:
             kmoduli: Kahler moduli.
             DI_DQB0, DI_DQF0, DI_DQZB0, DI_DQZF0: Basis derivatives.
             indices: Indices for coordinate selection. Shape (total_points, ...). Required.
-            fullmatrix: Whether to compute the full gWP matrix or just the diagonal.
+            fullmatrix: Whether to compute the full gWP matrix or just the diagonal. Must be static.
             batch_size: Number of points to process in each batch. Must be static for JIT.
             num_batches: Total number of batches (optional, calculated if None).
             nmoduli: Number of moduli (dimension). Must be static for JIT.
@@ -353,52 +491,44 @@ class WP:
         # Calculate number of batches needed. This value will be used by fori_loop.
         num_batches_calc = (total_points + batch_size - 1) // batch_size
 
-        # Determine the shape for gWP part 1 based on fullmatrix flag
-        gWP_part1_shape = (nmoduli, nmoduli) if fullmatrix else (nmoduli,)
+        # Determine the shape for gWP part 1 numerator based on fullmatrix flag
+        gWP_part1_num_shape = (nmoduli, nmoduli) if fullmatrix else (nmoduli,)
 
         # Initialize accumulators for online mean and variance calculation (Welford's algorithm)
-        # State tuple for fori_loop
+        # State tuple for fori_loop: Accumulate numerators for gWP part 1
         initial_state = (
             jnp.zeros((), dtype=jnp.int64), # n: Total samples processed
             jnp.zeros((), dtype=jnp.float64), # vol_omega_mean
             jnp.zeros((), dtype=jnp.float64), # vol_omega_M2
-            jnp.zeros(nmoduli, dtype=jnp.float64), # int_omega_dIomega_mean_real
-            jnp.zeros(nmoduli, dtype=jnp.float64), # int_omega_dIomega_mean_imag
-            jnp.zeros(nmoduli, dtype=jnp.float64), # int_omega_dIomega_M2_real
-            jnp.zeros(nmoduli, dtype=jnp.float64), # int_omega_dIomega_M2_imag
-            jnp.zeros(gWP_part1_shape, dtype=jnp.float64), # gWP_part1_mean_real
-            jnp.zeros(gWP_part1_shape, dtype=jnp.float64), # gWP_part1_mean_imag
-            jnp.zeros(gWP_part1_shape, dtype=jnp.float64), # gWP_part1_M2_real
-            jnp.zeros(gWP_part1_shape, dtype=jnp.float64)  # gWP_part1_M2_imag
+            jnp.zeros(nmoduli, dtype=jnp.float64), # int_omega_dIomega_num_mean_real
+            jnp.zeros(nmoduli, dtype=jnp.float64), # int_omega_dIomega_num_mean_imag
+            jnp.zeros(nmoduli, dtype=jnp.float64), # int_omega_dIomega_num_M2_real
+            jnp.zeros(nmoduli, dtype=jnp.float64), # int_omega_dIomega_num_M2_imag
+            jnp.zeros(gWP_part1_num_shape, dtype=jnp.float64), # gWP_part1_num_mean_real
+            jnp.zeros(gWP_part1_num_shape, dtype=jnp.float64), # gWP_part1_num_mean_imag
+            jnp.zeros(gWP_part1_num_shape, dtype=jnp.float64), # gWP_part1_num_M2_real
+            jnp.zeros(gWP_part1_num_shape, dtype=jnp.float64)  # gWP_part1_num_M2_imag
         )
 
         # Define the loop body function for jax.lax.fori_loop
         def loop_body(i, current_state):
             # Unpack current state
             n, vol_omega_mean, vol_omega_M2, \
-            int_omega_dIomega_mean_real, int_omega_dIomega_mean_imag, \
-            int_omega_dIomega_M2_real, int_omega_dIomega_M2_imag, \
-            gWP_part1_mean_real, gWP_part1_mean_imag, \
-            gWP_part1_M2_real, gWP_part1_M2_imag = current_state
+            int_omega_dIomega_num_mean_real, int_omega_dIomega_num_mean_imag, \
+            int_omega_dIomega_num_M2_real, int_omega_dIomega_num_M2_imag, \
+            gWP_part1_num_mean_real, gWP_part1_num_mean_imag, \
+            gWP_part1_num_M2_real, gWP_part1_num_M2_imag = current_state
 
             # Calculate batch indices
             start_idx = i * batch_size
-            # Use static batch_size for slicing, actual data size might be smaller for the last batch
-            # dynamic_slice handles out-of-bounds slicing gracefully if start_idx is too large
-            # but we need the actual size for Welford updates.
             current_batch_size = jnp.minimum(batch_size, total_points - start_idx)
 
             # Slice batch data using dynamic slices
-            # Note: dynamic_slice requires slice_sizes to be static or traceable.
-            # Using batch_size here, assuming padding or careful handling of the last batch.
-            # A potentially safer way is to pad the input arrays to be multiples of batch_size.
-            # Let's stick to dynamic_slice but calculate actual size `current_batch_size`.
             batch_points = jax.lax.dynamic_slice_in_dim(points, start_idx, batch_size, axis=0)
             batch_weights = jax.lax.dynamic_slice_in_dim(weights, start_idx, batch_size, axis=0).astype(jnp.float64)
             batch_pullbacks = jax.lax.dynamic_slice_in_dim(pullbacks, start_idx, batch_size, axis=0)
             batch_indices = jax.lax.dynamic_slice_in_dim(indices, start_idx, batch_size, axis=0)
 
-            # Mask invalid entries in the last batch if total_points is not a multiple of batch_size
             # Create a mask for valid entries in the current batch
             valid_mask = jnp.arange(batch_size) < current_batch_size
 
@@ -408,66 +538,87 @@ class WP:
             # --- Welford Update Logic (applied only to valid data) ---
             batch_n = current_batch_size # Number of valid samples in this batch
             new_n = n + batch_n
+            new_n_float = new_n.astype(jnp.float64)
 
             # Helper function for safe division (avoids NaN from 0/0 or x/0)
             def safe_divide(numerator, denominator):
-                return jnp.where(denominator == 0, 0.0, numerator / denominator)
+                # Ensure denominator is float for division
+                denom_float = denominator.astype(jnp.float64)
+                return jnp.where(denom_float == 0, 0.0, numerator / denom_float)
 
             # --- Process Volume (Weights) ---
+            # Welford update for mean and M2 (sum of squares of differences from the current mean)
+            # Combine M2: M2_new = M2_old + M2_batch + delta^2 * n_old * n_batch / n_new
             valid_weights = jnp.where(valid_mask, batch_weights, 0.0)
-            delta_vol = valid_weights - vol_omega_mean
-            vol_omega_mean_update = jnp.sum(jnp.where(valid_mask, delta_vol, 0.0)) * safe_divide(1.0, new_n.astype(jnp.float64))
-            vol_omega_mean += vol_omega_mean_update
-            delta2_vol = valid_weights - vol_omega_mean # Use updated mean
-            vol_omega_M2 += jnp.sum(jnp.where(valid_mask, delta_vol * delta2_vol, 0.0))
+            batch_sum_weights = jnp.sum(valid_weights)
+            batch_mean_weights = safe_divide(batch_sum_weights, batch_n)
+            delta_vol_global = batch_mean_weights - vol_omega_mean
+            new_vol_omega_mean = vol_omega_mean + delta_vol_global * safe_divide(batch_n, new_n)
+            batch_M2_vol = jnp.sum(jnp.where(valid_mask, (batch_weights - batch_mean_weights)**2, 0.0))
+            new_vol_omega_M2 = vol_omega_M2 + batch_M2_vol + delta_vol_global**2 * safe_divide(n * batch_n, new_n)
+            vol_omega_mean = new_vol_omega_mean
+            vol_omega_M2 = new_vol_omega_M2
 
-            # --- Process int_omega_dIomega ---
-            per_sample_int_omega_dIomega = jnp.einsum('x,xI->xI', batch_weights, trace_holo) # Shape (batch_size, nmoduli)
-            valid_per_sample_int_omega_dIomega = jnp.where(valid_mask[:, None], per_sample_int_omega_dIomega, 0.0)
+            # --- Process int_omega_dIomega Numerator ---
+            per_sample_int_omega_dIomega_num = jnp.einsum('x,xI->xI', batch_weights, trace_holo) # Shape (batch_size, nmoduli)
+            valid_per_sample_int_omega_dIomega_num = jnp.where(valid_mask[:, None], per_sample_int_omega_dIomega_num, 0.0+0.0j)
 
-            # Real part
-            delta_real = jnp.real(valid_per_sample_int_omega_dIomega) - int_omega_dIomega_mean_real
-            int_omega_dIomega_mean_real_update = jnp.sum(jnp.where(valid_mask[:, None], delta_real, 0.0), axis=0) * safe_divide(1.0, new_n.astype(jnp.float64))
-            int_omega_dIomega_mean_real += int_omega_dIomega_mean_real_update
-            delta2_real = jnp.real(valid_per_sample_int_omega_dIomega) - int_omega_dIomega_mean_real
-            int_omega_dIomega_M2_real += jnp.sum(jnp.where(valid_mask[:, None], delta_real * delta2_real, 0.0), axis=0)
+            # Combine Real part
+            batch_sum_real = jnp.sum(jnp.real(valid_per_sample_int_omega_dIomega_num), axis=0)
+            batch_mean_real = safe_divide(batch_sum_real, batch_n)
+            delta_real_global = batch_mean_real - int_omega_dIomega_num_mean_real
+            new_int_omega_dIomega_num_mean_real = int_omega_dIomega_num_mean_real + delta_real_global * safe_divide(batch_n, new_n)
+            batch_M2_real = jnp.sum(jnp.where(valid_mask[:, None], (jnp.real(per_sample_int_omega_dIomega_num) - batch_mean_real)**2, 0.0), axis=0)
+            new_int_omega_dIomega_num_M2_real = int_omega_dIomega_num_M2_real + batch_M2_real + delta_real_global**2 * safe_divide(n * batch_n, new_n)
+            int_omega_dIomega_num_mean_real = new_int_omega_dIomega_num_mean_real
+            int_omega_dIomega_num_M2_real = new_int_omega_dIomega_num_M2_real
 
-            # Imaginary part
-            delta_imag = jnp.imag(valid_per_sample_int_omega_dIomega) - int_omega_dIomega_mean_imag
-            int_omega_dIomega_mean_imag_update = jnp.sum(jnp.where(valid_mask[:, None], delta_imag, 0.0), axis=0) * safe_divide(1.0, new_n.astype(jnp.float64))
-            int_omega_dIomega_mean_imag += int_omega_dIomega_mean_imag_update
-            delta2_imag = jnp.imag(valid_per_sample_int_omega_dIomega) - int_omega_dIomega_mean_imag
-            int_omega_dIomega_M2_imag += jnp.sum(jnp.where(valid_mask[:, None], delta_imag * delta2_imag, 0.0), axis=0)
+            # Combine Imaginary part
+            batch_sum_imag = jnp.sum(jnp.imag(valid_per_sample_int_omega_dIomega_num), axis=0)
+            batch_mean_imag = safe_divide(batch_sum_imag, batch_n)
+            delta_imag_global = batch_mean_imag - int_omega_dIomega_num_mean_imag
+            new_int_omega_dIomega_num_mean_imag = int_omega_dIomega_num_mean_imag + delta_imag_global * safe_divide(batch_n, new_n)
+            batch_M2_imag = jnp.sum(jnp.where(valid_mask[:, None], (jnp.imag(per_sample_int_omega_dIomega_num) - batch_mean_imag)**2, 0.0), axis=0)
+            new_int_omega_dIomega_num_M2_imag = int_omega_dIomega_num_M2_imag + batch_M2_imag + delta_imag_global**2 * safe_divide(n * batch_n, new_n)
+            int_omega_dIomega_num_mean_imag = new_int_omega_dIomega_num_mean_imag
+            int_omega_dIomega_num_M2_imag = new_int_omega_dIomega_num_M2_imag
 
-            # --- Process gWP Part 1 ---
+            # --- Process gWP Part 1 Numerator ---
             wedge_the_two = jnp.array([[(-1)**((j+1)-(i+1)-1) for i in range(3)] for j in range(3)], dtype=jnp.float64)
 
             if not fullmatrix:
                 per_sample_term1_num = jnp.einsum('x,xI,xI->xI', batch_weights, trace_holo, jnp.conjugate(trace_holo))
                 per_sample_term2_num = jnp.einsum('x,ij,xIij,xIji->xI', batch_weights, wedge_the_two, dnu_dI_antiholobit, jnp.conjugate(dnu_dI_antiholobit))
                 mask_shape = valid_mask[:, None] # (batch_size, 1)
+                axis_sum = 0
             else:
                 per_sample_term1_num = jnp.einsum('x,xI,xJ->xIJ', batch_weights, trace_holo, jnp.conjugate(trace_holo))
                 per_sample_term2_num = jnp.einsum('x,ij,xIij,xJji->xIJ', batch_weights, wedge_the_two, dnu_dI_antiholobit, jnp.conjugate(dnu_dI_antiholobit))
                 mask_shape = valid_mask[:, None, None] # (batch_size, 1, 1)
+                axis_sum = 0
 
-            safe_current_vol_omega_mean = jnp.where(vol_omega_mean == 0, 1e-15, vol_omega_mean)
-            per_sample_gWP_part1 = -(per_sample_term1_num / safe_current_vol_omega_mean + per_sample_term2_num / safe_current_vol_omega_mean)
-            valid_per_sample_gWP_part1 = jnp.where(mask_shape, per_sample_gWP_part1, 0.0)
+            per_sample_gWP_part1_num = -(per_sample_term1_num + per_sample_term2_num)
+            valid_per_sample_gWP_part1_num = jnp.where(mask_shape, per_sample_gWP_part1_num, 0.0+0.0j)
 
-            # Real part
-            delta_gWP_real = jnp.real(valid_per_sample_gWP_part1) - gWP_part1_mean_real
-            gWP_part1_mean_real_update = jnp.sum(jnp.where(mask_shape, delta_gWP_real, 0.0), axis=0) * safe_divide(1.0, new_n.astype(jnp.float64))
-            gWP_part1_mean_real += gWP_part1_mean_real_update
-            delta2_gWP_real = jnp.real(valid_per_sample_gWP_part1) - gWP_part1_mean_real
-            gWP_part1_M2_real += jnp.sum(jnp.where(mask_shape, delta_gWP_real * delta2_gWP_real, 0.0), axis=0)
+            # Combine Real part
+            batch_sum_gWP_real = jnp.sum(jnp.real(valid_per_sample_gWP_part1_num), axis=axis_sum)
+            batch_mean_gWP_real = safe_divide(batch_sum_gWP_real, batch_n)
+            delta_gWP_real_global = batch_mean_gWP_real - gWP_part1_num_mean_real
+            new_gWP_part1_num_mean_real = gWP_part1_num_mean_real + delta_gWP_real_global * safe_divide(batch_n, new_n)
+            batch_M2_gWP_real = jnp.sum(jnp.where(mask_shape, (jnp.real(per_sample_gWP_part1_num) - batch_mean_gWP_real)**2, 0.0), axis=axis_sum)
+            new_gWP_part1_num_M2_real = gWP_part1_num_M2_real + batch_M2_gWP_real + delta_gWP_real_global**2 * safe_divide(n * batch_n, new_n)
+            gWP_part1_num_mean_real = new_gWP_part1_num_mean_real
+            gWP_part1_num_M2_real = new_gWP_part1_num_M2_real
 
-            # Imaginary part
-            delta_gWP_imag = jnp.imag(valid_per_sample_gWP_part1) - gWP_part1_mean_imag
-            gWP_part1_mean_imag_update = jnp.sum(jnp.where(mask_shape, delta_gWP_imag, 0.0), axis=0) * safe_divide(1.0, new_n.astype(jnp.float64))
-            gWP_part1_mean_imag += gWP_part1_mean_imag_update
-            delta2_gWP_imag = jnp.imag(valid_per_sample_gWP_part1) - gWP_part1_mean_imag
-            gWP_part1_M2_imag += jnp.sum(jnp.where(mask_shape, delta_gWP_imag * delta2_gWP_imag, 0.0), axis=0)
+            # Combine Imaginary part
+            batch_sum_gWP_imag = jnp.sum(jnp.imag(valid_per_sample_gWP_part1_num), axis=axis_sum)
+            batch_mean_gWP_imag = safe_divide(batch_sum_gWP_imag, batch_n)
+            delta_gWP_imag_global = batch_mean_gWP_imag - gWP_part1_num_mean_imag
+            new_gWP_part1_num_mean_imag = gWP_part1_num_mean_imag + delta_gWP_imag_global * safe_divide(batch_n, new_n)
+            batch_M2_gWP_imag = jnp.sum(jnp.where(mask_shape, (jnp.imag(per_sample_gWP_part1_num) - batch_mean_gWP_imag)**2, 0.0), axis=axis_sum)
+            new_gWP_part1_num_M2_imag = gWP_part1_num_M2_imag + batch_M2_gWP_imag + delta_gWP_imag_global**2 * safe_divide(n * batch_n, new_n)
+            gWP_part1_num_mean_imag = new_gWP_part1_num_mean_imag
+            gWP_part1_num_M2_imag = new_gWP_part1_num_M2_imag
 
             # Update total count only if the batch was valid
             n = jnp.where(batch_n > 0, new_n, n)
@@ -475,10 +626,10 @@ class WP:
             # Pack and return updated state
             updated_state = (
                 n, vol_omega_mean, vol_omega_M2,
-                int_omega_dIomega_mean_real, int_omega_dIomega_mean_imag,
-                int_omega_dIomega_M2_real, int_omega_dIomega_M2_imag,
-                gWP_part1_mean_real, gWP_part1_mean_imag,
-                gWP_part1_M2_real, gWP_part1_M2_imag
+                int_omega_dIomega_num_mean_real, int_omega_dIomega_num_mean_imag,
+                int_omega_dIomega_num_M2_real, int_omega_dIomega_num_M2_imag,
+                gWP_part1_num_mean_real, gWP_part1_num_mean_imag,
+                gWP_part1_num_M2_real, gWP_part1_num_M2_imag
             )
             # Use jax.lax.cond to return unchanged state if batch_n is 0, preventing NaN propagation
             return jax.lax.cond(batch_n > 0,
@@ -491,135 +642,129 @@ class WP:
 
         # Unpack final state
         n_final, vol_omega_mean_final, vol_omega_M2_final, \
-        int_omega_dIomega_mean_real_final, int_omega_dIomega_mean_imag_final, \
-        int_omega_dIomega_M2_real_final, int_omega_dIomega_M2_imag_final, \
-        gWP_part1_mean_real_final, gWP_part1_mean_imag_final, \
-        gWP_part1_M2_real_final, gWP_part1_M2_imag_final = final_state
+        int_omega_dIomega_num_mean_real_final, int_omega_dIomega_num_mean_imag_final, \
+        int_omega_dIomega_num_M2_real_final, int_omega_dIomega_num_M2_imag_final, \
+        gWP_part1_num_mean_real_final, gWP_part1_num_mean_imag_final, \
+        gWP_part1_num_M2_real_final, gWP_part1_num_M2_imag_final = final_state
 
         # --- Final Calculations ---
-        # Ensure n > 1 for variance calculation
         n_final_float = n_final.astype(jnp.float64)
-        # Use safe division for variance (n-1) and std error (n)
-        # Avoid division by zero or negative numbers under sqrt
         safe_n_minus_1 = jnp.maximum(1.0, n_final_float - 1.0)
         safe_n = jnp.maximum(1.0, n_final_float)
-
-        # Calculate sample variance (M2 / (n - 1))
-        int_omega_dIomega_var_real = int_omega_dIomega_M2_real_final / safe_n_minus_1
-        int_omega_dIomega_var_imag = int_omega_dIomega_M2_imag_final / safe_n_minus_1
-        gWP_part1_var_real = gWP_part1_M2_real_final / safe_n_minus_1
-        gWP_part1_var_imag = gWP_part1_M2_imag_final / safe_n_minus_1
-
-        # Calculate standard error of the mean (sqrt(variance / n))
-        # Ensure variance is non-negative before sqrt
-        int_omega_dIomega_std_error_real = jnp.sqrt(jnp.maximum(0.0, int_omega_dIomega_var_real / safe_n))
-        int_omega_dIomega_std_error_imag = jnp.sqrt(jnp.maximum(0.0, int_omega_dIomega_var_imag / safe_n))
-        gWP_part1_std_error_real = jnp.sqrt(jnp.maximum(0.0, gWP_part1_var_real / safe_n))
-        gWP_part1_std_error_imag = jnp.sqrt(jnp.maximum(0.0, gWP_part1_var_imag / safe_n))
-
-        # Handle case where n <= 1 explicitly for errors: std error should be 0
         zero_error_cond = n_final <= 1
-        int_omega_dIomega_std_error_real = jnp.where(zero_error_cond, 0.0, int_omega_dIomega_std_error_real)
-        int_omega_dIomega_std_error_imag = jnp.where(zero_error_cond, 0.0, int_omega_dIomega_std_error_imag)
-        gWP_part1_std_error_real = jnp.where(zero_error_cond, 0.0, gWP_part1_std_error_real)
-        gWP_part1_std_error_imag = jnp.where(zero_error_cond, 0.0, gWP_part1_std_error_imag)
 
+        # Calculate final means and standard errors for the numerators and volume
+        # Volume
+        vol_omega_var = vol_omega_M2_final / safe_n_minus_1
+        vol_omega_std_error = jnp.sqrt(jnp.maximum(0.0, vol_omega_var / safe_n))
+        vol_omega_std_error = jnp.where(zero_error_cond, 0.0, vol_omega_std_error)
 
-        # Combine final means
-        int_omega_dIomega = int_omega_dIomega_mean_real_final + 1j * int_omega_dIomega_mean_imag_final
-        gWP_part1 = gWP_part1_mean_real_final + 1j * gWP_part1_mean_imag_final
+        # int_omega_dIomega Numerator
+        int_omega_dIomega_num_mean = int_omega_dIomega_num_mean_real_final + 1j * int_omega_dIomega_num_mean_imag_final
+        int_omega_dIomega_num_var_real = int_omega_dIomega_num_M2_real_final / safe_n_minus_1
+        int_omega_dIomega_num_var_imag = int_omega_dIomega_num_M2_imag_final / safe_n_minus_1
+        int_omega_dIomega_num_std_error_real = jnp.sqrt(jnp.maximum(0.0, int_omega_dIomega_num_var_real / safe_n))
+        int_omega_dIomega_num_std_error_imag = jnp.sqrt(jnp.maximum(0.0, int_omega_dIomega_num_var_imag / safe_n))
+        int_omega_dIomega_num_std_error_real = jnp.where(zero_error_cond, 0.0, int_omega_dIomega_num_std_error_real)
+        int_omega_dIomega_num_std_error_imag = jnp.where(zero_error_cond, 0.0, int_omega_dIomega_num_std_error_imag)
 
-        # Calculate the second part of gWP and propagate errors
-        final_vol_omega_mean = vol_omega_mean_final
-        safe_final_vol_omega_mean = jnp.where(final_vol_omega_mean == 0, 1e-15, final_vol_omega_mean)
-        vol_denom = safe_final_vol_omega_mean**2
+        # gWP_part1 Numerator
+        gWP_part1_num_mean = gWP_part1_num_mean_real_final + 1j * gWP_part1_num_mean_imag_final
+        gWP_part1_num_var_real = gWP_part1_num_M2_real_final / safe_n_minus_1
+        gWP_part1_num_var_imag = gWP_part1_num_M2_imag_final / safe_n_minus_1
+        gWP_part1_num_std_error_real = jnp.sqrt(jnp.maximum(0.0, gWP_part1_num_var_real / safe_n))
+        gWP_part1_num_std_error_imag = jnp.sqrt(jnp.maximum(0.0, gWP_part1_num_var_imag / safe_n))
+        gWP_part1_num_std_error_real = jnp.where(zero_error_cond, 0.0, gWP_part1_num_std_error_real)
+        gWP_part1_num_std_error_imag = jnp.where(zero_error_cond, 0.0, gWP_part1_num_std_error_imag)
 
-        # Define inputs for error propagation (these will be zero if n <= 1)
-        a_Ir = int_omega_dIomega_mean_real_final
-        a_Ii = int_omega_dIomega_mean_imag_final
-        da_Ir = int_omega_dIomega_std_error_real
-        da_Ii = int_omega_dIomega_std_error_imag
-        a_Jr = int_omega_dIomega_mean_real_final
-        a_Ji = -int_omega_dIomega_mean_imag_final
-        da_Jr = int_omega_dIomega_std_error_real
-        da_Ji = int_omega_dIomega_std_error_imag
+        # --- Calculate gWP parts and propagate errors ---
+        safe_final_vol_omega_mean = jnp.where(vol_omega_mean_final == 0, 1e-15, vol_omega_mean_final)
+        Br = safe_final_vol_omega_mean
+        dBr = vol_omega_std_error
 
-        # Use jax.lax.cond for branching based on `fullmatrix` (static argument)
-        def calc_part2_fullmatrix_true():
+        # Calculate gWP_part1 = <gWP_part1_num> / <vol>
+        gWP_part1 = gWP_part1_num_mean / Br
+
+        # Error propagation for gWP_part1 = A / B
+        Ar = gWP_part1_num_mean_real_final
+        Ai = gWP_part1_num_mean_imag_final
+        dAr = gWP_part1_num_std_error_real
+        dAi = gWP_part1_num_std_error_imag
+
+        gWP_part1_var_real = (dAr/Br)**2 + (Ar*dBr/Br**2)**2
+        gWP_part1_var_imag = (dAi/Br)**2 + (Ai*dBr/Br**2)**2
+        gWP_part1_std_error_real = jnp.sqrt(jnp.maximum(0.0, gWP_part1_var_real))
+        gWP_part1_std_error_imag = jnp.sqrt(jnp.maximum(0.0, gWP_part1_var_imag))
+
+        # Calculate gWP_part2 = <int_omega_num> * <int_omega_num>* / <vol>^2
+        int_omega_dIomega = int_omega_dIomega_num_mean # Mean of the numerator
+        vol_denom = Br**2
+
+        # Define inputs for error propagation for gWP_part2
+        Cr = int_omega_dIomega_num_mean_real_final
+        Ci = int_omega_dIomega_num_mean_imag_final
+        dCr = int_omega_dIomega_num_std_error_real # Error of numerator mean
+        dCi = int_omega_dIomega_num_std_error_imag # Error of numerator mean
+
+        # Since fullmatrix is static, use Python if/else
+        if fullmatrix:
             gWP_part2 = jnp.einsum('I,J->IJ', int_omega_dIomega, jnp.conjugate(int_omega_dIomega)) / vol_denom
-            # Error propagation: var(f(x,y)) approx (df/dx*err_x)^2 + (df/dy*err_y)^2 + ...
-            # Here f = (a_Ir + i*a_Ii)*(a_Jr - i*a_Ji) / vol_denom
-            # Real part: (a_Ir*a_Jr + a_Ii*a_Ji) / vol_denom
-            # Imag part: (a_Ii*a_Jr - a_Ir*a_Ji) / vol_denom
-            # Variance calculation assumes independence of errors for different I, J and real/imag parts
-            vol_denom_sq = vol_denom**2 # vol_mean^4
+            # Error propagation for gWP_part2 = C_I * C_J* / B^2 (same logic as in gwP_jax)
+            term_Br_real_sq = ( (-2 * jnp.real(gWP_part2) / Br) * dBr )**2
+            term_Br_imag_sq = ( (-2 * jnp.imag(gWP_part2) / Br) * dBr )**2
+            term_I_real_sq = jnp.einsum('J,I->IJ', Cr**2 / Br**4, dCr**2) + jnp.einsum('J,I->IJ', Ci**2 / Br**4, dCi**2)
+            term_I_imag_sq = jnp.einsum('J,I->IJ', Ci**2 / Br**4, dCr**2) + jnp.einsum('J,I->IJ', Cr**2 / Br**4, dCi**2)
+            term_J_real_sq = jnp.einsum('I,J->IJ', Cr**2 / Br**4, dCr**2) + jnp.einsum('I,J->IJ', Ci**2 / Br**4, dCi**2)
+            term_J_imag_sq = jnp.einsum('I,J->IJ', Ci**2 / Br**4, dCr**2) + jnp.einsum('I,J->IJ', Cr**2 / Br**4, dCi**2)
 
-            # Variance of Real Part
-            # Terms from derivatives w.r.t. a_Ir, a_Ii, a_Jr, a_Ji
-            gWP_part2_var_real = (
-                jnp.einsum('J,I->IJ', a_Jr**2, da_Ir**2) + # (dReal/da_Ir * da_Ir)^2 = (a_Jr/vol * da_Ir)^2
-                jnp.einsum('J,I->IJ', a_Ji**2, da_Ii**2) + # (dReal/da_Ii * da_Ii)^2 = (a_Ji/vol * da_Ii)^2
-                jnp.einsum('I,J->IJ', a_Ir**2, da_Jr**2) + # (dReal/da_Jr * da_Jr)^2 = (a_Ir/vol * da_Jr)^2
-                jnp.einsum('I,J->IJ', a_Ii**2, da_Ji**2)   # (dReal/da_Ji * da_Ji)^2 = (a_Ii/vol * da_Ji)^2
-            ) / vol_denom_sq # Division by vol_denom^2 happens here
+            gWP_part2_var_real = term_I_real_sq + term_J_real_sq + term_Br_real_sq
+            gWP_part2_var_imag = term_I_imag_sq + term_J_imag_sq + term_Br_imag_sq
 
-            # Variance of Imaginary Part
-            # Terms from derivatives w.r.t. a_Ir, a_Ii, a_Jr, a_Ji
-            gWP_part2_var_imag = (
-                jnp.einsum('J,I->IJ', a_Ji**2, da_Ir**2) + # (dImag/da_Ir * da_Ir)^2 = (-a_Ji/vol * da_Ir)^2
-                jnp.einsum('J,I->IJ', a_Jr**2, da_Ii**2) + # (dImag/da_Ii * da_Ii)^2 = (a_Jr/vol * da_Ii)^2
-                jnp.einsum('I,J->IJ', a_Ii**2, da_Jr**2) + # (dImag/da_Jr * da_Jr)^2 = (a_Ii/vol * da_Jr)^2
-                jnp.einsum('I,J->IJ', a_Ir**2, da_Ji**2)   # (dImag/da_Ji * da_Ji)^2 = (-a_Ir/vol * da_Ji)^2
-            ) / vol_denom_sq # Division by vol_denom^2 happens here
+            # Diagonal correction
+            diag_idx = jnp.diag_indices_from(gWP_part2)
+            # Need to handle Cr, Ci, dCr, dCi indexing for diagonal
+            diag_Cr = Cr[diag_idx[0]]
+            diag_Ci = Ci[diag_idx[0]]
+            diag_dCr = dCr[diag_idx[0]]
+            diag_dCi = dCi[diag_idx[0]]
+            diag_gWP_part2_real = jnp.real(gWP_part2[diag_idx])
+
+            diag_term_Cr_sq = ( (2 * diag_Cr / Br**2) * diag_dCr )**2
+            diag_term_Ci_sq = ( (2 * diag_Ci / Br**2) * diag_dCi )**2
+            diag_term_Br_sq = ( (-2 * diag_gWP_part2_real / Br) * dBr )**2
+            diag_gWP_part2_var_real = diag_term_Cr_sq + diag_term_Ci_sq + diag_term_Br_sq
+            diag_gWP_part2_var_imag = jnp.zeros_like(diag_gWP_part2_var_real)
+
+            gWP_part2_var_real = gWP_part2_var_real.at[diag_idx].set(diag_gWP_part2_var_real)
+            gWP_part2_var_imag = gWP_part2_var_imag.at[diag_idx].set(diag_gWP_part2_var_imag)
 
             gWP_part2_std_error_real = jnp.sqrt(jnp.maximum(0.0, gWP_part2_var_real))
             gWP_part2_std_error_imag = jnp.sqrt(jnp.maximum(0.0, gWP_part2_var_imag))
-            return gWP_part2, gWP_part2_std_error_real, gWP_part2_std_error_imag
 
-        def calc_part2_fullmatrix_false():
+        else: # not fullmatrix
             # Calculate diagonal elements
-            diag_gWP_part2 = int_omega_dIomega * jnp.conjugate(int_omega_dIomega) / vol_denom # Complex version
-            
-            # Error propagation: f = (a_Ir^2 + a_Ii^2) / vol_denom
-            # var(f) approx (df/da_Ir*da_Ir)^2 + (df/da_Ii*da_Ii)^2
-            vol_denom_sq = vol_denom**2 # vol_mean^4
+            diag_gWP_part2 = (int_omega_dIomega * jnp.conjugate(int_omega_dIomega)) / vol_denom # Real result
 
-            # Corrected calculation based on formula df/dx = 2*a_Ir/vol_denom:
-            diag_gWP_part2_var_corrected = (
-                ( (2 * a_Ir / vol_denom) * da_Ir )**2 +
-                ( (2 * a_Ii / vol_denom) * da_Ii )**2
-            )
+            # Error propagation: f = (Cr^2 + Ci^2) / Br^2 (same logic as in gwP_jax)
+            term_Cr_sq = ( (2 * Cr / Br**2) * dCr )**2
+            term_Ci_sq = ( (2 * Ci / Br**2) * dCi )**2
+            term_Br_sq = ( (-2 * jnp.real(diag_gWP_part2) / Br) * dBr )**2
 
-            diag_gWP_part2_std_error_real = jnp.sqrt(jnp.maximum(0.0, diag_gWP_part2_var_corrected))
-            # gWP_part2 is real, so imag error is zero
-            diag_gWP_part2_std_error_imag = jnp.zeros_like(a_Ir)
-            
-            # Pad to match the shape of the fullmatrix=True branch
-            # Create matrix with zeros and put diagonal values in place
-            nmoduli = int_omega_dIomega.shape[0]
-            gWP_part2 = jnp.zeros((nmoduli, nmoduli), dtype=diag_gWP_part2.dtype)
-            gWP_part2_std_error_real = jnp.zeros((nmoduli, nmoduli), dtype=diag_gWP_part2_std_error_real.dtype)
-            gWP_part2_std_error_imag = jnp.zeros((nmoduli, nmoduli), dtype=diag_gWP_part2_std_error_imag.dtype)
-            
-            # Fill diagonals
-            gWP_part2 = gWP_part2.at[jnp.diag_indices(nmoduli)].set(diag_gWP_part2)
-            gWP_part2_std_error_real = gWP_part2_std_error_real.at[jnp.diag_indices(nmoduli)].set(diag_gWP_part2_std_error_real)
-            gWP_part2_std_error_imag = gWP_part2_std_error_imag.at[jnp.diag_indices(nmoduli)].set(diag_gWP_part2_std_error_imag)
-            
-            return gWP_part2, gWP_part2_std_error_real, gWP_part2_std_error_imag
+            diag_gWP_part2_var = term_Cr_sq + term_Ci_sq + term_Br_sq
+            diag_gWP_part2_std_error_real = jnp.sqrt(jnp.maximum(0.0, diag_gWP_part2_var))
+            diag_gWP_part2_std_error_imag = jnp.zeros_like(diag_gWP_part2_std_error_real)
 
-        # Use lax.cond - note `fullmatrix` must be a static argument for gwP_jax_batched
-        gWP_part2, gWP_part2_std_error_real, gWP_part2_std_error_imag = jax.lax.cond(
-            fullmatrix,
-            calc_part2_fullmatrix_true,
-            calc_part2_fullmatrix_false
-        )
+            # Assign results with correct shape for the 'else' branch
+            gWP_part2 = jnp.real(diag_gWP_part2) # Shape (nmoduli,)
+            gWP_part2_std_error_real = diag_gWP_part2_std_error_real # Shape (nmoduli,)
+            gWP_part2_std_error_imag = diag_gWP_part2_std_error_imag # Shape (nmoduli,)
+
 
         # Final gWP
-        gWP = gWP_part1 + gWP_part2
+        gWP = gWP_part1 + gWP_part2 # Shapes match due to static fullmatrix
 
         # Combine errors in quadrature (real and imaginary separately)
-        # Variances add, so std errors add in quadrature. Max(0,...) ensures non-negative variance.
+        # Shapes of std errors also match due to static fullmatrix
         gWP_std_error_real = jnp.sqrt(jnp.maximum(0.0, gWP_part1_std_error_real**2 + gWP_part2_std_error_real**2))
         gWP_std_error_imag = jnp.sqrt(jnp.maximum(0.0, gWP_part1_std_error_imag**2 + gWP_part2_std_error_imag**2))
 
