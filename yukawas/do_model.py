@@ -963,7 +963,7 @@ if __name__ ==  '__main__':
         print("just FS")
         do_extra_stuff_for_integration = False
     batch_size_psi = 1000
-    batch_size_det = 300
+    batch_size_det = 100
     if 'batchmu' in [s[:7] for s in sys.argv]:
         number = [s[7:] for s in sys.argv if s[:7] == 'batchmu'][0]
         number = number.split('_')
