@@ -1430,7 +1430,8 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
 
     if do_extra_stuff:    
         pass
-
+    
+    wandb.log({"reached_wp":True}, commit=True)
     import jax
     try:
         if batch_size_psi or batch_size_det:
