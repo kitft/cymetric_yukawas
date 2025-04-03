@@ -704,287 +704,288 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
             import random
             seed = 0
             tf.keras.utils.set_random_seed(seed)# equivalent to np, random, torch all in one
-            #mock_model = BiholoModelFuncGENERALforHYMinv3(network_shape, BASIS, stddev=0.1, use_zero_network=False, use_symmetry_reduced_TQ=False)
-            def mock_model(x, **kwargs):
-                cpoints = point_vec_to_complex(x)
-                kappa1 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,0:2])**2, axis=-1),real_dtype)
-                x0,x1 = cpoints[:,0], cpoints[:,1]
-                x0bar,x1bar = tf.math.conj(x0), tf.math.conj(x1)
+            # #mock_model = BiholoModelFuncGENERALforHYMinv3(network_shape, BASIS, stddev=0.1, use_zero_network=False, use_symmetry_reduced_TQ=False)
+            # def mock_model(x, **kwargs):
+            #     cpoints = point_vec_to_complex(x)
+            #     kappa1 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,0:2])**2, axis=-1),real_dtype)
+            #     x0,x1 = cpoints[:,0], cpoints[:,1]
+            #     x0bar,x1bar = tf.math.conj(x0), tf.math.conj(x1)
 
-                return tf.math.abs(x0*x0bar)/kappa1
-            def mock_model_2(x, **kwargs):
-                cpoints = point_vec_to_complex(x)
-                kappa2 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,2:4])**2, axis=-1),real_dtype)
-                y0,y1 = cpoints[:,2], cpoints[:,3]
-                y0bar,y1bar = tf.math.conj(y0), tf.math.conj(y1)
+            #     return tf.math.abs(x0*x0bar)/kappa1
+            # def mock_model_2(x, **kwargs):
+            #     cpoints = point_vec_to_complex(x)
+            #     kappa2 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,2:4])**2, axis=-1),real_dtype)
+            #     y0,y1 = cpoints[:,2], cpoints[:,3]
+            #     y0bar,y1bar = tf.math.conj(y0), tf.math.conj(y1)
 
-                return tf.math.abs(y0*y0bar)/kappa2
+            #     return tf.math.abs(y0*y0bar)/kappa2
 
-            def mock_model_3(x, **kwargs):
-                cpoints = point_vec_to_complex(x)
-                kappa3 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,4:6])**2, axis=-1),real_dtype)
-                z0,z1 = cpoints[:,4], cpoints[:,5]
-                z0bar,z1bar = tf.math.conj(z0), tf.math.conj(z1)
+            # def mock_model_3(x, **kwargs):
+            #     cpoints = point_vec_to_complex(x)
+            #     kappa3 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,4:6])**2, axis=-1),real_dtype)
+            #     z0,z1 = cpoints[:,4], cpoints[:,5]
+            #     z0bar,z1bar = tf.math.conj(z0), tf.math.conj(z1)
 
-                return tf.math.abs(z0*z0bar)/kappa3
-            def mock_model_4(x, **kwargs):
-                cpoints = point_vec_to_complex(x)
-                kappa4 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,6:8])**2, axis=-1),real_dtype) 
-                w0,w1 = cpoints[:,6], cpoints[:,7]
-                w0bar,w1bar = tf.math.conj(w0), tf.math.conj(w1)
+            #     return tf.math.abs(z0*z0bar)/kappa3
+            # def mock_model_4(x, **kwargs):
+            #     cpoints = point_vec_to_complex(x)
+            #     kappa4 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,6:8])**2, axis=-1),real_dtype) 
+            #     w0,w1 = cpoints[:,6], cpoints[:,7]
+            #     w0bar,w1bar = tf.math.conj(w0), tf.math.conj(w1)
 
-                return tf.math.abs(w0*w0bar)/kappa4
+            #     return tf.math.abs(w0*w0bar)/kappa4
 
-            def mock_model_complex1(x, **kwargs):
-                cpoints = point_vec_to_complex(x)
-                kappa1 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,0:2])**2, axis=-1),complex_dtype) 
-                x0,x1 = cpoints[:,0], cpoints[:,1]
-                x0bar,x1bar = tf.math.conj(x0), tf.math.conj(x1)
+            # def mock_model_complex1(x, **kwargs):
+            #     cpoints = point_vec_to_complex(x)
+            #     kappa1 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,0:2])**2, axis=-1),complex_dtype) 
+            #     x0,x1 = cpoints[:,0], cpoints[:,1]
+            #     x0bar,x1bar = tf.math.conj(x0), tf.math.conj(x1)
 
-                return x0*x1bar/kappa1
-            def mock_model_complex2(x, **kwargs):
-                cpoints = point_vec_to_complex(x)
-                kappa2 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,2:4])**2, axis=-1),complex_dtype) 
-                y0,y1 = cpoints[:,2], cpoints[:,3]
-                y0bar,y1bar = tf.math.conj(y0), tf.math.conj(y1)
+            #     return x0*x1bar/kappa1
+            # def mock_model_complex2(x, **kwargs):
+            #     cpoints = point_vec_to_complex(x)
+            #     kappa2 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,2:4])**2, axis=-1),complex_dtype) 
+            #     y0,y1 = cpoints[:,2], cpoints[:,3]
+            #     y0bar,y1bar = tf.math.conj(y0), tf.math.conj(y1)
 
-                return y0*y1bar/kappa2
-            def mock_model_complex3(x, **kwargs):
-                cpoints = point_vec_to_complex(x)
-                kappa3 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,4:6])**2, axis=-1),complex_dtype) 
-                z0,z1 = cpoints[:,4], cpoints[:,5]
-                z0bar,z1bar = tf.math.conj(z0), tf.math.conj(z1)        
+            #     return y0*y1bar/kappa2
+            # def mock_model_complex3(x, **kwargs):
+            #     cpoints = point_vec_to_complex(x)
+            #     kappa3 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,4:6])**2, axis=-1),complex_dtype) 
+            #     z0,z1 = cpoints[:,4], cpoints[:,5]
+            #     z0bar,z1bar = tf.math.conj(z0), tf.math.conj(z1)        
 
-                return z0*z1bar/kappa3
-            def mock_model_complex4(x, **kwargs):
-                cpoints = point_vec_to_complex(x)
-                kappa4 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,6:8])**2, axis=-1),complex_dtype) 
-                w0,w1 = cpoints[:,6], cpoints[:,7]
-                w0bar,w1bar = tf.math.conj(w0), tf.math.conj(w1)
+            #     return z0*z1bar/kappa3
+            # def mock_model_complex4(x, **kwargs):
+            #     cpoints = point_vec_to_complex(x)
+            #     kappa4 = tf.cast(tf.reduce_sum(tf.math.abs(cpoints[:,6:8])**2, axis=-1),complex_dtype) 
+            #     w0,w1 = cpoints[:,6], cpoints[:,7]
+            #     w0bar,w1bar = tf.math.conj(w0), tf.math.conj(w1)
 
-                return w0*w1bar/kappa4
+            #     return w0*w1bar/kappa4
 
             tf.keras.utils.set_random_seed(seed+1)
-            #mock_model_2 = BiholoModelFuncGENERALforHYMinv3(network_shape, BASIS, stddev=0.1, use_zero_network=False, use_symmetry_reduced_TQ=False)
-            print('model1: example output',mock_model(real_pts[0:3]))
-            print('model1: scale of first 100 outputs',tf.math.reduce_mean(tf.abs(mock_model(real_pts[0:100]))))
-            print('model2: example output',mock_model_2(real_pts[0:3]))
-            print('model2: scale of first 100 outputs',tf.math.reduce_mean(tf.abs(mock_model_2(real_pts[0:100]))))
-            print('model3: example output',mock_model_3(real_pts[0:3]))
-            print('model3: scale of first 100 outputs',tf.math.reduce_mean(tf.abs(mock_model_3(real_pts[0:100]))))
-            print('model4: example output',mock_model_4(real_pts[0:3]))
-            print('model4: scale of first 100 outputs',tf.math.reduce_mean(tf.abs(mock_model_4(real_pts[0:100]))))
-            if loadextra:
-                try:
-                    dataextra = np.load(laplacians_filename, allow_pickle=True)
-                    dataextra = convert_to_nested_tensor_dict(dataextra)
-                    laplacian_mock = dataextra['laplacian_mock']
-                    laplacian_mock_2 = dataextra['laplacian_mock_2']
-                    mock_model_vals = dataextra['mock_model_vals']
-                    mock_model_2_vals = dataextra['mock_model_2_vals']
-                    if not tf.reduce_all(tf.abs(mock_model_vals[0:100] - mock_model(real_pts[0:100])) < 1e-5):
-                        print(f"Loaded incorrectly! Not compatible, {tf.reduce_max(tf.abs(mock_model_vals[0:100] - mock_model(real_pts[0:100])))}")
-                        print(f"types: {type(mock_model_vals)}, {type(mock_model(real_pts))}")
-                        print(f"loaded: { mock_model_vals.dtype}, {mock_model_vals.shape}, {mock_model_vals[0:1]}")
-                        print(f"actual: {mock_model(real_pts).dtype}, {mock_model(real_pts).shape}, {mock_model(real_pts[:1])}")
-                        raise ValueError("Loaded incorrectly! Not compatible.")
-                    print("Loaded laplacians from saved file")
-                except FileNotFoundError:
-                    raise ValueError("Laplacians file not found. Computing laplacians...")
+            # #mock_model_2 = BiholoModelFuncGENERALforHYMinv3(network_shape, BASIS, stddev=0.1, use_zero_network=False, use_symmetry_reduced_TQ=False)
+            # print('model1: example output',mock_model(real_pts[0:3]))
+            # print('model1: scale of first 100 outputs',tf.math.reduce_mean(tf.abs(mock_model(real_pts[0:100]))))
+            # print('model2: example output',mock_model_2(real_pts[0:3]))
+            # print('model2: scale of first 100 outputs',tf.math.reduce_mean(tf.abs(mock_model_2(real_pts[0:100]))))
+            # print('model3: example output',mock_model_3(real_pts[0:3]))
+            # print('model3: scale of first 100 outputs',tf.math.reduce_mean(tf.abs(mock_model_3(real_pts[0:100]))))
+            # print('model4: example output',mock_model_4(real_pts[0:3]))
+            # print('model4: scale of first 100 outputs',tf.math.reduce_mean(tf.abs(mock_model_4(real_pts[0:100]))))
+            # if loadextra:
+            #     try:
+            #         dataextra = np.load(laplacians_filename, allow_pickle=True)
+            #         dataextra = convert_to_nested_tensor_dict(dataextra)
+            #         laplacian_mock = dataextra['laplacian_mock']
+            #         laplacian_mock_2 = dataextra['laplacian_mock_2']
+            #         mock_model_vals = dataextra['mock_model_vals']
+            #         mock_model_2_vals = dataextra['mock_model_2_vals']
+            #         if not tf.reduce_all(tf.abs(mock_model_vals[0:100] - mock_model(real_pts[0:100])) < 1e-5):
+            #             print(f"Loaded incorrectly! Not compatible, {tf.reduce_max(tf.abs(mock_model_vals[0:100] - mock_model(real_pts[0:100])))}")
+            #             print(f"types: {type(mock_model_vals)}, {type(mock_model(real_pts))}")
+            #             print(f"loaded: { mock_model_vals.dtype}, {mock_model_vals.shape}, {mock_model_vals[0:1]}")
+            #             print(f"actual: {mock_model(real_pts).dtype}, {mock_model(real_pts).shape}, {mock_model(real_pts[:1])}")
+            #             raise ValueError("Loaded incorrectly! Not compatible.")
+            #         print("Loaded laplacians from saved file")
+            #     except FileNotFoundError:
+            #         raise ValueError("Laplacians file not found. Computing laplacians...")
                     
-            else:
-                print("Computing laplacians as not requested to load.")
-                laplacian_mock = batch_process_helper_func(laplacian, [mock_model, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
-                laplacian_mock_2 = batch_process_helper_func(laplacian, [mock_model_2, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
-                laplacian_mock_3 = batch_process_helper_func(laplacian, [mock_model_3, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
-                laplacian_mock_4 = batch_process_helper_func(laplacian, [mock_model_4, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
-                laplacian_mock_c = batch_process_helper_func(laplacianWithH, [mock_model_complex1, real_pts, pullbacks, invmetrics,None], batch_indices=[1, 2, 3], kwargs={'training': False})
-                laplacian_mock_2_c = batch_process_helper_func(laplacianWithH, [mock_model_complex2, real_pts, pullbacks, invmetrics,None], batch_indices=[1, 2, 3], kwargs={'training': False})
-                laplacian_mock_3_c = batch_process_helper_func(laplacianWithH, [mock_model_complex3, real_pts, pullbacks, invmetrics,None], batch_indices=[1, 2, 3], kwargs={'training': False})
-                laplacian_mock_4_c = batch_process_helper_func(laplacianWithH, [mock_model_complex4, real_pts, pullbacks, invmetrics,None], batch_indices=[1, 2, 3], kwargs={'training': False})
-                mock_model_vals = mock_model(real_pts)
-                mock_model_2_vals = mock_model_2(real_pts)
-                mock_model_3_vals = mock_model_3(real_pts)
-                mock_model_4_vals = mock_model_4(real_pts)
-                mock_model_c_vals = mock_model_complex1(real_pts)
-                mock_model_2_c_vals = mock_model_complex2(real_pts)
-                mock_model_3_c_vals = mock_model_complex3(real_pts)
-                mock_model_4_c_vals = mock_model_complex4(real_pts)
-                
-                # Save laplacians to file
-                if saveextra:
-                    np.savez(laplacians_filename, 
-                         laplacian_mock=laplacian_mock.numpy(),
-                         laplacian_mock_2=laplacian_mock_2.numpy(),
-                         laplacian_mock_3=laplacian_mock_3.numpy(),
-                         laplacian_mock_4=laplacian_mock_4.numpy(),
-                         laplacian_mock_c=laplacian_mock_c.numpy(),
-                         laplacian_mock_2_c=laplacian_mock_2_c.numpy(),
-                         laplacian_mock_3_c=laplacian_mock_3_c.numpy(),
-                         laplacian_mock_4_c=laplacian_mock_4_c.numpy(),
-
-                         mock_model_vals=mock_model_vals.numpy(),
-                         mock_model_2_vals=mock_model_2_vals.numpy(),
-                         mock_model_3_vals=mock_model_3_vals.numpy(),
-                         mock_model_4_vals=mock_model_4_vals.numpy(),
-                         mock_model_c_vals=mock_model_c_vals.numpy(),
-                         mock_model_2_c_vals=mock_model_2_c_vals.numpy(),
-                         mock_model_3_c_vals=mock_model_3_c_vals.numpy(),
-                         mock_model_4_c_vals=mock_model_4_c_vals.numpy())
-                print(f"Saved laplacians to {laplacians_filename}")
-                
-                # laplacian_mock = batch_process_helper_func(laplacian, [mock_model, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
-                # laplacian_mock_2 = batch_process_helper_func(laplacian, [mock_model_2, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
+            # else:
+            #     print("Computing laplacians as not requested to load.")
+            #     print('no laplacoians')
+            #     # laplacian_mock = batch_process_helper_func(laplacian, [mock_model, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
+            #     # laplacian_mock_2 = batch_process_helper_func(laplacian, [mock_model_2, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
+            #     # laplacian_mock_3 = batch_process_helper_func(laplacian, [mock_model_3, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
+            #     # laplacian_mock_4 = batch_process_helper_func(laplacian, [mock_model_4, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
+                # laplacian_mock_c = batch_process_helper_func(laplacianWithH, [mock_model_complex1, real_pts, pullbacks, invmetrics,None], batch_indices=[1, 2, 3], kwargs={'training': False})
+                # laplacian_mock_2_c = batch_process_helper_func(laplacianWithH, [mock_model_complex2, real_pts, pullbacks, invmetrics,None], batch_indices=[1, 2, 3], kwargs={'training': False})
+                # laplacian_mock_3_c = batch_process_helper_func(laplacianWithH, [mock_model_complex3, real_pts, pullbacks, invmetrics,None], batch_indices=[1, 2, 3], kwargs={'training': False})
+                # laplacian_mock_4_c = batch_process_helper_func(laplacianWithH, [mock_model_complex4, real_pts, pullbacks, invmetrics,None], batch_indices=[1, 2, 3], kwargs={'training': False})
                 # mock_model_vals = mock_model(real_pts)
                 # mock_model_2_vals = mock_model_2(real_pts)
-                # np
+                # mock_model_3_vals = mock_model_3(real_pts)
+                # mock_model_4_vals = mock_model_4(real_pts)
+                # mock_model_c_vals = mock_model_complex1(real_pts)
+                # mock_model_2_c_vals = mock_model_complex2(real_pts)
+                # mock_model_3_c_vals = mock_model_complex3(real_pts)
+                # mock_model_4_c_vals = mock_model_complex4(real_pts)
+                
+                # # Save laplacians to file
+                # if saveextra:
+                #     np.savez(laplacians_filename, 
+                #          laplacian_mock=laplacian_mock.numpy(),
+                #          laplacian_mock_2=laplacian_mock_2.numpy(),
+                #          laplacian_mock_3=laplacian_mock_3.numpy(),
+                #          laplacian_mock_4=laplacian_mock_4.numpy(),
+                #          laplacian_mock_c=laplacian_mock_c.numpy(),
+                #          laplacian_mock_2_c=laplacian_mock_2_c.numpy(),
+                #          laplacian_mock_3_c=laplacian_mock_3_c.numpy(),
+                #          laplacian_mock_4_c=laplacian_mock_4_c.numpy(),
 
-            #sectionval_mock = mock_model(real_pts)
-            #sectionval_mock_2 = mock_model_2(real_pts)
+                #          mock_model_vals=mock_model_vals.numpy(),
+                #          mock_model_2_vals=mock_model_2_vals.numpy(),
+                #          mock_model_3_vals=mock_model_3_vals.numpy(),
+                #          mock_model_4_vals=mock_model_4_vals.numpy(),
+                #          mock_model_c_vals=mock_model_c_vals.numpy(),
+                #          mock_model_2_c_vals=mock_model_2_c_vals.numpy(),
+                #          mock_model_3_c_vals=mock_model_3_c_vals.numpy(),
+        #         #          mock_model_4_c_vals=mock_model_4_c_vals.numpy())
+        #         # print(f"Saved laplacians to {laplacians_filename}")
+                
+        #         # laplacian_mock = batch_process_helper_func(laplacian, [mock_model, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
+        #         # laplacian_mock_2 = batch_process_helper_func(laplacian, [mock_model_2, real_pts, pullbacks, invmetrics], batch_indices=[1, 2, 3], kwargs={'training': False})
+        #         # mock_model_vals = mock_model(real_pts)
+        #         # mock_model_2_vals = mock_model_2(real_pts)
+        #         # np
 
-            # Calculate absolute values for mock models
-            laplacian_mock_real_abs = tf.abs(tf.math.real(laplacian_mock))
-            laplacian_mock_imag_abs = tf.abs(tf.math.imag(laplacian_mock))
+        #     #sectionval_mock = mock_model(real_pts)
+        #     #sectionval_mock_2 = mock_model_2(real_pts)
+
+        #     # Calculate absolute values for mock models
+        #     laplacian_mock_real_abs = tf.abs(tf.math.real(laplacian_mock))
+        #     laplacian_mock_imag_abs = tf.abs(tf.math.imag(laplacian_mock))
             
-            laplacian_mock_2_real_abs = tf.abs(tf.math.real(laplacian_mock_2))
-            laplacian_mock_2_imag_abs = tf.abs(tf.math.imag(laplacian_mock_2))
+        #     laplacian_mock_2_real_abs = tf.abs(tf.math.real(laplacian_mock_2))
+        #     laplacian_mock_2_imag_abs = tf.abs(tf.math.imag(laplacian_mock_2))
             
-            laplacian_mock_3_real_abs = tf.abs(tf.math.real(laplacian_mock_3))
-            laplacian_mock_3_imag_abs = tf.abs(tf.math.imag(laplacian_mock_3))
+        #     laplacian_mock_3_real_abs = tf.abs(tf.math.real(laplacian_mock_3))
+        #     laplacian_mock_3_imag_abs = tf.abs(tf.math.imag(laplacian_mock_3))
             
-            laplacian_mock_4_real_abs = tf.abs(tf.math.real(laplacian_mock_4))
-            laplacian_mock_4_imag_abs = tf.abs(tf.math.imag(laplacian_mock_4))
+        #     laplacian_mock_4_real_abs = tf.abs(tf.math.real(laplacian_mock_4))
+        #     laplacian_mock_4_imag_abs = tf.abs(tf.math.imag(laplacian_mock_4))
 
-            laplacian_mock_c_real_abs = tf.abs(tf.math.real(laplacian_mock_c))
-            laplacian_mock_c_imag_abs = tf.abs(tf.math.imag(laplacian_mock_c))
+        #     laplacian_mock_c_real_abs = tf.abs(tf.math.real(laplacian_mock_c))
+        #     laplacian_mock_c_imag_abs = tf.abs(tf.math.imag(laplacian_mock_c))
             
-            laplacian_mock_2_c_real_abs = tf.abs(tf.math.real(laplacian_mock_2_c))
-            laplacian_mock_2_c_imag_abs = tf.abs(tf.math.imag(laplacian_mock_2_c))
+        #     laplacian_mock_2_c_real_abs = tf.abs(tf.math.real(laplacian_mock_2_c))
+        #     laplacian_mock_2_c_imag_abs = tf.abs(tf.math.imag(laplacian_mock_2_c))
 
-            laplacian_mock_3_c_real_abs = tf.abs(tf.math.real(laplacian_mock_3_c))
-            laplacian_mock_3_c_imag_abs = tf.abs(tf.math.imag(laplacian_mock_3_c))
+        #     laplacian_mock_3_c_real_abs = tf.abs(tf.math.real(laplacian_mock_3_c))
+        #     laplacian_mock_3_c_imag_abs = tf.abs(tf.math.imag(laplacian_mock_3_c))
 
-            laplacian_mock_4_c_real_abs = tf.abs(tf.math.real(laplacian_mock_4_c))
-            laplacian_mock_4_c_imag_abs = tf.abs(tf.math.imag(laplacian_mock_4_c))
+        #     laplacian_mock_4_c_real_abs = tf.abs(tf.math.real(laplacian_mock_4_c))
+        #     laplacian_mock_4_c_imag_abs = tf.abs(tf.math.imag(laplacian_mock_4_c))
 
-            # Use g_cy_weights for integration
-            g_cy_weights = aux_weights * tf.math.real(tf.linalg.det(mets))
+        #     # Use g_cy_weights for integration
+        #     g_cy_weights = aux_weights * tf.math.real(tf.linalg.det(mets))
 
-            vol, se, _, _ = weighted_mean_and_standard_error(g_cy_weights**0, g_cy_weights)
-            print(f"check volume: {vol} +- {se}")
+        #     vol, se, _, _ = weighted_mean_and_standard_error(g_cy_weights**0, g_cy_weights)
+        #     print(f"check volume: {vol} +- {se}")
 
-            print(f"Shapes: {mock_model_vals.shape}, {mock_model_2_vals.shape}, {laplacian_mock.shape}, {laplacian_mock_2.shape}")
+        #     print(f"Shapes: {mock_model_vals.shape}, {mock_model_2_vals.shape}, {laplacian_mock.shape}, {laplacian_mock_2.shape}")
 
-            # Ensure mock models are real
-            mock_model_vals_real = tf.math.real(mock_model_vals)
-            mock_model_2_vals_real = tf.math.real(mock_model_2_vals)
-            mock_model_3_vals_real = tf.math.real(mock_model_3_vals)
-            mock_model_4_vals_real = tf.math.real(mock_model_4_vals)
+        #     # Ensure mock models are real
+        #     mock_model_vals_real = tf.math.real(mock_model_vals)
+        #     mock_model_2_vals_real = tf.math.real(mock_model_2_vals)
+        #     mock_model_3_vals_real = tf.math.real(mock_model_3_vals)
+        #     mock_model_4_vals_real = tf.math.real(mock_model_4_vals)
 
-            # Integrate laplacians
-            integate_mock, integate_mock_se, integate_mock_eff_n, _ = weighted_mean_and_standard_error(mock_model_vals_real, g_cy_weights)
-            integate_mock_2, integate_mock_2_se, integate_mock_2_eff_n, _ = weighted_mean_and_standard_error(mock_model_2_vals_real, g_cy_weights)
-            integate_mock_3, integate_mock_3_se, integate_mock_3_eff_n, _ = weighted_mean_and_standard_error(mock_model_3_vals_real, g_cy_weights)
-            integate_mock_4, integate_mock_4_se, integate_mock_4_eff_n, _ = weighted_mean_and_standard_error(mock_model_4_vals_real, g_cy_weights)
-            integate_mock_c, integate_mock_c_se, integate_mock_c_eff_n, _ = weighted_mean_and_standard_error(mock_model_c_vals, g_cy_weights)  
-            integate_mock_2_c, integate_mock_2_c_se, integate_mock_2_c_eff_n, _ = weighted_mean_and_standard_error(mock_model_2_c_vals, g_cy_weights)
-            integate_mock_3_c, integate_mock_3_c_se, integate_mock_3_c_eff_n, _ = weighted_mean_and_standard_error(mock_model_3_c_vals, g_cy_weights)
-            integate_mock_4_c, integate_mock_4_c_se, integate_mock_4_c_eff_n, _ = weighted_mean_and_standard_error(mock_model_4_c_vals, g_cy_weights)
-
-            
-            
-            int_lap_mock, int_lap_mock_se, int_lap_mock_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock, g_cy_weights)
-            int_lap_mock_real, int_lap_mock_real_se, int_lap_mock_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_real_abs, g_cy_weights)
-            int_lap_mock_imag, int_lap_mock_imag_se, int_lap_mock_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_imag_abs, g_cy_weights)
-            
-            int_lap_mock_2, int_lap_mock_2_se, int_lap_mock_2_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2, g_cy_weights)
-            int_lap_mock_2_real, int_lap_mock_2_real_se, int_lap_mock_2_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_real_abs, g_cy_weights)
-            int_lap_mock_2_imag, int_lap_mock_2_imag_se, int_lap_mock_2_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_imag_abs, g_cy_weights)
-            
-            int_lap_mock_3, int_lap_mock_3_se, int_lap_mock_3_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3, g_cy_weights)
-            int_lap_mock_3_real, int_lap_mock_3_real_se, int_lap_mock_3_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3_real_abs, g_cy_weights)
-            int_lap_mock_3_imag, int_lap_mock_3_imag_se, int_lap_mock_3_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3_imag_abs, g_cy_weights)
-            
-            int_lap_mock_4, int_lap_mock_4_se, int_lap_mock_4_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4, g_cy_weights)
-            int_lap_mock_4_real, int_lap_mock_4_real_se, int_lap_mock_4_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4_real_abs, g_cy_weights)
-            int_lap_mock_4_imag, int_lap_mock_4_imag_se, int_lap_mock_4_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4_imag_abs, g_cy_weights)
-
-
-            int_lap_mock_c, int_lap_mock_c_se, int_lap_mock_c_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_c, g_cy_weights)
-            int_lap_mock_c_real, int_lap_mock_c_real_se, int_lap_mock_c_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_c_real_abs, g_cy_weights)
-            int_lap_mock_c_imag, int_lap_mock_c_imag_se, int_lap_mock_c_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_c_imag_abs, g_cy_weights)   
-
-            int_lap_mock_2_c, int_lap_mock_2_c_se, int_lap_mock_2_c_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_c, g_cy_weights)
-            int_lap_mock_2_c_real, int_lap_mock_2_c_real_se, int_lap_mock_2_c_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_c_real_abs, g_cy_weights)
-            int_lap_mock_2_c_imag, int_lap_mock_2_c_imag_se, int_lap_mock_2_c_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_c_imag_abs, g_cy_weights)
-
-            int_lap_mock_3_c, int_lap_mock_3_c_se, int_lap_mock_3_c_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3_c, g_cy_weights)
-            int_lap_mock_3_c_real, int_lap_mock_3_c_real_se, int_lap_mock_3_c_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3_c_real_abs, g_cy_weights)
-            int_lap_mock_3_c_imag, int_lap_mock_3_c_imag_se, int_lap_mock_3_c_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3_c_imag_abs, g_cy_weights)
-
-            int_lap_mock_4_c, int_lap_mock_4_c_se, int_lap_mock_4_c_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4_c, g_cy_weights)
-            int_lap_mock_4_c_real, int_lap_mock_4_c_real_se, int_lap_mock_4_c_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4_c_real_abs, g_cy_weights)
-            int_lap_mock_4_c_imag, int_lap_mock_4_c_imag_se, int_lap_mock_4_c_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4_c_imag_abs, g_cy_weights)
-
+        #     # Integrate laplacians
+        #     integate_mock, integate_mock_se, integate_mock_eff_n, _ = weighted_mean_and_standard_error(mock_model_vals_real, g_cy_weights)
+        #     integate_mock_2, integate_mock_2_se, integate_mock_2_eff_n, _ = weighted_mean_and_standard_error(mock_model_2_vals_real, g_cy_weights)
+        #     integate_mock_3, integate_mock_3_se, integate_mock_3_eff_n, _ = weighted_mean_and_standard_error(mock_model_3_vals_real, g_cy_weights)
+        #     integate_mock_4, integate_mock_4_se, integate_mock_4_eff_n, _ = weighted_mean_and_standard_error(mock_model_4_vals_real, g_cy_weights)
+        #     integate_mock_c, integate_mock_c_se, integate_mock_c_eff_n, _ = weighted_mean_and_standard_error(mock_model_c_vals, g_cy_weights)  
+        #     integate_mock_2_c, integate_mock_2_c_se, integate_mock_2_c_eff_n, _ = weighted_mean_and_standard_error(mock_model_2_c_vals, g_cy_weights)
+        #     integate_mock_3_c, integate_mock_3_c_se, integate_mock_3_c_eff_n, _ = weighted_mean_and_standard_error(mock_model_3_c_vals, g_cy_weights)
+        #     integate_mock_4_c, integate_mock_4_c_se, integate_mock_4_c_eff_n, _ = weighted_mean_and_standard_error(mock_model_4_c_vals, g_cy_weights)
 
             
             
+        #     int_lap_mock, int_lap_mock_se, int_lap_mock_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock, g_cy_weights)
+        #     int_lap_mock_real, int_lap_mock_real_se, int_lap_mock_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_real_abs, g_cy_weights)
+        #     int_lap_mock_imag, int_lap_mock_imag_se, int_lap_mock_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_imag_abs, g_cy_weights)
             
+        #     int_lap_mock_2, int_lap_mock_2_se, int_lap_mock_2_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2, g_cy_weights)
+        #     int_lap_mock_2_real, int_lap_mock_2_real_se, int_lap_mock_2_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_real_abs, g_cy_weights)
+        #     int_lap_mock_2_imag, int_lap_mock_2_imag_se, int_lap_mock_2_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_imag_abs, g_cy_weights)
             
+        #     int_lap_mock_3, int_lap_mock_3_se, int_lap_mock_3_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3, g_cy_weights)
+        #     int_lap_mock_3_real, int_lap_mock_3_real_se, int_lap_mock_3_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3_real_abs, g_cy_weights)
+        #     int_lap_mock_3_imag, int_lap_mock_3_imag_se, int_lap_mock_3_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3_imag_abs, g_cy_weights)
             
-            
-            
-            
-            
-            # Print integration results
-            print(f"Mock model 1: {integate_mock} ± {integate_mock_se}")
-            print(f"Mock model 1 laplacian: {int_lap_mock} ± {int_lap_mock_se}")
-            print(f"Mock model 1 |Re(lap)|: {int_lap_mock_real} ± {int_lap_mock_real_se}")
-            #print(f"Mock model 1 |Im(lap)|: {int_lap_mock_imag} ± {int_lap_mock_imag_se}")
-            
-            print(f"Mock model 2: {integate_mock_2} ± {integate_mock_2_se}")
-            print(f"Mock model 2 laplacian: {int_lap_mock_2} ± {int_lap_mock_2_se}")
-            print(f"Mock model 2 |Re(lap)|: {int_lap_mock_2_real} ± {int_lap_mock_2_real_se}")
-            #print(f"Mock model 2 |Im(lap)|: {int_lap_mock_2_imag} ± {int_lap_mock_2_imag_se}")
-            
-            print(f"Mock model 3: {integate_mock_3} ± {integate_mock_3_se}")
-            print(f"Mock model 3 laplacian: {int_lap_mock_3} ± {int_lap_mock_3_se}")
-            print(f"Mock model 3 |Re(lap)|: {int_lap_mock_3_real} ± {int_lap_mock_3_real_se}")
-            #print(f"Mock model 3 |Im(lap)|: {int_lap_mock_3_imag} ± {int_lap_mock_3_imag_se}")
-            
-            print(f"Mock model 4: {integate_mock_4} ± {integate_mock_4_se}")
-            print(f"Mock model 4 laplacian: {int_lap_mock_4} ± {int_lap_mock_4_se}")
-            print(f"Mock model 4 |Re(lap)|: {int_lap_mock_4_real} ± {int_lap_mock_4_real_se}")
-            #print(f"Mock model 4 |Im(lap)|: {int_lap_mock_4_imag} ± {int_lap_mock_4_imag_se}")
-
-            print(f"Mock model c: {integate_mock_c} ± {integate_mock_c_se}")
-            print(f"Mock model c laplacian: {int_lap_mock_c} ± {int_lap_mock_c_se}")
-            print(f"Mock model c |Re(lap)|: {int_lap_mock_c_real} ± {int_lap_mock_c_real_se}")
-            #print(f"Mock model c |Im(lap)|: {int_lap_mock_c_imag} ± {int_lap_mock_c_imag_se}")
-
-            print(f"Mock model 2 c: {integate_mock_2_c} ± {integate_mock_2_c_se}")
-            print(f"Mock model 2 c laplacian: {int_lap_mock_2_c} ± {int_lap_mock_2_c_se}")
-            print(f"Mock model 2 c |Re(lap)|: {int_lap_mock_2_c_real} ± {int_lap_mock_2_c_real_se}")
-            #print(f"Mock model 2 c |Im(lap)|: {int_lap_mock_2_c_imag} ± {int_lap_mock_2_c_imag_se}")
-            
-            print(f"Mock model 3 c: {integate_mock_3_c} ± {integate_mock_3_c_se}")
-            print(f"Mock model 3 c laplacian: {int_lap_mock_3_c} ± {int_lap_mock_3_c_se}")
-            print(f"Mock model 3 c |Re(lap)|: {int_lap_mock_3_c_real} ± {int_lap_mock_3_c_real_se}")
-            #print(f"Mock model 3 c |Im(lap)|: {int_lap_mock_3_c_imag} ± {int_lap_mock_3_c_imag_se}")
-            
-            print(f"Mock model 4 c: {integate_mock_4_c} ± {integate_mock_4_c_se}")
-            print(f"Mock model 4 c laplacian: {int_lap_mock_4_c} ± {int_lap_mock_4_c_se}")
-            print(f"Mock model 4 c |Re(lap)|: {int_lap_mock_4_c_real} ± {int_lap_mock_4_c_real_se}")
-            #print(f"Mock model 4 c |Im(lap)|: {int_lap_mock_4_c_imag} ± {int_lap_mock_4_c_imag_se}")
-            
-            
-            
-            
-            
-            
+        #     int_lap_mock_4, int_lap_mock_4_se, int_lap_mock_4_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4, g_cy_weights)
+        #     int_lap_mock_4_real, int_lap_mock_4_real_se, int_lap_mock_4_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4_real_abs, g_cy_weights)
+        #     int_lap_mock_4_imag, int_lap_mock_4_imag_se, int_lap_mock_4_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4_imag_abs, g_cy_weights)
 
 
-        # vals = []
+        #     int_lap_mock_c, int_lap_mock_c_se, int_lap_mock_c_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_c, g_cy_weights)
+        #     int_lap_mock_c_real, int_lap_mock_c_real_se, int_lap_mock_c_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_c_real_abs, g_cy_weights)
+        #     int_lap_mock_c_imag, int_lap_mock_c_imag_se, int_lap_mock_c_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_c_imag_abs, g_cy_weights)   
+
+        #     int_lap_mock_2_c, int_lap_mock_2_c_se, int_lap_mock_2_c_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_c, g_cy_weights)
+        #     int_lap_mock_2_c_real, int_lap_mock_2_c_real_se, int_lap_mock_2_c_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_c_real_abs, g_cy_weights)
+        #     int_lap_mock_2_c_imag, int_lap_mock_2_c_imag_se, int_lap_mock_2_c_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_2_c_imag_abs, g_cy_weights)
+
+        #     int_lap_mock_3_c, int_lap_mock_3_c_se, int_lap_mock_3_c_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3_c, g_cy_weights)
+        #     int_lap_mock_3_c_real, int_lap_mock_3_c_real_se, int_lap_mock_3_c_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3_c_real_abs, g_cy_weights)
+        #     int_lap_mock_3_c_imag, int_lap_mock_3_c_imag_se, int_lap_mock_3_c_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_3_c_imag_abs, g_cy_weights)
+
+        #     int_lap_mock_4_c, int_lap_mock_4_c_se, int_lap_mock_4_c_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4_c, g_cy_weights)
+        #     int_lap_mock_4_c_real, int_lap_mock_4_c_real_se, int_lap_mock_4_c_real_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4_c_real_abs, g_cy_weights)
+        #     int_lap_mock_4_c_imag, int_lap_mock_4_c_imag_se, int_lap_mock_4_c_imag_eff_n, _ = weighted_mean_and_standard_error(laplacian_mock_4_c_imag_abs, g_cy_weights)
+
+
+            
+            
+            
+            
+            
+            
+            
+            
+            
+        #     # Print integration results
+        #     print(f"Mock model 1: {integate_mock} ± {integate_mock_se}")
+        #     print(f"Mock model 1 laplacian: {int_lap_mock} ± {int_lap_mock_se}")
+        #     print(f"Mock model 1 |Re(lap)|: {int_lap_mock_real} ± {int_lap_mock_real_se}")
+        #     #print(f"Mock model 1 |Im(lap)|: {int_lap_mock_imag} ± {int_lap_mock_imag_se}")
+            
+        #     print(f"Mock model 2: {integate_mock_2} ± {integate_mock_2_se}")
+        #     print(f"Mock model 2 laplacian: {int_lap_mock_2} ± {int_lap_mock_2_se}")
+        #     print(f"Mock model 2 |Re(lap)|: {int_lap_mock_2_real} ± {int_lap_mock_2_real_se}")
+        #     #print(f"Mock model 2 |Im(lap)|: {int_lap_mock_2_imag} ± {int_lap_mock_2_imag_se}")
+            
+        #     print(f"Mock model 3: {integate_mock_3} ± {integate_mock_3_se}")
+        #     print(f"Mock model 3 laplacian: {int_lap_mock_3} ± {int_lap_mock_3_se}")
+        #     print(f"Mock model 3 |Re(lap)|: {int_lap_mock_3_real} ± {int_lap_mock_3_real_se}")
+        #     #print(f"Mock model 3 |Im(lap)|: {int_lap_mock_3_imag} ± {int_lap_mock_3_imag_se}")
+            
+        #     print(f"Mock model 4: {integate_mock_4} ± {integate_mock_4_se}")
+        #     print(f"Mock model 4 laplacian: {int_lap_mock_4} ± {int_lap_mock_4_se}")
+        #     print(f"Mock model 4 |Re(lap)|: {int_lap_mock_4_real} ± {int_lap_mock_4_real_se}")
+        #     #print(f"Mock model 4 |Im(lap)|: {int_lap_mock_4_imag} ± {int_lap_mock_4_imag_se}")
+
+        #     print(f"Mock model c: {integate_mock_c} ± {integate_mock_c_se}")
+        #     print(f"Mock model c laplacian: {int_lap_mock_c} ± {int_lap_mock_c_se}")
+        #     print(f"Mock model c |Re(lap)|: {int_lap_mock_c_real} ± {int_lap_mock_c_real_se}")
+        #     #print(f"Mock model c |Im(lap)|: {int_lap_mock_c_imag} ± {int_lap_mock_c_imag_se}")
+
+        #     print(f"Mock model 2 c: {integate_mock_2_c} ± {integate_mock_2_c_se}")
+        #     print(f"Mock model 2 c laplacian: {int_lap_mock_2_c} ± {int_lap_mock_2_c_se}")
+        #     print(f"Mock model 2 c |Re(lap)|: {int_lap_mock_2_c_real} ± {int_lap_mock_2_c_real_se}")
+        #     #print(f"Mock model 2 c |Im(lap)|: {int_lap_mock_2_c_imag} ± {int_lap_mock_2_c_imag_se}")
+            
+        #     print(f"Mock model 3 c: {integate_mock_3_c} ± {integate_mock_3_c_se}")
+        #     print(f"Mock model 3 c laplacian: {int_lap_mock_3_c} ± {int_lap_mock_3_c_se}")
+        #     print(f"Mock model 3 c |Re(lap)|: {int_lap_mock_3_c_real} ± {int_lap_mock_3_c_real_se}")
+        #     #print(f"Mock model 3 c |Im(lap)|: {int_lap_mock_3_c_imag} ± {int_lap_mock_3_c_imag_se}")
+            
+        #     print(f"Mock model 4 c: {integate_mock_4_c} ± {integate_mock_4_c_se}")
+        #     print(f"Mock model 4 c laplacian: {int_lap_mock_4_c} ± {int_lap_mock_4_c_se}")
+        #     print(f"Mock model 4 c |Re(lap)|: {int_lap_mock_4_c_real} ± {int_lap_mock_4_c_real_se}")
+        #     #print(f"Mock model 4 c |Im(lap)|: {int_lap_mock_4_c_imag} ± {int_lap_mock_4_c_imag_se}")
+            
+            
+            
+            
+            
+            
+
+
+        # # vals = []
        
         # vals = []
         # mAll = []
