@@ -93,6 +93,8 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
     weights=tf.cast(ytrain64[:n_p,0],real_dtype)
     omegasquared=tf.cast(ytrain64[:n_p,1],real_dtype)
     mulweightsby=omegasquared/tf.reduce_mean(omegasquared)# arbitrary normalisation
+  
+
 
     print("\n do analysis: \n\n\n")
 
@@ -1432,7 +1434,16 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
         if batch_size_psi or batch_size_det:
             from cymetric.pointgen.wp import WP
             wpcalculator = WP(pg)
+            try:
+                pointsComplex_all_jax = jnp.concat((dataEval['X_train'], dataEval['X_val']), axis=0)
+                pullbacks_all_jax = jnp.concat((dataEval['train_pullbacks'], dataEval['val_pullbacks']), axis=0)
+                weights_all_jax = jnp.concat((dataEval['y_train'][:,0], dataEval['y_val'][:,1]), axis=0)
+            except:
+                pointsComplex_all_jax = None
+                pullbacks_all_jax = None
+                weights_all_jax = None
         if batch_size_psi:
+            import jax
             if 'm1' in run_args and not 'split_deformation' in run_args:
                 vector = jax.nn.one_hot(40, 81)
             elif 'm1' in run_args and 'split_deformation' in run_args:
@@ -1447,7 +1458,7 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
 
             jax.config.update('jax_enable_x64', True)
             print(f"Running normalisation of deformation: batch size {batch_size_psi}")
-            norm_of_psi, error_of_norm, zscore_of_norm = wpcalculator.get_moduli_psi_normalisation(jnp.array(pointsComplex, dtype = jnp.complex128), jnp.array(weights, dtype = jnp.float64), jnp.array(pullbacks_all, dtype = jnp.complex128), batch_size = batch_size_psi, psivector = vector)
+            norm_of_psi, error_of_norm, zscore_of_norm = wpcalculator.get_moduli_psi_normalisation(jnp.array(pointsComplex_all_jax, dtype = jnp.complex128), jnp.array(weights_all_jax, dtype = jnp.float64), jnp.array(pullbacks_all_jax, dtype = jnp.complex128), batch_size = batch_size_psi, psivector = vector)
             canonical_normaliser = np.abs(norm_of_psi)**(-0.5)
             error_on_canonical_normaliser = 0.5 * np.abs(norm_of_psi)**(-1.5) * np.abs(error_of_norm)
             wandb.log({"psi_matrix_element_R": np.real(norm_of_psi),
@@ -1460,7 +1471,7 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
             #i.e. d modulus = canonical_normaliser*d modulus of psi
         if batch_size_det:
             print(f"Running moduli space determinant: batch size {batch_size_det}")
-            det_of_moduli_space, error_of_det, zscore_of_det = wpcalculator.get_moduli_space_determinant(jnp.array(pointsComplex, dtype = jnp.complex128), jnp.array(weights, dtype = jnp.float64), jnp.array(pullbacks_all, dtype = jnp.complex128), batch_size = batch_size_det)
+            det_of_moduli_space, error_of_det, zscore_of_det = wpcalculator.get_moduli_space_determinant(jnp.array(pointsComplex_all_jax, dtype = jnp.complex128), jnp.array(weights_all_jax, dtype = jnp.float64), jnp.array(pullbacks_all_jax, dtype = jnp.complex128), batch_size = batch_size_det)
 
             wandb.log({"det_of_moduli_space_R":np.real(det_of_moduli_space),
                         "det_of_moduli_space_I":np.imag(det_of_moduli_space), 
