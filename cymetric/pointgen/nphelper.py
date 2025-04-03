@@ -265,11 +265,21 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
         else:
             if average_selected_t==True:
                 raise ValueError("Shuffling points must be done when average_selected_t is True")
-
     elif use_quadratic_method:
         numpy_seed = np.random.get_state()[1][0]# use the same seed as numpy for the jax seed
         all_points, all_weights, all_omega, all_pullbacks = [], [], [], []
         print("Using quadratic method")
+        
+        # Compile JAX functions first to avoid redundant compilation in each process
+        # Run a small batch through the key functions to trigger compilation
+        if hasattr(point_gen, 'generate_point_weights'):
+            print("Pre-compiling JAX functions...")
+            # Create a small test batch with a fixed seed
+            test_batch_size = 100
+            datatemp = point_gen.generate_point_weights(test_batch_size, omega=True, normalize_to_vol_j=False, selected_t_val=None, use_quadratic_method=True, get_pullbacks=True)
+            # Run through the solver to compile functions
+            print("JAX functions compiled")
+        
         if do_multiprocessing:
             # Set JAX to use only 1 thread per process to avoid oversubscription
             # Limit ourselves to single-threaded jax/xla operations to avoid thrashing. See
@@ -307,7 +317,6 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
                 )
             for i in range(10):
                 gc.collect()
-        
             # Collect results
             for pts, w, om, pb in results:
                 all_points.append(pts)

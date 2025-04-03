@@ -8,7 +8,7 @@ import time
 from functools import partial
 
 # Disable JIT compilation
-jax.config.update("jax_disable_jit", True)
+#jax.config.update("jax_disable_jit", True)
 
 
 class JAXPointGeneratorQuadratic:
@@ -440,7 +440,7 @@ class IntersectionSolverJAX:
     def roots_NR_vmap(self, x, max_iter=100):
         return jax.vmap(lambda x: self.roots_NR(x, max_iter=max_iter))(x)
     
-    @jax.jit
+    @partial(jax.jit, static_argnums=(0))
     def roots_NR(self, coeffs, tol=1e-12, max_iter=100):
         """Find polynomial roots with jnp.roots then refine with Newton-Raphson."""
         # Get initial roots
@@ -473,7 +473,7 @@ class IntersectionSolverJAX:
     # -------------------------------------------------
     # Build patch polynomials
     # -------------------------------------------------
-    @jax.jit
+    @partial(jax.jit, static_argnums=(0))
     def patchA_poly(self, c):
         """
         c => (c00,c01,c10,c11),
@@ -492,7 +492,7 @@ class IntersectionSolverJAX:
         # Map the function application across all functions in patchA_funs
         return jnp.stack(jax.tree.map(apply_fun, self.patchA_funs))
 
-    @jax.jit
+    @partial(jax.jit, static_argnums=(0))
     def patchB_poly(self, c):
         # c00, c01, c10, c11 = c[0], c[1], c[2], c[3]
         # d00, d01, d10, d11 = c[4], c[5], c[6], c[7]
@@ -512,7 +512,7 @@ class IntersectionSolverJAX:
     # -------------------------------------------------
     # eqn1..eqn4 check
     # -------------------------------------------------
-    @jax.jit
+    @partial(jax.jit, static_argnums=(0))
     def get_point_from_solution(self, x0, x1, c):
         """
         Evaluate eqn1..eqn4 with expansions from eqn1..eqn3 plus user monomials.
@@ -542,6 +542,7 @@ class IntersectionSolverJAX:
 
         return jnp.concatenate([jnp.array([x0, x1]), ys, zs, ws])
 
+    @partial(jax.jit, static_argnums=(0))
     def eqn_123_eval(self, point, cs):
         x0, x1, y0, y1, z0, z1, w0, w1 = point
         c00, c01, c10, c11, d00, d01, d10, d11, e00, e01, e10, e11 = cs
@@ -550,6 +551,7 @@ class IntersectionSolverJAX:
         eq3_val = e00*z0*w0 + e01*z0*w1 + e10*z1*w0 + e11*z1*w1
         return jnp.array([eq1_val, eq2_val, eq3_val])
 
+    @partial(jax.jit, static_argnums=(0))
     def eqn_eval(self, point):
         """
         Evaluate eqn1..eqn4 with expansions from eqn1..eqn3 plus user monomials.
@@ -589,8 +591,9 @@ class IntersectionSolverJAX:
 
         return jnp.array(eq4_val, dtype=jnp.complex128)
 
-    @jax.jit
-    def generate_and_format_cde(self, key, batch_size):
+    @staticmethod
+    @partial(jax.jit, static_argnums=(1))
+    def generate_and_format_cde(key, batch_size):
         key, subkey1, subkey2, subkey3, subkey4, subkey5, subkey6 = jax.random.split(key, 7)
         cs = jax.random.normal(subkey1, (batch_size, 4)) + 1j*jax.random.normal(subkey2, (batch_size, 4))
         cs /= jnp.sqrt(jnp.sum(jnp.abs(cs)**2, axis=1, keepdims=True))
@@ -614,7 +617,7 @@ class IntersectionSolverJAX:
            then evaluate eqn1..eqn4. Return eqA_vals, eqB_vals => shape
            (batch_size, degA, 4) and (batch_size, degB, 4).
         """
-        cde_batch = self.generate_and_format_cde(key, batch_size)
+        cde_batch = IntersectionSolverJAX.generate_and_format_cde(key, batch_size)
         polyA_batch = self.funcall_A_batch(cde_batch)
         polyA_batch = polyA_batch/jnp.sqrt(jnp.sum(jnp.abs(polyA_batch)**2, axis=1, keepdims=True))
         if self.use_gmpy2:

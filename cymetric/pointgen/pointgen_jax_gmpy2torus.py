@@ -8,7 +8,7 @@ import time
 from functools import partial
 
 # Disable JIT compilation
-jax.config.update("jax_disable_jit", True)
+#jax.config.update("jax_disable_jit", False)
 from cymetric.pointgen.pointgen_jax_gmpy2 import gmpy2_poly_solver
 
 
@@ -339,19 +339,19 @@ class IntersectionSolverJAX_torus:
         else:
             self.roots_solver = self.roots_vmap
 
-    @jax.jit
+    @partial(jax.jit, static_argnums=(0))
     def patchA_poly(self, c):
         def apply_fun(fun):
             return fun(*c)
         return jnp.stack(jax.tree.map(apply_fun, self.patchA_funs))
 
-    @jax.jit
+    @partial(jax.jit, static_argnums=(0))
     def patchB_poly(self, c):
         def apply_fun(fun):
             return fun(*c)
         return jnp.stack(jax.tree.map(apply_fun, self.patchB_funs))
 
-    @jax.jit
+    @partial(jax.jit, static_argnums=(0))
     def get_point_from_solution(self, x0, x1, c):
         x0,x1= projective_normalize(x0,x1)
         c00, c01, c10, c11 = c[0], c[1], c[2], c[3]
@@ -381,7 +381,7 @@ class IntersectionSolverJAX_torus:
         eq2_val = jnp.sum(self.coefficients_jax * monomial_values)
         return jnp.array(eq2_val, dtype=jnp.complex128)
 
-    @jax.jit
+    @partial(jax.jit, static_argnums=(0,2))
     def generate_and_format_c(self, key, batch_size):
         key, subkey1, subkey2 = jax.random.split(key, 3)
         cs = jax.random.normal(subkey1, (batch_size, 4)) + 1j*jax.random.normal(subkey2, (batch_size, 4))
@@ -430,7 +430,7 @@ class IntersectionSolverJAX_torus:
     def roots_NR_vmap(self, x, max_iter=100):
         return jax.vmap(lambda x: self.roots_NR(x, max_iter=max_iter))(x)
     
-    @jax.jit
+    @partial(jax.jit, static_argnums=(0))
     def roots_NR(self, coeffs, tol=1e-12, max_iter=100):
         """Find polynomial roots with jnp.roots then refine with Newton-Raphson."""
         # Get initial roots
