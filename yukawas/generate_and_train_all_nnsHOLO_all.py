@@ -364,6 +364,7 @@ def train_and_save_nn(manifold_name_and_data, phimodel_config=None,use_zero_netw
    #phimodel.learn_ricci_val= True
    valfinal=phimodel.test_step(datacasted)
    valfinal = {key: value.numpy() for key, value in valfinal.items()}
+   wandb.log(valfinal)
    #phimodel.learn_ricci_val=False 
    print("zero network validation loss: ")
    print(valzero)
@@ -513,6 +514,7 @@ def load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=
    # valtrained=phimodel.evaluate(datacasted[0],datacasted[1],datacasted[2],return_dict=True)
    valzero=phimodelzero.test_step(datacasted)
    valtrained=phimodel.test_step(datacasted)
+   wp.log(valtrained)
 
 
    # phimodel.learn_ricci_val=False 

@@ -962,8 +962,14 @@ if __name__ ==  '__main__':
     else:
         print("just FS")
         do_extra_stuff_for_integration = False
-    batch_size_psi = 10000
-    batch_size_det = 3000
+    batch_size_psi = 1000
+    batch_size_det = 300
+    if 'batchmu' in [s[:7] for s in sys.argv]:
+        number = [s[7:] for s in sys.argv if s[:7] == 'batchmu'][0]
+        number = number.split('_')
+        batch_size_psi = int(number[0])
+        batch_size_det = int(number[1])
+        print(f"batch_size_psi: {batch_size_psi}, batch_size_det: {batch_size_det}")
     if 'nowp' in sys.argv:
         batch_size_psi = False
         batch_size_det = False
