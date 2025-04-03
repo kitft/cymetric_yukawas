@@ -1434,6 +1434,7 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
         if batch_size_psi or batch_size_det:
             from cymetric.pointgen.wp import WP
             wpcalculator = WP(pg)
+            jax.config.update('jax_enable_x64', True)
             try:
                 pointsComplex_all_jax = jnp.concat((dataEval['X_train'], dataEval['X_val']), axis=0)
                 pullbacks_all_jax = jnp.concat((dataEval['train_pullbacks'], dataEval['val_pullbacks']), axis=0)
@@ -1456,7 +1457,6 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
                 print("no sensible run_args found, using default psi")
                 vector = jax.nn.one_hot(40, 81)
 
-            jax.config.update('jax_enable_x64', True)
             print(f"Running normalisation of deformation: batch size {batch_size_psi}")
             norm_of_psi, error_of_norm, zscore_of_norm = wpcalculator.get_moduli_psi_normalisation(jnp.array(pointsComplex_all_jax, dtype = jnp.complex128), jnp.array(weights_all_jax, dtype = jnp.float64), jnp.array(pullbacks_all_jax, dtype = jnp.complex128), batch_size = batch_size_psi, psivector = vector)
             canonical_normaliser = np.abs(norm_of_psi)**(-0.5)
