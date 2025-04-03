@@ -8,7 +8,7 @@ import time
 from functools import partial
 
 # Disable JIT compilation
-jax.config.update("jax_disable_jit", True)
+#jax.config.update("jax_disable_jit", True)
 
 
 class JAXPointGenerator:
