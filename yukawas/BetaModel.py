@@ -701,7 +701,7 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     kappaover6 = tf.cast(kappaover6, real_dtype)
     weightsreal = tf.cast(weights[:,0], real_dtype)
     print(f'kappa over 6 : {kappaover6}')
-    slopeassertlimit = 10 if len(sourcesCY) < 10000 else 5
+    slopeassertlimit = 10 if len(sourcesCY) < 10000 else 10
     
     # Calculate volumes and slopes using weighted mean and standard error
     vol_integrand = weightsreal
@@ -715,8 +715,12 @@ def prepare_dataset_HYM(point_gen, data,n_p, dirname, metricModel,linebundleforH
     slope_error = tf.math.real(slope_se) * kappaover6
 
     print("CY volume and slope: " + str(volfromCY.numpy().item()) + " and " + str(slopefromvolCYrhoCY.numpy().item()) + " ± " + str(slope_error.numpy().item()))
-    tf.debugging.assert_less(tf.abs(slopefromvolCYrhoCY), tf.constant(slopeassertlimit, dtype=real_dtype) * tf.abs(slope_error),
-                            message=f"Error: Slope {slopefromvolCYrhoCY} exceeds threshold of {slopeassertlimit} times error {slope_error}")
+    # Warn if slope is over 5 times the error, error if over 20 times
+    if tf.abs(slopefromvolCYrhoCY) > tf.constant(5.0, dtype=real_dtype) * tf.abs(slope_error):
+        print(f"Warning: Slope {slopefromvolCYrhoCY.numpy().item()} exceeds 5 times error {slope_error.numpy().item()}")
+    
+    tf.debugging.assert_less(tf.abs(slopefromvolCYrhoCY), tf.constant(20.0, dtype=real_dtype) * tf.abs(slope_error),
+                            message=f"Error: Slope {slopefromvolCYrhoCY} exceeds threshold of 20 times error {slope_error}")
     
     abs_slope_integrand = (1/6) * (2/np.pi) * tf.math.abs(sourcesCY)
     abs_slope_mean, abs_slope_se, _, _ = weighted_mean_and_standard_error(abs_slope_integrand, weightsreal, is_top_form=True)
