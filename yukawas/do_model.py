@@ -768,6 +768,7 @@ if __name__ ==  '__main__':
     #if start_from != 'end':
     wandb.init(project = type_folder,
             name = f'{modeltype}_fc_{unique_id_or_coeff}_{addtofilename}_{job_id}',
+            tags = [integrate_or_run, modeltype, "nint"+str(n_to_integrate), "npoints"+str(nPoints), addtofilename]+addtags,
             config = {'unique_id_or_coeff': unique_id_or_coeff,
                       'unique_id_or_coeff_float': unique_id_or_coeff_float,
                       'unique_id_or_coeff_real': np.real(unique_id_or_coeff),
