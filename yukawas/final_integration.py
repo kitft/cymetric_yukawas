@@ -1448,15 +1448,20 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
                 weights_all_jax = None
         if batch_size_psi:
             if 'm1' in run_args and not 'split_deformation' in run_args:
+                print('using 40')
                 vector = jax.nn.one_hot(40, 81)
             elif 'm1' in run_args and 'split_deformation' in run_args:
+                print('using 58 and 22')
                 vector = jax.nn.one_hot(58, 81) + jax.nn.one_hot(22, 81)
             elif 'm2' in run_args and not 'regular_deformation' in run_args:
+                print('using 58 and 22')
                 vector = jax.nn.one_hot(58, 81) + jax.nn.one_hot(22, 81)
             elif 'm2' in run_args and 'regular_deformation' in run_args:
+                print('using 40')
                 vector = jax.nn.one_hot(40, 81)
             else:
                 print("no sensible run_args found, using default psi")
+                print('using 40')
                 vector = jax.nn.one_hot(40, 81)
 
             print(f"Running normalisation of deformation: batch size {batch_size_psi}")
@@ -1469,7 +1474,8 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
                        "error_I": np.imag(error_of_norm),
                        "zscore_R": (zscore_of_norm),
                        'canonical_normaliser': canonical_normaliser,
-                       'error_on_canonical_normaliser': error_on_canonical_normaliser}, commit=True)
+                       'error_on_canonical_normaliser': error_on_canonical_normaliser,
+                       "vector_used_nonzero_indices": np.count_nonzero(vector)}, commit=True)
             #i.e. d modulus = canonical_normaliser*d modulus of psi
         if batch_size_det:
             print(f"Running moduli space determinant: batch size {batch_size_det}")

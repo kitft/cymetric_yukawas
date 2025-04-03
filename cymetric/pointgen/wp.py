@@ -552,10 +552,46 @@ class WP:
 
         return gWP, gWP_std_error
 
-    def gwP(self, points, weights, pullbacks, indices = None, fullmatrix = False):
+    
+    @partial(jax.jit, static_argnums=(11,))
+    def gwP_jax_simple(points, weights, pullbacks, DQDZB0, DQDZF0, kmoduli, DI_DQB0, DI_DQF0, DI_DQZB0, DI_DQZF0, indices=None, fullmatrix=True):
+        """Simple version of gwP calculation without error handling"""
+        if indices is None:
+            indices = pg._find_max_dQ_coords_jax(points, DQDZB0, DQDZF0)
+        
+        vol_omega = jnp.mean(weights)
+        dnu_dI_antiholobit, trace_holo = dnu_dI(points, DQDZB0, DQDZF0, kmoduli, DI_DQB0, DI_DQF0, DI_DQZB0, DI_DQZF0, pullbacks, indices)
+        
+        # Calculate int_omega_dIomega
+        int_omega_dIomega = jnp.mean(jnp.einsum('x,xI->xI', weights, trace_holo), axis=0)
+        
+        # Calculate matrix components
+        int_dIomega_dJomegaholobit = jnp.einsum('x,xI,xJ->xIJ', weights, trace_holo, jnp.conjugate(trace_holo))
+        
+        wedge_the_two = jnp.array([[(-1)**((j+1)-(i+1)-1) for i in range(3)] for j in range(3)])
+        dnu_dI_antiholobit_dJantiholobit = jnp.einsum('x,ij,xIij,xJji->xIJ', weights, wedge_the_two, 
+                                                      dnu_dI_antiholobit, jnp.conjugate(dnu_dI_antiholobit))
+        
+        # Calculate gWP components
+        term1 = jnp.mean(int_dIomega_dJomegaholobit, axis=0) / vol_omega
+        term2 = jnp.mean(dnu_dI_antiholobit_dJantiholobit, axis=0) / vol_omega
+        term3 = jnp.einsum('I,J->IJ', int_omega_dIomega, jnp.conjugate(int_omega_dIomega)) / vol_omega**2
+        
+        # Combine terms
+        gWP = -(term1 + term2) + term3
+        
+        return gWP
+
+
+    def gwP(self, points, weights, pullbacks, indices = None, fullmatrix = False, simple = False):
         if indices is None:
             indices = PointGenerator._find_max_dQ_coords_jax(jnp.array(points, dtype = jnp.complex128), jnp.array(self.BASIS['DQDZB0'], dtype = jnp.complex128), jnp.array(self.BASIS['DQDZF0'], dtype = jnp.complex128))
         #return gwP_jax(points, self.BASIS['DQDZB0'], self.BASIS['DQDZF0'], self.kmoduli, self.BASIS['DI_DQB0'], self.BASIS['DI_DQF0'], self.BASIS['DI_DQZB0'], self.BASIS['DI_DQZF0'], weights,pullbacks, indices = indices, fullmatrix = fullmatrix)
+        if simple:
+            return WP.gwP_jax_simple(points, jnp.array(weights, dtype = jnp.float64), jnp.array(pullbacks, dtype = jnp.complex128), jnp.array(self.BASIS['DQDZB0'], dtype = jnp.complex128), 
+                       jnp.array(self.BASIS['DQDZF0'], dtype = jnp.complex128), jnp.array(self.kmoduli, dtype = jnp.complex128), jnp.array(self.BASIS['DI_DQB0'], dtype = jnp.complex128),
+                         jnp.array(self.BASIS['DI_DQF0'], dtype = jnp.complex128), jnp.array(self.BASIS['DI_DQZB0'], dtype = jnp.complex128), jnp.array(self.BASIS['DI_DQZF0'], dtype = jnp.complex128), 
+                         indices = indices, fullmatrix = fullmatrix), None
         return WP.gwP_jax(jnp.array(points, dtype = jnp.complex128), jnp.array(weights, dtype = jnp.float64), jnp.array(pullbacks, dtype = jnp.complex128), jnp.array(self.BASIS['DQDZB0'], dtype = jnp.complex128), 
                        jnp.array(self.BASIS['DQDZF0'], dtype = jnp.complex128), jnp.array(self.kmoduli, dtype = jnp.complex128), jnp.array(self.BASIS['DI_DQB0'], dtype = jnp.complex128),
                          jnp.array(self.BASIS['DI_DQF0'], dtype = jnp.complex128), jnp.array(self.BASIS['DI_DQZB0'], dtype = jnp.complex128), jnp.array(self.BASIS['DI_DQZF0'], dtype = jnp.complex128), 
