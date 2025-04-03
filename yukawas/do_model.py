@@ -902,7 +902,6 @@ if __name__ ==  '__main__':
     wandb.log({"Vol_J_1n_dijktitjtk:": np.real(pg.vol_j_norm/np.real(tf.math.exp(tf.math.lgamma(tf.cast(pg.nfold, real_dtype)+1))))})
     wandb.log({"Vol_CY_om_ombar:": np.real(pg.vol_j_norm/np.real(BASIS['KAPPA']))})
     wandb.log({"factor_to_multiply_by_for_CY_vol:": np.sqrt(8/np.real(BASIS['KAPPA']))})
-
     if just_FS:
         print("skipped to EVAL")
         #phimodel = 
@@ -963,10 +962,19 @@ if __name__ ==  '__main__':
     else:
         print("just FS")
         do_extra_stuff_for_integration = False
-        
+    batch_size_psi = 10000
+    batch_size_det = 3000
+    if 'nowp' in sys.argv:
+        batch_size_psi = False
+        batch_size_det = False
+    if 'nomeasure' in sys.argv:
+        batch_size_det = False
+    if 'nonorm' in sys.argv:
+        batch_size_psi = False
     masses, masserrors = do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH,
                                        HFmodel_vQ3, HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = do_extra_stuff_for_integration,
-                                         run_args=sys.argv, dirnameEval=dirnameEval, result_files_path=result_files_path, addtofilename=addtofilename, just_FS = just_FS, batch_size_for_processing = batch_size_for_processing)
+                                         run_args=sys.argv, dirnameEval=dirnameEval, result_files_path=result_files_path, addtofilename=addtofilename, just_FS = just_FS, batch_size_for_processing = batch_size_for_processing,
+                                           batch_size_psi = batch_size_psi, batch_size_det = batch_size_det)
 
 
 
@@ -1003,6 +1011,7 @@ if __name__ ==  '__main__':
     # # measure_integral = pg._measure_integral(all_points,all_aux_weights,j_elim=None)
     # # print("measure val here: ", measure_integral)
     # # wandb.log({'measure_integral': measure_integral})
+
     try:
         if 'random_search' in sys.argv:
             print("random search")

@@ -40,7 +40,8 @@ def convert_to_nested_tensor_dict(data):
       return data
 
 def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamodel_LB1, betamodel_LB2, betamodel_LB3, HFmodel_vH, HFmodel_vQ3,
-                  HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, run_args=None, dirnameEval=None, result_files_path=None, addtofilename=None, just_FS=False, batch_size_for_processing=None):
+                  HFmodel_vU3, HFmodel_vQ1, HFmodel_vQ2, HFmodel_vU1, HFmodel_vU2, network_params, do_extra_stuff = None, run_args=None, dirnameEval=None,
+                 result_files_path=None, addtofilename=None, just_FS=False, batch_size_for_processing=None, batch_size_psi=10000, batch_size_det=3000):
 
 
 
@@ -1423,4 +1424,45 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
     if do_extra_stuff:    
         pass
 
+    try:
+        if batch_size_psi or batch_size_det:
+            wpcalculator = WP(pg)
+        if batch_size_psi:
+            if 'm1' in run_args and not 'split_deformation' in run_args:
+                vector = jax.nn.one_hot(40, 81)
+            elif 'm1' in run_args and 'split_deformation' in run_args:
+                vector = jax.nn.one_hot(58, 81) + jax.nn.one_hot(22, 81)
+            elif 'm2' in run_args and not 'regular_deformation' in run_args:
+                vector = jax.nn.one_hot(58, 81) + jax.nn.one_hot(22, 81)
+            elif 'm2' in run_args and 'regular_deformation' in run_args:
+                vector = jax.nn.one_hot(40, 81)
+            else:
+                print("no sensible run_args found, using default psi")
+                vector = jax.nn.one_hot(40, 81)
+            from cymetric.pointgen.wp import WP
+
+            jax.config.update('jax_enable_x64', True)
+            print(f"Running normalisation of deformation: batch size {batch_size_psi}")
+            norm_of_psi, error_of_norm, zscore_of_norm = wpcalculator.get_moduli_psi_normalisation(jnp.array(pointsComplex, dtype = jnp.complex128), jnp.array(weights, dtype = jnp.float64), jnp.array(pullbacks_all, dtype = jnp.complex128), batch_size = batch_size_psi, psivector = vector)
+            canonical_normaliser = np.abs(norm_of_psi)**(-0.5)
+            error_on_canonical_normaliser = 0.5 * np.abs(norm_of_psi)**(-1.5) * np.abs(error_of_norm)
+            wandb.log({"psi_matrix_element_R": np.real(norm_of_psi),
+                       "psi_matrix_element_I": np.imag(norm_of_psi),
+                       "error_R": np.real(error_of_norm),
+                       "error_I": np.imag(error_of_norm),
+                       "zscore_R": (zscore_of_norm),
+                       'canonical_normaliser': canonical_normaliser,
+                       'error_on_canonical_normaliser': error_on_canonical_normaliser})
+            #i.e. d modulus = canonical_normaliser*d modulus of psi
+        if batch_size_det:
+            print(f"Running moduli space determinant: batch size {batch_size_det}")
+            det_of_moduli_space, error_of_det, zscore_of_det = wpcalculator.get_moduli_space_determinant(jnp.array(pointsComplex, dtype = jnp.complex128), jnp.array(weights, dtype = jnp.float64), jnp.array(pullbacks_all, dtype = jnp.complex128), batch_size = batch_size_det)
+
+            wandb.log({"det_of_moduli_space_R":np.real(det_of_moduli_space),
+                        "det_of_moduli_space_I":np.imag(det_of_moduli_space), 
+                        "error_of_det_of_moduli_space_R": np.real(error_of_det), 
+                        "error_of_det_of_moduli_space_I": np.imag(error_of_det), 
+                        "zscore_of_det_of_moduli_space": np.real(zscore_of_det)})
+    except Exception as e:
+        print(f"failed to calculate moduli space determinant {e}. Returning.")
     return np.array(masses_trained_and_ref), np.array(singular_values_errors_trained_and_ref)
