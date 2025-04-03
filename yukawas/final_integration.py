@@ -12,7 +12,7 @@ from datetime import datetime
 from cymetric.models.tfhelper import prepare_tf_basis, train_model
 import wandb
 import jax.numpy as jnp
-
+from auxiliary_funcs import point_vec_to_complex_jax
 
 def convert_to_nested_tensor_dict(data):
    if isinstance(data, dict) or hasattr(data, 'items'):
@@ -1430,13 +1430,14 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
     if do_extra_stuff:    
         pass
 
+    import jax
     try:
         if batch_size_psi or batch_size_det:
             from cymetric.pointgen.wp import WP
             wpcalculator = WP(pg)
             jax.config.update('jax_enable_x64', True)
             try:
-                pointsComplex_all_jax = jnp.concat((dataEval['X_train'], dataEval['X_val']), axis=0)
+                pointsComplex_all_jax = jnp.array(point_vec_to_complex_jax(jnp.concat((dataEval['X_train'], dataEval['X_val']), axis=0)))
                 pullbacks_all_jax = jnp.concat((dataEval['train_pullbacks'], dataEval['val_pullbacks']), axis=0)
                 weights_all_jax = jnp.concat((dataEval['y_train'][:,0], dataEval['y_val'][:,1]), axis=0)
             except:
@@ -1444,7 +1445,6 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
                 pullbacks_all_jax = None
                 weights_all_jax = None
         if batch_size_psi:
-            import jax
             if 'm1' in run_args and not 'split_deformation' in run_args:
                 vector = jax.nn.one_hot(40, 81)
             elif 'm1' in run_args and 'split_deformation' in run_args:

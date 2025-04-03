@@ -7,6 +7,16 @@ from cymetric.config import real_dtype, complex_dtype
 
 
 
+def point_vec_to_complex_jax(p):
+    plen = p.shape[-1] // 2
+    return p[..., :plen] + 1j * p[..., plen:]
+
+def point_vec_to_real_jax(p):
+    # Convert complex array to real by concatenating real and imaginary parts
+    plen = p.shape[-1]
+    return jnp.concatenate([jnp.real(p), jnp.imag(p)], axis=-1)
+    
+
 def convertcomptoreal(complexvec):
     # this converts from complex to real
     return tf.concat([tf.math.real(complexvec),tf.math.imag(complexvec)],-1) 
