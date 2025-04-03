@@ -19,6 +19,7 @@ from jax import vmap as jax_vmap
 from functools import partial
 import gc
 from jax import config as jaxconfig
+import jax
 
 jaxconfig.update("jax_enable_x64", True)
 
@@ -1361,7 +1362,7 @@ class PointGenerator:
     @staticmethod
     @jax_jit
     def _compute_dI_dQZ_jax(points, indices, DI_DQZB0, DI_DQZF0):
-        """Compute derivatives of I with respect to Q and Z."""
+        """Compute derivatives of I,z with respect to Q"""
         # Expand points to match DI_DQZB0 shape which is (81, 8, 54, 8), where 81 can just be the number of directions under consideration
         #dotDI_DQZB0 = jnp.einsum('Ii,i...->I...', moduli_space_directions, DI_DQZB0)#shape I
         expanded_points = jnp.expand_dims(jnp.expand_dims(points, 0), 2)# shape 1,N,1, 8
@@ -1378,6 +1379,125 @@ class PointGenerator:
         dIp = jnp.multiply.reduce(dIp, axis=-1) # shape is 81, N, monoms
         dIp = jnp.add.reduce(jnp.expand_dims(DI_DQF0, 1) * dIp, axis=-1) # shape is 81, N# 81 is a stand-in for the number of moduli space directions
         return dIp
+
+    @jax_jit
+    def _compute_H_poly(points, DQDZB0, DQDZF0, kmoduli):
+        dq_dz = jnp.power(jnp.expand_dims(points, (1,2)),jnp.expand_dims(DQDZB0, 0))
+        dq_dz = jnp.multiply.reduce(dq_dz, axis=-1)
+        dq_dz = jnp.add.reduce(jnp.expand_dims(DQDZF0, 0) * dq_dz, axis=-1)
+        fubini_study  = PointGenerator.inverse_fubini_study_metrics_jax(points, kmoduli)
+        dqbar_dzbar = jnp.conj(dq_dz)
+        H = jnp.einsum('xb,xba,xa->x', jnp.conj(dq_dz), fubini_study, dq_dz)
+        return H, fubini_study,dq_dz,dqbar_dzbar
+
+    @staticmethod
+    def _compute_vecbeforep(points, DQDZB0, DQDZF0, kmoduli, good_ambient_coords):
+        H, fubini_study,dq_dz,dqbar_dzbar = PointGenerator._compute_H_poly(points, DQDZB0, DQDZF0, kmoduli)
+        vecbefore_Ip = - jnp.einsum('x,xJi,xJ->xi',H**(-1),fubini_study, dqbar_dzbar)
+        vecbefore_Ip = PointGenerator.proj_mask(vecbefore_Ip, good_ambient_coords,axis=-1)
+        return vecbefore_Ip
+
+    @staticmethod
+    def _compute_vecafterp_r_r(realpoints, DQDZB0, DQDZF0, kmoduli, good_ambient_coords):
+        
+        complexpoints = realpoints[:,:8] + 1j*realpoints[:,8:]
+        vecbefore_Ip = PointGenerator._compute_vecbeforep(complexpoints, DQDZB0, DQDZF0, kmoduli, good_ambient_coords)
+        return jnp.stack([jnp.real(vecbefore_Ip), jnp.imag(vecbefore_Ip)], axis=-1)
+        
+    @staticmethod
+    #@jax_jit
+    def _compute_del_and_delbar_vecbefore_p(points, DQDZB0, DQDZF0, kmoduli, good_cy_coords, good_ambient_coords):
+        """Compute both the value and gradient of _compute_vecafterp_r_r.
+        
+        Args:
+            realpoints: Real representation of points (batch_size, 16)
+            DQDZB0, DQDZF0: Basis for derivatives
+            kmoduli: Kähler moduli
+            proj_to_good_coords: boolean mask of good coordinates
+        Returns:
+            value: The output of _compute_vecafterp_r_r
+            gradient: The Jacobian with respect to realpoints
+        """
+        # Since _compute_vecafterp_r_r returns a vector output, we need to use jacfwd
+        # to get the full Jacobian matrix rather than value_and_grad
+        real_points = points[:,:8] + 1j*points[:,8:]
+        value = PointGenerator._compute_vecbeforep(real_points, DQDZB0, DQDZF0, kmoduli, good_ambient_coords)
+        complexvalue = value[:,:4] + 1j*value[:,4:]
+        
+        # Define the function to differentiate (real input, real output)
+        def vecafterp_r_r_fn(real_pts):
+            return PointGenerator._compute_vecafterp_r_r(real_pts, DQDZB0, DQDZF0, kmoduli, good_ambient_coords)
+        
+        # Compute the Jacobian using JAX
+        jacobian = jax.jacfwd(vecafterp_r_r_fn)(real_points)
+        
+        # Reconstruct holomorphic and anti-holomorphic components
+        # For a function f(z,z̄) with z = x + iy, the holomorphic derivative is:
+        # ∂f/∂z = (1/2)(∂f/∂x - i∂f/∂y)
+        # And the anti-holomorphic derivative is:
+        # ∂f/∂z̄ = (1/2)(∂f/∂x + i∂f/∂y)
+        
+        # Split the jacobian into parts for the first 8 (real) and last 8 (imaginary) components
+        # Assuming jacobian shape is (batch, output_dim, input_dim)
+        jac_dx_Vx = jacobian[...,0, :8], # jacobian w.r.t. real parts
+        jac_dx_Vy = jacobian[...,1, :8],  # jacobian w.r.t. real parts
+        jac_dy_Vx = jacobian[...,0, 8:], # jacobian w.r.t. imaginary parts
+        jac_dy_Vy = jacobian[...,1, 8:] # jacobian w.r.t. imaginary parts  
+        
+        # Reconstruct holomorphic and anti-holomorphic components
+        holo_derivative = 0.5 * (jac_dx_Vx - 1j * jac_dy_Vx) + 0.5 *1j * (jac_dx_Vy - 1j * jac_dy_Vy)
+        antiholo_derivative = 0.5 * (jac_dx_Vx + 1j * jac_dy_Vx) + 0.5 *1j * (jac_dx_Vy + 1j * jac_dy_Vy)
+        
+        return complexvalue, holo_derivative, antiholo_derivative
+
+    @staticmethod
+    def proj_mask(jacobian, proj_to_good_coords, axis=-1):
+        """Extract only the components specified by proj_to_good_coords along the given axis."""
+        return jnp.take(jacobian, jnp.where(proj_to_good_coords)[0], axis=axis)
+        
+    @staticmethod
+    def dholo_antiholo_theta(points, DQDZB0, DQDZF0, kmoduli, DI_DQB0, DI_DQF0, good_cy_coords, good_ambient_coords):
+        #indices = PointGenerator._find_max_dQ_coords_jax(points, DQDZB0, DQDZF0)
+        complexvalue, holo_derivative, antiholo_derivative = PointGenerator._compute_del_and_delbar_vecbefore_p(points, DQDZB0, DQDZF0, kmoduli, good_cy_coords, good_ambient_coords)
+        dI_dQZ = PointGenerator._compute_dI_dQZ_jax(points,all, DQDZB0, DQDZF0)#automatically pulled back!
+        dI_p = PointGenerator._compute_dIp_jax(points, DI_DQB0, DI_DQF0)
+        #pullbacks = PointGenerator.pullbacks(points, all, DQDZB0, DQDZF0)
+        thetai_holo= jnp.einsum('xAb,Ix->xIAb',holo_derivative, dI_p) + jnp.einsum('xA,Ixb->xIAb',complexvalue, dI_dQZ)
+        antiholo_derivative=PointGenerator.proj_mask(antiholo_derivative, good_cy_coords, axis=-2)# put vector into good cy coordinates
+        iproduct = jnp.array([-1,1,-1], dtype=antiholo_derivative.dtype)
+        gi_kantiholo_holoup = jnp.einsum('A,xmb,xAb,Ix->xIAm',iproduct,jnp.conj(pullbacks),antiholo_derivative, dI_p)# then pull back the form
+        trace_holo = jnp.einsum('xIAA->xI',PointGenerator.proj_mask(thetai_holo, good_ambient_coords, axis=-1))
+
+        return gi_kantiholo_holoup, trace_holo
+
+    def dnu_dI(points, DQDZB0, DQDZF0, kmoduli, DI_DQB0, DI_DQF0, weights):
+        good_ambient_coords = jnp.logical_not(jnp.isclose(points, jax.lax.complex(1.,0.)))
+        #good_cy_coords =
+        indices = PointGenerator._find_max_dQ_coords_jax(points, DQDZB0, DQDZF0)
+        
+        # Set proj_to_good_coords to False at positions specified by indices
+        good_cy_coords = good_ambient_coords.at[jnp.arange(indices.shape[0]), indices].set(False)
+
+        gi_kantiholo_holoup, trace_holo = PointGenerator.dholo_antiholo_theta(points, DQDZB0, DQDZF0, kmoduli, DI_DQB0, DI_DQF0, good_cy_coords, good_ambient_coords)
+        wedge_the_two =  jnp.array([[(-1)**((j+1)-(i+1)-1) for i in range(3)] for j in range(3)])
+        dnu_dI_antiholobit = jnp.einsum('ij,xIij,xIji->xI',wedge_the_two,gi_kantiholo_holoup,jnp.conjugate(gi_kantiholo_holoup))
+        #dnu_dI_holobit = trace_holo
+
+        return dnu_dI_antiholobit, trace_holo
+
+    def gwP_jax(points, DQDZB0, DQDZF0, kmoduli, DI_DQB0, DI_DQF0, weights):
+        vol_omega = jnp.mean(weights)
+        dnu_dI_antiholobit, trace_holo = PointGenerator.dnu_dI(points, DQDZB0, DQDZF0, kmoduli, DI_DQB0, DI_DQF0, weights)
+        int_omega_dIomega = jnp.mean(weights*trace_holo)
+        int_dIomega_dJomegaholobit = jnp.einsum('x,xI,xJ->IJ', weights,jnp.conjugate(dnu_dI_antiholobit),dnu_dI_antiholobit)
+        int_dIomega_dJomegaantiholobit = jnp.einsum('x,xI,xJ->IJ',weights,dnu_dI_antiholobit,jnp.conjugate(dnu_dI_antiholobit))
+
+        gWP = -(int_dIomega_dJomegaholobit + int_dIomega_dJomegaantiholobit)/vol_omega +  jnp.einsum('I,J->IJ',int_omega_dIomega,jnp.conjugate(int_omega_dIomega))/vol_omega**2
+        
+        return gWP
+
+    def gwP(self, points):
+        return PointGenerator.gwP_jax(points, self.BASIS['DQDZB0'], self.BASIS['DQDZF0'], self.kmoduli, self.BASIS['DI_DQB0'], self.BASIS['DI_DQF0'], self.weights)
 
     def dI_holomorphic_volume_form(self, points, j_elim=None, use_jax=True):
         """Wrapper for holomorphic volume form computation with moduli space derivatives."""
@@ -2004,6 +2124,27 @@ class PointGenerator:
         return gFS
 
     @staticmethod
+    def inverse_fubini_study_metrics_jax(points, vol_js):
+        r"""Computes the FS metric at each point.
+
+        Args:
+            points (ndarray[(n_p, ncoords), np.complex128]): Points.
+            vol_js (ndarray[(h^{(1,1)}), np.complex128]): vol_j factor.
+                Defaults to None.
+
+        Returns:
+            ndarray[(n_p, ncoords, ncoords), np.complex128]: g^FS
+        """
+        gFS = np.zeros((len(points),8,8),
+                       dtype=np.complex128)
+        for i in range(4):
+            s = 2*i
+            e =2*i + 2
+            gFS[:, s:e, s:e] += jnp.matrix_transpose(PointGenerator._fubini_study_n_metrics_jax(points[:, s:e], vol_js[i]**(-1))*np.sum(np.abs(points[:, s:e])**2,axis=-1)**2)
+            #so it has indices bbar a
+        return gFS
+
+    @staticmethod
     def _fubini_study_n_metrics(points, vol_j=1. + 0.j):
         r"""Computes the FS metric for a single projective space of points.
 
@@ -2020,6 +2161,24 @@ class PointGenerator:
         gFS = np.einsum('x,ij->xij', point_square, np.eye(points.shape[1]))
         gFS = gFS.astype(np.complex128) - outer
         return np.einsum('xij,x->xij', gFS, 1 / (point_square ** 2)) * vol_j / np.pi
+
+    @staticmethod
+    def _fubini_study_n_metrics_jax(points, vol_j=1. + 0.j):
+        r"""Computes the FS metric for a single projective space of points.
+
+        Args:
+            point (ndarray[(n_p, n), np.complex128]): Points.
+            vol_j (complex): Volume factor. Defaults to 1+0.j.
+
+        Returns:
+            ndarray[(n_p, n, n), np.complex128]: g^FS
+        """
+        # we want to compute d_i d_j K^FS
+        point_square = jnp.add.reduce(jnp.abs(points) ** 2, axis=-1)
+        outer = jnp.einsum('xi,xj->xij', jnp.conj(points), points)
+        gFS = jnp.einsum('x,ij->xij', point_square, jnp.eye(points.shape[1]))
+        gFS = gFS.astype(jnp.complex128) - outer
+        return jnp.einsum('xij,x->xij', gFS, 1 / (point_square ** 2)) * vol_j / np.pi
 
     def prepare_basis(self, dirname, kappa=1.):
         r"""Prepares pickled monomial basis for the tensorflow models.
