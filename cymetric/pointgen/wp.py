@@ -243,7 +243,7 @@ class WP:
             
             # Calculate the terms for each sample point
             per_sample_term1 = (int_dIomega_dJomegaholobit)/(vol_omega)
-            per_sample_term2 = dnu_dI_antiholobit_dJantiholobit
+            per_sample_term2 = dnu_dI_antiholobit_dJantiholobit/vol_omega
             per_sample_gWP = -(per_sample_term1 + per_sample_term2)
             
             # Calculate mean and standard error for the first part, tracking real and imaginary separately
@@ -285,7 +285,7 @@ class WP:
             
             # Calculate the terms for each sample point
             per_sample_term1 = (int_dIomega_dJomegaholobit)/(vol_omega)
-            per_sample_term2 = dnu_dI_antiholobit_dJantiholobit
+            per_sample_term2 = dnu_dI_antiholobit_dJantiholobit/vol_omega
             per_sample_gWP = -(per_sample_term1 + per_sample_term2)
             
             # Calculate mean and standard error for the first part, tracking real and imaginary separately
@@ -424,7 +424,7 @@ class WP:
             current_vol_omega_mean = vol_omega_mean # Mean volume calculated up to *this* batch
             safe_vol_omega_mean = jnp.where(current_vol_omega_mean == 0, 1e-15, current_vol_omega_mean) # Avoid division by zero
 
-            per_sample_gWP_part1 = -(per_sample_term1 / safe_vol_omega_mean + per_sample_term2)
+            per_sample_gWP_part1 = -(per_sample_term1 / safe_vol_omega_mean + per_sample_term2/safe_vol_omega_mean)
 
             # Welford update for gWP_part1 (real part)
             batch_delta_gWP_real = jnp.real(per_sample_gWP_part1) - gWP_part1_mean_real

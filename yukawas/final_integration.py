@@ -1469,7 +1469,7 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
                        "error_I": np.imag(error_of_norm),
                        "zscore_R": (zscore_of_norm),
                        'canonical_normaliser': canonical_normaliser,
-                       'error_on_canonical_normaliser': error_on_canonical_normaliser})
+                       'error_on_canonical_normaliser': error_on_canonical_normaliser}, commit=True)
             #i.e. d modulus = canonical_normaliser*d modulus of psi
         if batch_size_det:
             print(f"Running moduli space determinant: batch size {batch_size_det}")
@@ -1479,7 +1479,7 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
                         "det_of_moduli_space_I":np.imag(det_of_moduli_space), 
                         "error_of_det_of_moduli_space_R": np.real(error_of_det), 
                         "error_of_det_of_moduli_space_I": np.imag(error_of_det), 
-                        "zscore_of_det_of_moduli_space": np.real(zscore_of_det)})
+                        "zscore_of_det_of_moduli_space": np.real(zscore_of_det)}, commit=True)
     except Exception as e:
         print(f"failed to calculate moduli space determinant {e}. Returning.")
     return np.array(masses_trained_and_ref), np.array(singular_values_errors_trained_and_ref)
