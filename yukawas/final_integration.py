@@ -1200,6 +1200,10 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
 
             # Log the data to wandb
             wandb.log(mass_data)
+            # Calculate hierarchy ratio and its error using proper error propagation formula for a ratio
+            hierarchy_ratio = s[1]/s[0]
+            hierarchy_error = hierarchy_ratio * np.sqrt((singular_value_errors[1]/s[1])**2 + (singular_value_errors[0]/s[0])**2)
+            wandb.log({"hierarchy": hierarchy_ratio, "hierarchy_error": hierarchy_error})
             # Create tables for physical yukawa matrices (trained and reference)
             physical_yukawa_data = []
             # Log individual physical yukawa matrix elements instead of as a table
@@ -1426,6 +1430,7 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
 
     try:
         if batch_size_psi or batch_size_det:
+            from cymetric.pointgen.wp import WP
             wpcalculator = WP(pg)
         if batch_size_psi:
             if 'm1' in run_args and not 'split_deformation' in run_args:
@@ -1439,7 +1444,6 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
             else:
                 print("no sensible run_args found, using default psi")
                 vector = jax.nn.one_hot(40, 81)
-            from cymetric.pointgen.wp import WP
 
             jax.config.update('jax_enable_x64', True)
             print(f"Running normalisation of deformation: batch size {batch_size_psi}")
