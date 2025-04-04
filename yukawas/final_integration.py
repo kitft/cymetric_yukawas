@@ -1001,6 +1001,19 @@ def do_integrals(manifold_name_and_data, pg, BASIS, dataEval, phimodel, betamode
         Qmat = mfieldmatrixfactors*np.array([[Q1Q1,Q2Q1,0],[Q1Q2,Q2Q2,0],[0,0,Q3Q3]])
         Umat = mfieldmatrixfactors*np.array([[U1U1,U2U1,0],[U1U2,U2U2,0],[0,0,U3U3]])
         # Store effective sample sizes for each integral
+        wandb.log({f"{prefix}_HuHu": np.real(HuHu), f"{prefix}_HuHu_imag": np.imag(HuHu), f"{prefix}_HuHu_std_error": np.abs(integral_stats['HuHu']['std_error'])})
+        wandb.log({f"{prefix}_Q1Q1": np.real(Q1Q1), f"{prefix}_Q1Q1_imag": np.imag(Q1Q1), f"{prefix}_Q1Q1_std_error": np.abs(integral_stats['Q1Q1']['std_error'])})
+        wandb.log({f"{prefix}_Q2Q1": np.real(Q2Q1), f"{prefix}_Q2Q1_imag": np.imag(Q2Q1), f"{prefix}_Q2Q1_std_error": np.abs(integral_stats['Q2Q1']['std_error'])})
+        wandb.log({f"{prefix}_Q1Q2": np.real(Q1Q2), f"{prefix}_Q1Q2_imag": np.imag(Q1Q2), f"{prefix}_Q1Q2_std_error": np.abs(integral_stats['Q1Q2']['std_error'])})
+        wandb.log({f"{prefix}_Q2Q2": np.real(Q2Q2), f"{prefix}_Q2Q2_imag": np.imag(Q2Q2), f"{prefix}_Q2Q2_std_error": np.abs(integral_stats['Q2Q2']['std_error'])})
+        wandb.log({f"{prefix}_Q3Q3": np.real(Q3Q3), f"{prefix}_Q3Q3_imag": np.imag(Q3Q3), f"{prefix}_Q3Q3_std_error": np.abs(integral_stats['Q3Q3']['std_error'])})
+        wandb.log({f"{prefix}_U1U1": np.real(U1U1), f"{prefix}_U1U1_imag": np.imag(U1U1), f"{prefix}_U1U1_std_error": np.abs(integral_stats['U1U1']['std_error'])})
+        wandb.log({f"{prefix}_U2U1": np.real(U2U1), f"{prefix}_U2U1_imag": np.imag(U2U1), f"{prefix}_U2U1_std_error": np.abs(integral_stats['U2U1']['std_error'])}) 
+        wandb.log({f"{prefix}_U1U2": np.real(U1U2), f"{prefix}_U1U2_imag": np.imag(U1U2), f"{prefix}_U1U2_std_error": np.abs(integral_stats['U1U2']['std_error'])})
+        wandb.log({f"{prefix}_U2U2": np.real(U2U2), f"{prefix}_U2U2_imag": np.imag(U2U2), f"{prefix}_U2U2_std_error": np.abs(integral_stats['U2U2']['std_error'])})
+        wandb.log({f"{prefix}_U3U3": np.real(U3U3), f"{prefix}_U3U3_imag": np.imag(U3U3), f"{prefix}_U3U3_std_error": np.abs(integral_stats['U3U3']['std_error'])})
+        
+        
         Qneffs = np.array([
             [Q1Q1_eff_n, Q2Q1_eff_n, 0],
             [Q1Q2_eff_n, Q2Q2_eff_n, 0],
