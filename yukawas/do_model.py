@@ -537,6 +537,16 @@ if __name__ == '__main__':
         nEpochsBeta = 10
         nEpochsSigma = 10
         nEpochsSigma2 = 10
+    elif '20epochs' in sys.argv[1:]:
+        nEpochsPhi = 20
+        nEpochsBeta = 20
+        nEpochsSigma = 20
+        nEpochsSigma2 = 20
+    elif '50epochs' in sys.argv[1:]:
+        nEpochsPhi = 50
+        nEpochsBeta = 50
+        nEpochsSigma = 50
+        nEpochsSigma2 = 50
     else:
         nEpochsPhi = 1
         nEpochsBeta = 1
@@ -589,17 +599,29 @@ if __name__ == '__main__':
         s = width_args[0]
         # Split by 'widths' and then handle possible underscore before numbers
         parts = s.split('widths')[1].lstrip('_').split('_')
-        widthPhi = int(parts[0])
-        widthBeta = int(parts[1])
-        widthSigma = int(parts[2])
-        widthSigma2 = int(parts[3])
+        if len(parts) == 1:
+            widthPhi = int(parts[0])
+            widthBeta = int(parts[0])
+            widthSigma = int(parts[0])
+            widthSigma2 = int(parts[0])
+        else:
+            widthPhi = int(parts[0])
+            widthBeta = int(parts[1])
+            widthSigma = int(parts[2])
+            widthSigma2 = int(parts[3])
     if depth_args:
         s = depth_args[0]
         parts = s.split('depths')[1].lstrip('_').split('_')
-        depthPhi = int(parts[0])
-        depthBeta = int(parts[1])
-        depthSigma = int(parts[2])
-        depthSigma2 = int(parts[3])
+        if len(parts) == 1:
+            depthPhi = int(parts[0])
+            depthBeta = int(parts[0])
+            depthSigma = int(parts[0])
+            depthSigma2 = int(parts[0])
+        else:
+            depthPhi = int(parts[0])
+            depthBeta = int(parts[1])
+            depthSigma = int(parts[2])
+            depthSigma2 = int(parts[3])
 
 
     if integrate_or_run == 'integrate':
