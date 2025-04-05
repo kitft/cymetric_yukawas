@@ -818,7 +818,7 @@ if __name__ ==  '__main__':
                       'tags': [integrate_or_run, modeltype, "nint"+str(n_to_integrate), "npoints"+str(nPoints), addtofilename]+addtags})
     
     
-    if not just_FS: 
+    while not just_FS: 
         if not skip_pg:
             generate_points_and_save_using_defaults(manifold_name_and_data,nPoints,force_generate=force_generate_phi,seed_set=seed_for_gen,average_selected_t = orbit_P1s, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing, batch_size = batch_size_for_gen)
         if train_phi:
@@ -827,22 +827,27 @@ if __name__ ==  '__main__':
         else:
             phimodel,training_history, measure_phi=load_nn_phimodel(manifold_name_and_data,phimodel_config,set_weights_to_zero=return_zero_phi,skip_measures=skip_measuresPhi,set_weights_to_random=return_random_phi, unique_name=unique_name_phi)
 
-
+        if end_before == 'LB1':
+            print("ending before LB1")
+            break
         generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundleforHYM_LB1,nPoints,phimodel,force_generate=force_generate_HYM,seed_set=seed_for_gen)
         if train_LB1:
             betamodel_LB1,training_historyBeta_LB1, measure_LB1 = train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM_LB1,betamodel_config,phimodel,load_network=False,use_zero_network=use_zero_network_beta, unique_name=unique_name_LB1)
         else: 
             betamodel_LB1,training_historyBeta_LB1, measure_LB1=load_nn_HYM(manifold_name_and_data,linebundleforHYM_LB1,betamodel_config,phimodel,set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM, unique_name=unique_name_LB1)
         purge_dicts_and_mem()
-
-    
+        if end_before == 'LB2':
+            print("ending before LB2")
+            break
         generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundleforHYM_LB2,nPoints,phimodel,force_generate=force_generate_HYM,seed_set=seed_for_gen)
         if train_LB2:
             betamodel_LB2,training_historyBeta_LB2, measure_LB2 = train_and_save_nn_HYM(manifold_name_and_data,linebundleforHYM_LB2,betamodel_config,phimodel,load_network=False,use_zero_network=use_zero_network_beta, unique_name=unique_name_LB2)
         else:
             betamodel_LB2,training_historyBeta_LB2, measure_LB2=load_nn_HYM(manifold_name_and_data,linebundleforHYM_LB2,betamodel_config,phimodel,set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM, unique_name=unique_name_LB2)
         purge_dicts_and_mem()
-  
+        if end_before == 'LB3':
+            print("ending before LB3")
+            break  
 
         generate_points_and_save_using_defaultsHYM(manifold_name_and_data,linebundleforHYM_LB3,nPoints,phimodel,force_generate=force_generate_HYM,seed_set=seed_for_gen)
         if train_LB3:
@@ -850,6 +855,9 @@ if __name__ ==  '__main__':
         else:
             betamodel_LB3,training_historyBeta_LB3, measure_LB3=load_nn_HYM(manifold_name_and_data,linebundleforHYM_LB3,betamodel_config,phimodel,set_weights_to_zero=return_zero_HYM,skip_measures=skip_measuresBeta,set_weights_to_random=return_random_HYM, unique_name=unique_name_LB3)
         purge_dicts_and_mem()
+        if end_before == 'vH':
+            print("ending before vH")
+            break
 
         generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB1,functionforbaseharmonicform_jbar_for_vH,phimodel,betamodel_LB1,nPoints,force_generate=force_generate_HF,seed_set=seed_for_gen)
         if train_vH:
@@ -859,6 +867,9 @@ if __name__ ==  '__main__':
         else:
             HFmodel_vH,trainingHistoryHF_vH, measure_HF1=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB1,betamodel_LB1,phimodel,functionforbaseharmonicform_jbar_for_vH,sigmamodel_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vH)
         purge_dicts_and_mem()
+        if end_before == 'vQ3':
+            print("ending before vQ3")
+            break
 
 
 
@@ -870,6 +881,9 @@ if __name__ ==  '__main__':
         else:
             HFmodel_vQ3,trainingHistoryHF_vQ3, measure_HF2=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB2,betamodel_LB2,phimodel,functionforbaseharmonicform_jbar_for_vQ3,sigmamodel_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vQ3)
         purge_dicts_and_mem()
+        if end_before == 'vU3':
+            print("ending before vU3")
+            break
 
 
         generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB2,functionforbaseharmonicform_jbar_for_vU3,phimodel,betamodel_LB2,nPoints,force_generate=force_generate_HF,seed_set=seed_for_gen)
@@ -878,6 +892,9 @@ if __name__ ==  '__main__':
         else:
             HFmodel_vU3,trainingHistoryHF_vU3, measure_HF3=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB2,betamodel_LB2,phimodel,functionforbaseharmonicform_jbar_for_vU3,sigmamodel_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vU3)
         purge_dicts_and_mem()
+        if end_before == 'vQ1':
+            print("ending before vQ1")
+            break
 
 
 
@@ -890,6 +907,9 @@ if __name__ ==  '__main__':
         else:
             HFmodel_vQ1,trainingHistoryHF_vQ1, measure_HF4=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vQ1,sigma2model_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vQ1)
         purge_dicts_and_mem()
+        if end_before == 'vQ2':
+            print("ending before vQ2")
+            break
     
 
         generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB3,functionforbaseharmonicform_jbar_for_vQ2,phimodel,betamodel_LB3,nPoints,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
@@ -898,12 +918,20 @@ if __name__ ==  '__main__':
         else:
             HFmodel_vQ2,trainingHistoryHF_vQ2, measure_HF5=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vQ2,sigma2model_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vQ2)
         purge_dicts_and_mem()   
+        if end_before == 'vU1':
+            print("ending before vU1")
+            break
 
         generate_points_and_save_using_defaultsHF(manifold_name_and_data,linebundleforHYM_LB3,functionforbaseharmonicform_jbar_for_vU1,phimodel,betamodel_LB3,nPoints,force_generate=force_generate_HF_2,seed_set=seed_for_gen)
         if train_vU1:
             HFmodel_vU1,trainingHistoryHF_vU1, measure_HF6 = train_and_save_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vU1,sigma2model_config, unique_name=unique_name_vU1)
         else:
             HFmodel_vU1,trainingHistoryHF_vU1, measure_HF6=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vU1,sigma2model_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vU1)  
+        purge_dicts_and_mem()
+        if end_before == 'vU2':
+            print("ending before vU2")
+            break
+
         delete_all_dicts_except('dataEval')
         gc.collect()
         tf.keras.backend.clear_session()
@@ -914,40 +942,14 @@ if __name__ ==  '__main__':
         else:
             HFmodel_vU2,trainingHistoryHF_vU2, measure_HF7=load_nn_HF(manifold_name_and_data,linebundleforHYM_LB3,betamodel_LB3,phimodel,functionforbaseharmonicform_jbar_for_vU2,sigma2model_config,skip_measures=skip_measuresHF,set_weights_to_random=return_random_HF, unique_name=unique_name_vU2)
         purge_dicts_and_mem()
-
-    else:
+        if end_before == 'end':
+            print("ending before end")
+            break
+        break
+    if not just_FS: 
         print("just FS - skipping to eval")
-
-
-
-    pg,kmoduli=generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,n_to_integrate,seed_set=seed_for_gen,force_generate=force_generate_eval,average_selected_t = orbit_P1s, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing, batch_size = batch_size_for_eval)
-    dirnameEval = os.path.join(data_path,type_folder,f'{manifold_name}_pg_for_eval_with_{unique_id_or_coeff}')
-    # Delete dirnameEval if it exists
     
-    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameEval, 'basis.pickle'), allow_pickle=True))
-    wandb.log({"Kappa:": np.real(BASIS['KAPPA'])})# J^3 = \kappa |\Omega|^2 in this scheme. So integral omega wedge omegabar = 6*vol_J/kappa
-    wandb.log({"Vol_J_1n_dijktitjtk:": np.real(pg.vol_j_norm/np.real(tf.math.exp(tf.math.lgamma(tf.cast(pg.nfold, real_dtype)+1))))})
-    wandb.log({"Vol_CY_om_ombar:": np.real(pg.vol_j_norm/np.real(BASIS['KAPPA']))})
-    wandb.log({"factor_to_multiply_by_for_CY_vol:": np.sqrt(8/np.real(BASIS['KAPPA']))})
-    if just_FS:
-        print("skipped to EVAL")
-        #phimodel = 
-        phimodel = FSModel(BASIS, unique_name='phi')
-        betamodel_LB1 = lambda x: raw_FS_HYM_r_r(x, linebundleforHYM_LB1)
-        betamodel_LB2 = lambda x: raw_FS_HYM_r_r(x, linebundleforHYM_LB2)
-        betamodel_LB3 = lambda x: raw_FS_HYM_r_r(x, linebundleforHYM_LB3)
-        HFmodel_vH = pulled_back_func(functionforbaseharmonicform_jbar_for_vH)
-        HFmodel_vQ3 = pulled_back_func(functionforbaseharmonicform_jbar_for_vQ3)
-        HFmodel_vU3 = pulled_back_func(functionforbaseharmonicform_jbar_for_vU3)
-        HFmodel_vQ1 = pulled_back_func(functionforbaseharmonicform_jbar_for_vQ1)
-        HFmodel_vQ2 = pulled_back_func(functionforbaseharmonicform_jbar_for_vQ2)
-        HFmodel_vU1 = pulled_back_func(functionforbaseharmonicform_jbar_for_vU1)
-        HFmodel_vU2 = pulled_back_func(functionforbaseharmonicform_jbar_for_vU2)
 
-    dirnameEval = os.path.join(data_path,type_folder,f'{manifold_name}_pg_for_eval_with_{unique_id_or_coeff}')
-    if not os.path.exists(dirnameEval):
-        raise FileNotFoundError(f"Directory {dirnameEval} not found.")
-    dataEval=np.load(os.path.join(dirnameEval, 'dataset.npz'))
 
     network_params = {        # Network parameters
         'free_coefficient': np.real(free_coefficient),
@@ -989,6 +991,36 @@ if __name__ ==  '__main__':
     else:
         print("just FS")
         do_extra_stuff_for_integration = False
+
+    pg,kmoduli=generate_points_and_save_using_defaults_for_eval(manifold_name_and_data,n_to_integrate,seed_set=seed_for_gen,force_generate=force_generate_eval,average_selected_t = orbit_P1s, use_quadratic_method = use_quadratic_method, use_jax = use_jax, do_multiprocessing = do_multiprocessing, batch_size = batch_size_for_eval)
+    dirnameEval = os.path.join(data_path,type_folder,f'{manifold_name}_pg_for_eval_with_{unique_id_or_coeff}')
+    # Delete dirnameEval if it exists
+    
+    BASIS = prepare_tf_basis(np.load(os.path.join(dirnameEval, 'basis.pickle'), allow_pickle=True))
+    wandb.log({"Kappa:": np.real(BASIS['KAPPA'])})# J^3 = \kappa |\Omega|^2 in this scheme. So integral omega wedge omegabar = 6*vol_J/kappa
+    wandb.log({"Vol_J_1n_dijktitjtk:": np.real(pg.vol_j_norm/np.real(tf.math.exp(tf.math.lgamma(tf.cast(pg.nfold, real_dtype)+1))))})
+    wandb.log({"Vol_CY_om_ombar:": np.real(pg.vol_j_norm/np.real(BASIS['KAPPA']))})
+    wandb.log({"factor_to_multiply_by_for_CY_vol:": np.sqrt(8/np.real(BASIS['KAPPA']))})
+    if just_FS:
+        print("skipped to EVAL")
+        #phimodel = 
+        phimodel = FSModel(BASIS, unique_name='phi')
+        betamodel_LB1 = lambda x: raw_FS_HYM_r_r(x, linebundleforHYM_LB1)
+        betamodel_LB2 = lambda x: raw_FS_HYM_r_r(x, linebundleforHYM_LB2)
+        betamodel_LB3 = lambda x: raw_FS_HYM_r_r(x, linebundleforHYM_LB3)
+        HFmodel_vH = pulled_back_func(functionforbaseharmonicform_jbar_for_vH)
+        HFmodel_vQ3 = pulled_back_func(functionforbaseharmonicform_jbar_for_vQ3)
+        HFmodel_vU3 = pulled_back_func(functionforbaseharmonicform_jbar_for_vU3)
+        HFmodel_vQ1 = pulled_back_func(functionforbaseharmonicform_jbar_for_vQ1)
+        HFmodel_vQ2 = pulled_back_func(functionforbaseharmonicform_jbar_for_vQ2)
+        HFmodel_vU1 = pulled_back_func(functionforbaseharmonicform_jbar_for_vU1)
+        HFmodel_vU2 = pulled_back_func(functionforbaseharmonicform_jbar_for_vU2)
+
+    dirnameEval = os.path.join(data_path,type_folder,f'{manifold_name}_pg_for_eval_with_{unique_id_or_coeff}')
+    if not os.path.exists(dirnameEval):
+        raise FileNotFoundError(f"Directory {dirnameEval} not found.")
+    dataEval=np.load(os.path.join(dirnameEval, 'dataset.npz'))
+
     batch_size_psi = 3000
     batch_size_det = 1000
     if 'batchmu' in [s[:7] for s in sys.argv]:
