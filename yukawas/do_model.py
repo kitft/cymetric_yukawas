@@ -442,12 +442,15 @@ if __name__ == '__main__':
             skip_measuresHF=True
         #skip_measuresHF
 
-    if integrate_or_run == 'integrate' or 'zerophibeta' in sys.argv[1:]:
+    if integrate_or_run == 'integrate' or 'zerophibeta' in sys.argv[1:] or 'scan_hypers' in sys.argv[1:]:
         return_zero_phi= True
         return_zero_beta = True
         return_zero_HYM = True
         return_zero_HF = False
         return_zero_HF_2 = False
+        if 'scan_hypers' in sys.argv[1:]:
+            return_zero_HF = True
+            return_zero_HF_2 = True
         print("RETURNING ZERO PHI AND HYM")
     else:
         return_zero_phi= False
