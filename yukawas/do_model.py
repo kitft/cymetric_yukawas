@@ -29,7 +29,7 @@ start_from = sys.argv[4] if len(sys.argv) > 3+1 else 'phi' # start from phi, LB1
 npoints_config = sys.argv[5] if len(sys.argv) > 4+1 else '1hundred'
 job_id = sys.argv[-1] # job id
 
-if integrate_or_run not in ['integrate', 'run', 'just_FS', 'justFS']:
+if integrate_or_run not in ['integrate', 'run', 'just_FS', 'justFS', 'scan_hypers']:
     raise ValueError("Invalid command: " + integrate_or_run, "you ran " + " ".join(sys.argv))
 if integrate_or_run == 'justFS':
     integrate_or_run = 'just_FS'
@@ -522,6 +522,9 @@ if __name__ == '__main__':
             n_to_integrate = 10_000_000
         else:
             raise ValueError("Invalid data size: " + npoints_config)
+    elif integrate_or_run == 'scan_hypers':
+        nPoints=300_000
+        n_to_integrate=1000_000
     #tr_batchsize = 10
     #SecondBSize = 10
     if '5epochs' in sys.argv[1:]:
@@ -579,6 +582,24 @@ if __name__ == '__main__':
         widthSigma = 3
         depthSigma2 = 2
         widthSigma2 = 3
+    # Check for width arguments in either format: 'widths100_200_300_400' or 'widths_100_200_300_400'
+    width_args = [s for s in sys.argv[1:] if s.startswith('widths')]
+    depth_args = [s for s in sys.argv[1:] if s.startswith('depths')]
+    if width_args:
+        s = width_args[0]
+        # Split by 'widths' and then handle possible underscore before numbers
+        parts = s.split('widths')[1].lstrip('_').split('_')
+        widthPhi = int(parts[0])
+        widthBeta = int(parts[1])
+        widthSigma = int(parts[2])
+        widthSigma2 = int(parts[3])
+    if depth_args:
+        s = depth_args[0]
+        parts = s.split('depths')[1].lstrip('_').split('_')
+        depthPhi = int(parts[0])
+        depthBeta = int(parts[1])
+        depthSigma = int(parts[2])
+        depthSigma2 = int(parts[3])
 
 
     if integrate_or_run == 'integrate':
@@ -720,6 +741,11 @@ if __name__ == '__main__':
     else:
         skip_pg = False
 
+    if 'end_before' in [s[:10] for s in sys.argv[1:]]:
+        end_before = [s[10:] for s in sys.argv[1:] if s[:10] == 'end_before'][0].lstrip('_')
+    else:
+        end_before = None
+
 # if orbit_P1s!=False:
 #     orbit_P1s = False
 #     use_quadratic_method = True
@@ -729,7 +755,7 @@ if __name__ == '__main__':
 if __name__ == '__main__':
 
     
-    training_flags = determine_training_flags(start_from)
+    training_flags = determine_training_flags(start_from,end_before= end_before)
     
     # Unpack training flags
     train_phi, train_LB1, train_LB2, train_LB3, train_vH, train_vQ3, train_vU3, train_vQ1, train_vQ2, train_vU1, train_vU2 = (

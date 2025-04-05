@@ -119,8 +119,7 @@ def batch_process_helper_func(func_orig, args, batch_indices=(0,), batch_size=10
 
     return tf.concat(results_list, axis=0)
 
-
-def determine_training_flags(start_from='phi'):
+def determine_training_flags(start_from='phi', end_before=None):
     training_flags = {
         'phi': True,
         'LB1': True,  # 02m20
@@ -145,6 +144,17 @@ def determine_training_flags(start_from='phi'):
     for key in list(training_flags.keys())[:start_index]:
         training_flags[key] = False
         print(f"Skipping: {key}")
+    
+    if end_before is not None:
+        if end_before not in training_flags:
+            raise ValueError(f"Error: '{end_before}' is not a valid ending point.")
+        
+        end_index = list(training_flags.keys()).index(end_before)
+        print(f"Ending training before: {end_before}")
+        
+        for key in list(training_flags.keys())[end_index:]:
+            training_flags[key] = False
+            print(f"Skipping: {key}")
     
     return training_flags
 import sys
