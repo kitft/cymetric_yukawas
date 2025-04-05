@@ -805,7 +805,15 @@ def purge_dicts_and_mem():
  
 do_extra_stuff_for_integration = True
     
-
+measure_phi = None
+measure_LB1 = None
+measure_LB2 = None
+measure_LB3 = None
+measure_HF1 = None
+measure_HF2 = None
+measure_HF3 = None
+measure_HF4 = None
+measure_HF5 = None
 if __name__ ==  '__main__':
 
     unique_id_or_coeff = free_coefficient_str
