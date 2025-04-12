@@ -193,7 +193,7 @@ def prepare_dataset(point_gen, n_p, dirname, n_batches=None, val_split=0.1, ltai
             if n_batches % number_ambients != 0:
                 n_batches = n_batches * number_ambients // math.gcd(n_batches, number_ambients)
             fixed_selected_t_val = None
-        elif isinstance(average_selected_t, int) and 0 <= average_selected_t < number_ambients:
+        elif isinstance(average_selected_t, int) and 0 <= average_selected_t < number_ambients and average_selected_t is not False:
             fixed_selected_t_val = average_selected_t
         elif average_selected_t==False:
             fixed_selected_t_val = np.argmax(point_gen.ambient)

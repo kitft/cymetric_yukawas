@@ -889,4 +889,7 @@ class WP:
         gwp_inv = jnp.linalg.inv(gwp)
         det_gwp_error = jnp.sqrt(jnp.sum(jnp.abs(det_gwp * gwp_inv.T * gwpErr)**2))
         print(f"Determinant: {det_gwp}, Error: {det_gwp_error}, zscore: {np.abs(det_gwp)/np.abs(det_gwp_error)}")
-        return det_gwp, det_gwp_error, np.abs(det_gwp)/np.abs(det_gwp_error)
+        rank = jnp.linalg.matrix_rank(gwp)
+        sampling_ratio_determinant = det_gwp/np.exp(np.sum(0.5*np.abs(self.pg.coefficients)**2))/np.sqrt(2*np.pi)**21
+        sampling_ratio_error = det_gwp_error/np.exp(np.sum(0.5*np.abs(self.pg.coefficients)**2))/np.sqrt(2*np.pi)**21
+        return det_gwp, det_gwp_error, np.abs(det_gwp)/np.abs(det_gwp_error), rank, sampling_ratio_determinant, sampling_ratio_error

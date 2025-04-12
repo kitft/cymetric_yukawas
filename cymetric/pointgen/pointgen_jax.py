@@ -103,7 +103,9 @@ class JAXPointGenerator:
         """
         #print(f"selected pn: {selected_t_val}")
         key = jax.random.PRNGKey(numpy_seed) # use the same seed as numpy for the jax seed
+        print('selected_t_val',selected_t_val, "self.selected_t",self.selected_t)
         max_ts = np.max(self.selected_t[selected_t_val])
+        #max_ts =
         max_degree = self.ambient[self.selected_t[selected_t_val].astype(bool)][0] + 1# 0 to get the .item()
         n_p_red = int(n_p / max_degree) + 1
         pn_pnts = np.zeros((n_p_red, self.ncoords, max_ts + 1),
