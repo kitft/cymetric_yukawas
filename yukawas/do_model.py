@@ -179,6 +179,11 @@ for arg in sys.argv[1:]:
     if arg.startswith('tag'):
         addtags.append(arg[3:])
 
+if 'extraname' in [s[:9] for s in sys.argv[1:]]:
+    extraname = [s[9:] for s in sys.argv[1:] if s[:9] == 'extraname'][0]
+else:   
+    extraname = ""
+
 print("Adding to final filename: ",addtofilename)
 
 print("Saving all files to data path: ",data_path)
@@ -227,7 +232,7 @@ if modeltype == "m13":
 
     kmoduliTQ = np.array([1,(np.sqrt(7)-2)/3,(np.sqrt(7)-2)/3,1])
 elif modeltype == "m1":
-    type_folder = integrate_or_run+"model1"
+    type_folder = integrate_or_run+"model1"+extraname
     from yukawas.OneAndTwoFormsForLineBundlesModel1 import *
     get_coefficients_here = get_coefficients_m1
 
